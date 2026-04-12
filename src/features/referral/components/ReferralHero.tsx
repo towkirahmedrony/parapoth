@@ -1,0 +1,115 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Copy, Share2, Check, Link as LinkIcon } from 'lucide-react';
+import { Button } from '@/shared/components/ui/Button';
+
+interface ReferralHeroProps {
+  code: string;
+  isLoading?: boolean;
+  refereeBonus?: number;
+}
+
+export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, refereeBonus = 100 }) => {
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (copiedCode) timeoutId = setTimeout(() => setCopiedCode(false), 2000);
+    return () => clearTimeout(timeoutId);
+  }, [copiedCode]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (copiedLink) timeoutId = setTimeout(() => setCopiedLink(false), 2000);
+    return () => clearTimeout(timeoutId);
+  }, [copiedLink]);
+
+  const handleCopyCode = useCallback(async () => {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(true);
+    } catch {}
+  }, [code]);
+
+  const handleCopyLink = useCallback(async () => {
+    if (!code) return;
+    try {
+      const referralLink = `${window.location.origin}/register?ref=${code}`;
+      await navigator.clipboard.writeText(referralLink);
+      setCopiedLink(true);
+    } catch {}
+  }, [code]);
+
+  const handleShare = useCallback(async () => {
+    if (navigator.share && code) {
+      try {
+        const referralLink = `${window.location.origin}/register?ref=${code}`;
+        await navigator.share({
+          title: 'প্যারাপাথ-এ জয়েন করুন (Join ParaPoth)',
+          text: `আমার লিংক দিয়ে প্যারাপাথ-এ অ্যাকাউন্ট খুললে আপনি পেয়ে যাবেন ${refereeBonus} বোনাস লার্নিং কয়েন!`,
+          url: referralLink,
+        });
+      } catch (err) {}
+    }
+  }, [code, refereeBonus]);
+
+  if (isLoading) {
+    return <div className="h-32 rounded-xl animate-pulse bg-[color-mix(in_srgb,var(--dyn-text)_5%,transparent)]" />;
+  }
+
+  return (
+    <div className="rounded-xl p-4 md:p-5 bg-[var(--dyn-card)] border border-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)] shadow-sm">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        
+        <div className="flex-1">
+          <h2 className="text-lg font-bold mb-1">আপনার ইনভাইট লিংক</h2>
+          <p className="text-xs text-[color-mix(in_srgb,var(--dyn-text)_70%,transparent)] leading-relaxed max-w-sm">
+            আপনার লিংকটি বন্ধুদের সাথে শেয়ার করুন। তারা অ্যাকাউন্ট ভেরিফাই করলেই আপনারা দুজনেই কয়েন পাবেন।
+          </p>
+        </div>
+
+        <div className="w-full md:w-auto flex flex-col gap-2 p-2 rounded-lg border border-[color-mix(in_srgb,var(--dyn-primary)_20%,transparent)] bg-[color-mix(in_srgb,var(--dyn-primary)_5%,transparent)]">
+          <div className="px-3 py-1 font-mono font-bold text-center text-lg tracking-wider text-[var(--dyn-primary)]">
+            {code || '------'}
+          </div>
+          <div className="flex gap-1">
+            <Button 
+              onClick={handleCopyCode}
+              disabled={!code}
+              size="sm"
+              variant="outline"
+              className="flex-1 px-2 h-8 flex items-center justify-center gap-1.5 border-[color-mix(in_srgb,var(--dyn-primary)_30%,transparent)] text-[var(--dyn-primary)] hover:bg-[color-mix(in_srgb,var(--dyn-primary)_5%,transparent)] text-xs rounded-md"
+            >
+              {copiedCode ? <Check size={14} /> : <Copy size={14} />}
+              <span className="hidden sm:inline">{copiedCode ? 'কপি হয়েছে' : 'কোড'}</span>
+            </Button>
+
+            <Button 
+              onClick={handleCopyLink}
+              disabled={!code}
+              size="sm"
+              className="flex-1 px-2 h-8 flex items-center justify-center gap-1.5 bg-[var(--dyn-primary)] text-[var(--dyn-bg)] hover:opacity-90 font-medium text-xs rounded-md"
+            >
+              {copiedLink ? <Check size={14} /> : <LinkIcon size={14} />}
+              <span className="hidden sm:inline">{copiedLink ? 'কপি হয়েছে' : 'লিংক'}</span>
+            </Button>
+            
+            {!!navigator.share && (
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={handleShare} 
+                disabled={!code}
+                className="px-2 h-8 border-[color-mix(in_srgb,var(--dyn-primary)_30%,transparent)] text-[var(--dyn-primary)] hover:bg-[color-mix(in_srgb,var(--dyn-primary)_5%,transparent)] rounded-md"
+              >
+                <Share2 size={14} />
+              </Button>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};

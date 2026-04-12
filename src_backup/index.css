@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* --- Theme Variables (Default Fallbacks) --- */
+  :root {
+    --dyn-bg: #F8FAFC;      
+    --dyn-card: #FFFFFF;    
+    --dyn-text: #0F172A;    
+    --dyn-primary: #2563EB; 
+    --dyn-accent: #4F46E5;  
+  }
+
+  .dark {
+    --dyn-bg: #0F172A;      
+    --dyn-card: #1E293B;    
+    --dyn-text: #F8FAFC;    
+    --dyn-primary: #3B82F6; 
+    --dyn-accent: #6366F1;  
+  }
+
+  body {
+    /* ডিফল্ট টেক্সট কালার এবং ব্যাকগ্রাউন্ড লজিক */
+    @apply bg-dyn-bg text-dyn-text font-sans transition-colors duration-300;
+  }
+}
+
+@layer components {
+  /* --- Feature Grid Custom Classes --- */
+  .feature-item {
+    @apply flex flex-col items-center justify-center gap-2 transition-transform active:scale-95 p-2 rounded-2xl bg-dyn-card border border-slate-200/50 dark:border-slate-700/50 shadow-sm hover:brightness-95 dark:hover:brightness-110;
+  }
+
+  .feature-img {
+    @apply w-24 h-24 object-contain drop-shadow-md rounded-2xl;
+  }
+
+  .feature-text {
+    @apply text-dyn-text font-bold text-sm font-['Hind_Siliguri'] text-center mt-1;
+  }
+
+  /* --- Global Text Helpers --- */
+  .page-title {
+    @apply text-2xl font-bold text-dyn-text font-['Hind_Siliguri'];
+  }
+
+  .page-subtitle {
+    @apply opacity-80 text-dyn-text font-['Hind_Siliguri'];
+  }
+
+  /* --- Bottom Navigation Bar --- */
+  .bottom-nav-container {
+    @apply fixed bottom-0 left-0 right-0 z-50 h-16 bg-dyn-card shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)];
+  }
+}
+
+/* --- Utilities (Scrollbar & Animation) --- */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
