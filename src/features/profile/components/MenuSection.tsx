@@ -1,6 +1,6 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { 
-  Gift, Settings as SettingsIcon, LogOut, ChevronRight, HelpCircle, Lock, Moon, Sun
+  Gift, Settings as SettingsIcon, LogOut, ChevronRight, Lock, Moon, Sun, Shield
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/hooks/useAuth'; 
@@ -10,6 +10,20 @@ const MenuSection: React.FC = memo(() => {
   const { signOut } = useAuth(); 
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  
+  // কলাপস স্টেট লোকাল স্টোরেজ থেকে রিড করে ইনিশিয়ালাইজ করা হচ্ছে
+  const [isLegalOpen, setIsLegalOpen] = useState(() => {
+    const savedState = localStorage.getItem('isLegalMenuOpen');
+    return savedState === 'true';
+  });
+
+  const handleLegalToggle = useCallback(() => {
+    setIsLegalOpen(prev => {
+      const newState = !prev;
+      localStorage.setItem('isLegalMenuOpen', String(newState));
+      return newState;
+    });
+  }, []);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -37,15 +51,6 @@ const MenuSection: React.FC = memo(() => {
         onClick={() => navigate('/referral')} 
       />
       
-      <div className="h-px mx-4" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }} />
-
-      {/* Help & Support */}
-      <MenuItem 
-        icon={<HelpCircle size={18}/>} 
-        label="হেল্প ও সাপোর্ট" 
-        onClick={() => navigate('/contact')} 
-      />
-
       <div className="h-px mx-4" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }} />
 
       {/* Change Password */}
@@ -89,14 +94,59 @@ const MenuSection: React.FC = memo(() => {
       />
 
       <div className="h-px mx-4" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }} />
+
+      {/* Expandable Legal & Help Section */}
+      <div>
+        <button 
+          onClick={handleLegalToggle}
+          className="w-full flex items-center justify-between p-4 transition-colors group hover:[background-color:color-mix(in_srgb,var(--dyn-text)_5%,transparent)]"
+        >
+          <div className="flex items-center gap-3">
+            <div 
+              className="p-2 rounded-lg transition-colors"
+              style={{ 
+                backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
+                color: 'var(--dyn-primary)' 
+              }}
+            >
+              <Shield size={18} />
+            </div>
+            <span className="font-medium font-['Hind_Siliguri']" style={{ color: 'var(--dyn-text)' }}>হেল্প ও লিগাল</span>
+          </div>
+          <ChevronRight 
+            size={18} 
+            className={`transition-transform duration-300 ${isLegalOpen ? 'rotate-90' : ''}`}
+            style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }}
+          />
+        </button>
+
+        {/* Collapsible Content */}
+        <div 
+          className="transition-all duration-300 ease-in-out overflow-hidden"
+          style={{ 
+            maxHeight: isLegalOpen ? '600px' : '0px',
+            opacity: isLegalOpen ? 1 : 0,
+            backgroundColor: 'color-mix(in srgb, var(--dyn-text) 2%, transparent)'
+          }}
+        >
+          {/* Sub menu items with left border to show hierarchy */}
+          <div className="py-2">
+            <SubMenuItem label="হেল্প ও সাপোর্ট" onClick={() => navigate('/contact')} />
+            <SubMenuItem label="সচরাচর জিজ্ঞাসিত প্রশ্ন (FAQ)" onClick={() => navigate('/faq')} />
+            <SubMenuItem label="আমাদের সম্পর্কে" onClick={() => navigate('/about')} />
+            <SubMenuItem label="প্রাইভেসি পলিসি" onClick={() => navigate('/privacy-policy')} />
+            <SubMenuItem label="টার্মস অ্যান্ড কন্ডিশনস" onClick={() => navigate('/terms-conditions')} />
+            <SubMenuItem label="ডেটা ডিলিশন" onClick={() => navigate('/data-deletion')} danger={true} />
+          </div>
+        </div>
+      </div>
+
+      <div className="h-px mx-4" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }} />
       
       {/* Logout */}
       <button 
         onClick={handleLogout} 
-        className="w-full flex items-center justify-between p-4 transition-colors group"
-        style={{ 
-           ':hover': { backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' } 
-        } as any}
+        className="w-full flex items-center justify-between p-4 transition-colors group hover:[background-color:color-mix(in_srgb,var(--dyn-text)_5%,transparent)]"
       >
         <div className="flex items-center gap-3">
           <div 
@@ -121,16 +171,13 @@ interface MenuItemProps {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
-  rightElement?: React.ReactNode; // ডানপাশে কাস্টম ইলিমেন্ট (যেমন: সুইচ) বসানোর জন্য
+  rightElement?: React.ReactNode; 
 }
 
 const MenuItem: React.FC<MenuItemProps> = memo(({ icon, label, onClick, rightElement }) => (
   <button 
     onClick={onClick} 
-    className="w-full flex items-center justify-between p-4 transition-colors group"
-    style={{ 
-       ':hover': { backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' } 
-    } as any}
+    className="w-full flex items-center justify-between p-4 transition-colors group hover:[background-color:color-mix(in_srgb,var(--dyn-text)_5%,transparent)]"
   >
     <div className="flex items-center gap-3">
       <div 
@@ -150,7 +197,6 @@ const MenuItem: React.FC<MenuItemProps> = memo(({ icon, label, onClick, rightEle
       </span>
     </div>
     
-    {/* যদি rightElement থাকে তবে সেটি দেখাবে, না থাকলে ডিফল্ট ChevronRight দেখাবে */}
     {rightElement ? (
       rightElement
     ) : (
@@ -164,5 +210,33 @@ const MenuItem: React.FC<MenuItemProps> = memo(({ icon, label, onClick, rightEle
 ));
 
 MenuItem.displayName = 'MenuItem';
+
+interface SubMenuItemProps {
+  label: string;
+  onClick?: () => void;
+  danger?: boolean;
+}
+
+const SubMenuItem: React.FC<SubMenuItemProps> = memo(({ label, onClick, danger }) => (
+  <button 
+    onClick={onClick} 
+    className="w-full flex items-center justify-start py-2.5 pr-4 transition-colors hover:[background-color:color-mix(in_srgb,var(--dyn-text)_5%,transparent)]"
+  >
+    {/* Left border added here to align nicely under the parent icon */}
+    <div 
+      className="ml-[2.25rem] pl-4 border-l-2 transition-colors duration-300"
+      style={{ borderColor: danger ? 'color-mix(in srgb, #ef4444 30%, transparent)' : 'color-mix(in srgb, var(--dyn-text) 15%, transparent)' }}
+    >
+      <span 
+        className="font-medium font-['Hind_Siliguri'] text-sm"
+        style={{ color: danger ? '#ef4444' : 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
+      >
+        {label}
+      </span>
+    </div>
+  </button>
+));
+
+SubMenuItem.displayName = 'SubMenuItem';
 
 export default MenuSection;

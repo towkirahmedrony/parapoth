@@ -25,7 +25,7 @@ const STATIC_STYLES = {
 
 // Prose specific styles extracted safely
 const PROSE_STYLES: React.CSSProperties = {
-  '--tw-prose-body': 'color-mix(in srgb, var(--dyn-text) 80%, transparent)',
+  '--tw-prose-body': 'var(--dyn-text)',
   '--tw-prose-headings': 'var(--dyn-text)',
   '--tw-prose-links': 'var(--dyn-primary)',
   '--tw-prose-bullets': 'var(--dyn-primary)',
@@ -98,7 +98,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           {/* Markdown Content Area */}
           <div className="p-6 md:p-10">
             <article 
-              className="prose max-w-none prose-h1:text-2xl prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:border-b prose-h2:pb-2 prose-p:leading-relaxed prose-a:font-semibold prose-a:no-underline hover:prose-a:underline hover:prose-a:decoration-2 hover:prose-a:underline-offset-4 prose-a:transition-all prose-strong:font-semibold prose-ul:mt-2 prose-ul:space-y-2"
+              className="prose dark:prose-invert max-w-none prose-p:opacity-80 prose-h1:text-2xl prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:border-b prose-h2:pb-2 prose-p:leading-relaxed prose-a:font-semibold prose-a:no-underline hover:prose-a:underline hover:prose-a:decoration-2 hover:prose-a:underline-offset-4 prose-a:transition-all prose-strong:font-semibold prose-ul:mt-2 prose-ul:space-y-2"
               style={PROSE_STYLES}
             >
               <ReactMarkdown>{activeContent}</ReactMarkdown>

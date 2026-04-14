@@ -43,6 +43,7 @@ const TermsConditions = lazy(() => import('@/features/legal/pages/TermsCondition
 const AboutUs = lazy(() => import('@/features/legal/pages/AboutUs'));
 const CookiePolicy = lazy(() => import('@/features/legal/pages/CookiePolicy'));
 const FAQ = lazy(() => import('@/features/legal/pages/FAQ'));
+const DataDeletion = lazy(() => import('@/features/legal/pages/DataDeletion'));
 
 // Subscription Pages (Lazy Loaded)
 const Plans = lazy(() => import('@/features/subscription/pages/Plans'));
@@ -80,6 +81,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/data-deletion" element={<DataDeletion />} />
 
         {/* --- Fullscreen routes (No Sidebar/Header/BottomNav) --- */}
         <Route path="/exam/selection" element={<PermissionGuard><Selection /></PermissionGuard>} />

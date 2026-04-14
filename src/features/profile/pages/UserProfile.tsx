@@ -1,154 +1,155 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useAuth } from '../../auth/hooks/useAuth';
+import { MainLayout } from '../../../shared/components/layout/MainLayout';
 import ProfileHeader from '../components/ProfileHeader';
-import { InfoCard, InfoRow } from '../components/InfoCard';
 import MenuSection from '../components/MenuSection';
-import { UserProfileData } from '../types/profile';
-import { supabase } from '@/shared/lib/supabase';
-import { ProfileSkeleton } from '../components/public/ProfileSkeleton';
-import { BackButton } from '@/shared/components/ui/BackButton';
+import { Card } from '../../../shared/components/ui/Card';
+import { Button } from '../../../shared/components/ui/Button';
+import { Edit2, LogOut, Settings, Trash2 } from 'lucide-react';
 
-// --- Services & Constants ---
-import { QUERY_KEYS } from '@/shared/constants/storageKeys';
-import { getCurrentUserProfile } from '../services/profileService';
-
-const APP_VERSION = 'ParaPoth v5.0.0 (Supreme)';
-const STALE_TIME_MS = 5 * 60 * 1000; // 5 minutes
-
-interface ExtendedUserProfile extends UserProfileData {
-  username?: string | null;
+interface Language {
+  bn: string;
+  en: string;
 }
 
+interface MenuItemProps {
+  icon: React.ReactNode;
+  label: Language;
+  href: string;
+  count?: number;
+}
+
+const USER_MENU_ITEMS: (MenuItemProps & { danger?: boolean })[] = [
+  {
+    icon: <Edit2 size={20} />,
+    label: { bn: 'প্রোফাইল সম্পাদনা', en: 'Edit Profile' },
+    href: '/profile/edit',
+  },
+  {
+    icon: <Settings size={20} />,
+    label: { bn: 'সেটিংস', en: 'Settings' },
+    href: '/profile/settings',
+  },
+  {
+    icon: <Trash2 size={20} />,
+    label: { bn: 'ডেটা ডিলেশন', en: 'Data Deletion' },
+    href: '/data-deletion',
+  },
+  {
+    icon: <LogOut size={20} className="text-red-500" />,
+    label: { bn: 'লগ আউট', en: 'Log Out' },
+    href: '/logout',
+    danger: true,
+  },
+];
+
 const UserProfile: React.FC = () => {
-  const navigate = useNavigate();
+  const { user, signOut, language } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Fetches user profile using React Query and Centralized Services
-  const { data: user, isLoading } = useQuery<ExtendedUserProfile | null>({
-    queryKey: QUERY_KEYS.USER_PROFILE,
-    queryFn: async () => {
-      // 1. Get authenticated user
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        console.error("Auth Error:", authError.message);
-        return null;
-      }
-      if (!authUser) return null;
-
-      try {
-        // 2. Fetch profile from centralized service
-        const profileData = await getCurrentUserProfile(authUser.id);
-
-        // Safe typing for JSON/JSONB address field
-        const addressData = profileData.address as Record<string, string> | null;
-
-        // 3. Map to UI data structure
-        return {
-          id: profileData.id,
-          username: profileData.username || null,
-          full_name: profileData.full_name || '',
-          email: profileData.email || '',
-          avatar_url: profileData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(profileData.full_name || 'User')}`,
-          institution: profileData.institution || '',
-          class_level: profileData.class_level || '',
-          group: profileData.group || '',
-          education_board: profileData.education_board || '',
-          batch_year: profileData.batch_year || '',
-          study_goal: profileData.study_goal || '',
-          bio: profileData.bio || '',
-          phone_number: profileData.phone_number || '',
-          is_phone_verified: profileData.is_phone_verified || false,
-          guardian_phone: profileData.guardian_phone || '',
-          gender: profileData.gender || '',
-          address: addressData || { full_address: '' }, 
-          subscription_status: profileData.subscription_status || 'inactive', 
-          role: 'student',
-          
-          coin_balance: profileData.coin_balance || 0,
-          total_xp: profileData.total_xp || 0 
-        };
-      } catch (error: any) {
-        console.error("Profile Fetch Error:", error.message);
-        throw error;
-      }
-    },
-    staleTime: STALE_TIME_MS,
-  });
-
-  const handleEditClick = () => {
-    if (user) {
-      // Navigate to the Edit Profile page and pass the structured user data
-      navigate('/edit-profile', { state: { user } });
+  const handleLogoutConfirm = async () => {
+    try {
+      await signOut();
+      setShowLogoutModal(false);
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen pb-24 relative" style={{ backgroundColor: 'var(--dyn-bg)' }}>
-        <div className="absolute top-4 left-4 z-50">
-          <BackButton />
-        </div>
-        <ProfileSkeleton />
-      </div>
-    );
-  }
+  const handleLogoutClick = (e: React.MouseEvent<HTMLAnchorElement>, item: MenuItemProps & { danger?: boolean }) => {
+    if (item.danger) {
+      e.preventDefault();
+      setShowLogoutModal(true);
+    }
+  };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative" style={{ backgroundColor: 'var(--dyn-bg)' }}>
-        <div className="absolute top-4 left-4 z-50">
-          <BackButton />
-        </div>
-        <p className="font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
-          দয়া করে লগ ইন করুন।
-        </p>
-      </div>
-    );
-  }
+  const menuSections = [
+    {
+      title: { bn: 'প্রোফাইল', en: 'Profile' },
+      items: USER_MENU_ITEMS.slice(0, 3),
+    },
+    {
+      title: { bn: 'সেশন', en: 'Session' },
+      items: USER_MENU_ITEMS.slice(3),
+    }
+  ];
 
   return (
-    <div className="min-h-screen pb-24 relative" style={{ backgroundColor: 'var(--dyn-bg)' }}>
-      <div className="absolute top-4 left-4 z-50">
-        <BackButton />
+    <MainLayout>
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Profile Header */}
+        <ProfileHeader user={user} language={language} />
+
+        {/* Menu Sections and Info Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            {menuSections.map((section, idx) => (
+              <MenuSection
+                key={idx}
+                title={section.title}
+                items={section.items}
+                language={language}
+                onItemClick={handleLogoutClick}
+              />
+            ))}
+          </div>
+          
+          <div className="lg:col-span-2 space-y-6">
+            <Card title={{ bn: 'একাউন্ট তথ্য', en: 'Account Information' }} language={language}>
+              <div className="space-y-4 text-[var(--dyn-text)] text-sm">
+                <p>
+                  <strong>UID:</strong> {user?.id}
+                </p>
+                <p>
+                  <strong>Provider:</strong> {user?.app_metadata?.provider || 'Email/Password'}
+                </p>
+                <p className="break-all">
+                  <strong>Metadata:</strong> {JSON.stringify(user?.user_metadata || {})}
+                </p>
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
 
-      <ProfileHeader 
-        user={user} 
-        onEdit={handleEditClick} 
-      />
-
-      <div className="px-4 mt-6 space-y-4 max-w-2xl mx-auto">
-        <InfoCard title="একাডেমিক তথ্য" icon={<span className="text-lg">🎓</span>}>
-            <InfoRow label="ক্লাস এবং বিভাগ" value={`${user.class_level || 'দেওয়া নেই'} | ${user.group || 'দেওয়া নেই'}`} />
-            <InfoRow label="লক্ষ্য" value={user.study_goal || 'দেওয়া নেই'} />
-            <InfoRow label="বোর্ড" value={user.education_board || 'দেওয়া নেই'} />
-        </InfoCard>
-
-        <InfoCard title="যোগাযোগের তথ্য" icon={<span className="text-lg">📞</span>}>
-            <InfoRow label="ইউজারনেম" value={user.username ? `@${user.username}` : 'সেট করা নেই'} />
-            <InfoRow label="ফোন" value={user.phone_number || 'দেওয়া নেই'} isVerified={user.is_phone_verified} />
-            <InfoRow label="ইমেইল" value={user.email || 'দেওয়া নেই'} />
-            {user.guardian_phone && <InfoRow label="অভিভাবক" value={user.guardian_phone} />}
-        </InfoCard>
-
-        <div className="mt-8">
-            <h3 
-              className="text-xs font-bold uppercase tracking-wider mb-3 ml-1 font-['Hind_Siliguri']"
-              style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
-            >
-              সেটিংস এবং সাপোর্ট
-            </h3>
-            <MenuSection />
-        </div>
-
-        <div className="text-center py-6">
-            <p className="text-xs font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}>
-              {APP_VERSION}
+      {/* কাস্টম সেফ মডাল */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div 
+            className="p-6 rounded-2xl shadow-xl w-full max-w-sm"
+            style={{ 
+              backgroundColor: 'var(--dyn-card)',
+              border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
+            }}
+          >
+            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--dyn-text)' }}>
+              {language === 'bn' ? 'লগ আউট কনফার্মেশন' : 'Logout Confirmation'}
+            </h2>
+            <p className="text-sm mb-6" style={{ color: 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }}>
+              {language === 'bn' 
+                ? 'আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?' 
+                : 'Are you sure you want to log out?'}
             </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                {language === 'bn' ? 'বাতিল' : 'Cancel'}
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleLogoutConfirm}
+              >
+                {language === 'bn' ? 'লগ আউট' : 'Log Out'}
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </MainLayout>
   );
 };
 

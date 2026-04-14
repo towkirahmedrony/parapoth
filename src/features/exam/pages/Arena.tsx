@@ -110,17 +110,31 @@ const Arena: React.FC = () => {
 
     let correct = 0, wrong = 0, skipped = 0;
     
-    questions.forEach(q => {
+    // 🌟 আপডেট: Loop এর ভেতরেই stats ক্যালকুলেশন এবং detailedResults অ্যারে তৈরি করা হচ্ছে
+    const detailedResults = questions.map(q => {
       const userAnswerId = userAnswers[q.id];
       const correctOption = q.options.find(o => o.isCorrect);
-      
+      const isCorrect = !!(correctOption && userAnswerId === correctOption.id);
+
+      let marksAwarded = 0;
+
       if (!userAnswerId) {
         skipped++;
-      } else if (correctOption && userAnswerId === correctOption.id) {
+        marksAwarded = 0;
+      } else if (isCorrect) {
         correct++;
+        marksAwarded = MARKS_PER_QUESTION;
       } else {
         wrong++;
+        marksAwarded = config.negativeMarking ? -NEGATIVE_MARK_PENALTY : 0;
       }
+
+      return {
+        question_id: q.id,
+        selected_option: userAnswerId || null,
+        is_correct: isCorrect,
+        marks_awarded: marksAwarded
+      };
     });
 
     const score = (correct * MARKS_PER_QUESTION) - (config.negativeMarking ? wrong * NEGATIVE_MARK_PENALTY : 0);
@@ -133,7 +147,8 @@ const Arena: React.FC = () => {
       time_taken: timeTaken,
       score: score,
       total_marks: questions.length * MARKS_PER_QUESTION,
-      details_json: { questions, userAnswers } 
+      // 🌟 আপডেট: details_json এর ভেতরে detailedResults পাঠানো হচ্ছে
+      details_json: { questions, userAnswers, detailedResults } 
     };
 
     submitExam(resultPayload);

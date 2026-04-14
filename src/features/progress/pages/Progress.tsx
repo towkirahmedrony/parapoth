@@ -66,19 +66,10 @@ const ProgressSkeleton: React.FC<{ palette: SkeletonPalette }> = ({ palette }) =
         className="rounded-2xl p-4 flex items-center gap-4 shadow-sm animate-pulse"
         style={cardStyle}
       >
-        <div
-          className="w-16 h-16 rounded-full shrink-0"
-          style={blockStyle}
-        />
+        <div className="w-16 h-16 rounded-full shrink-0" style={blockStyle} />
         <div className="flex-col space-y-2 flex-1">
-          <div
-            className="h-5 w-40 rounded-md"
-            style={blockStyle}
-          />
-          <div
-            className="h-6 w-28 rounded-full"
-            style={blockStyle}
-          />
+          <div className="h-5 w-40 rounded-md" style={blockStyle} />
+          <div className="h-6 w-28 rounded-full" style={blockStyle} />
         </div>
       </div>
 
@@ -89,23 +80,11 @@ const ProgressSkeleton: React.FC<{ palette: SkeletonPalette }> = ({ palette }) =
           style={cardStyle}
         >
           <div className="flex-col space-y-3 flex-1">
-            <div
-              className="h-4 w-20 rounded-md"
-              style={blockStyle}
-            />
-            <div
-              className="h-6 w-24 rounded-md"
-              style={blockStyle}
-            />
-            <div
-              className="h-3 w-32 rounded-md mt-1"
-              style={softBlockStyle}
-            />
+            <div className="h-4 w-20 rounded-md" style={blockStyle} />
+            <div className="h-6 w-24 rounded-md" style={blockStyle} />
+            <div className="h-3 w-32 rounded-md mt-1" style={softBlockStyle} />
           </div>
-          <div
-            className="w-12 h-12 rounded-xl shrink-0"
-            style={blockStyle}
-          />
+          <div className="w-12 h-12 rounded-xl shrink-0" style={blockStyle} />
         </div>
       ))}
 
@@ -113,10 +92,7 @@ const ProgressSkeleton: React.FC<{ palette: SkeletonPalette }> = ({ palette }) =
         className="h-[300px] w-full rounded-2xl shadow-sm animate-pulse mt-2 flex items-center justify-center"
         style={cardStyle}
       >
-        <div
-          className="w-[90%] h-[90%] rounded-xl"
-          style={softBlockStyle}
-        />
+        <div className="w-[90%] h-[90%] rounded-xl" style={softBlockStyle} />
       </div>
     </div>
   );
@@ -194,6 +170,7 @@ const Progress: React.FC = () => {
       <AnalysisSection
         weaknesses={data.weaknesses}
         focusTopic={data.focusTopic}
+        aiAnalysis={data.aiAnalysis} // 🔥 AI Data Passed Here
       />
       <SubjectReportSection subjectReport={data.subjectReport} />
     </div>

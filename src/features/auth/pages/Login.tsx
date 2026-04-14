@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
+import SocialLogin from '../components/SocialLogin';
 
 export default function Login() {
   return (
@@ -17,6 +18,9 @@ export default function Login() {
 
         {/* Minimal Form */}
         <LoginForm />
+
+        {/* Social Login Buttons */}
+        <SocialLogin />
 
         {/* Links */}
         <div className="w-full mt-4 flex flex-col items-center gap-5">
