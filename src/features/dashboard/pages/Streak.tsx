@@ -1,11 +1,15 @@
+// src/features/dashboard/pages/Streak.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StreakCalendar } from '../components/StreakCalendar';
 import { Flame, Trophy, Sparkles, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useStreak } from '../hooks/useStreak';
 
-const toBn = (num: number | string) =>
-  (num || 0).toString().replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)]);
+// Improved number-to-Bengali converter with safety checks
+const toBn = (num: number | string | undefined | null) => {
+  if (num === undefined || num === null) return '০';
+  return num.toString().replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)] || d);
+};
 
 // Extract magic strings into constants
 const FIRE_COLOR = '#FF6B00';
@@ -54,14 +58,13 @@ const StreakSkeleton: React.FC = () => (
 const Streak: React.FC = () => {
   const navigate = useNavigate();
   
-  // No type casting needed anymore. The hook inherently provides strict types.
   const {
-    currentStreak,
+    currentStreak = 0,
     longestStreak,
-    activities,
+    activities = [],
     loading,
     error,
-    freezesLeft,
+    freezesLeft = 0,
   } = useStreak();
 
   return (

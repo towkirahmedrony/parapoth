@@ -19,6 +19,32 @@ const Header: React.FC = () => {
     queryKey: ['profile', 'stats', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
+
+      try {
+        // ১. ইউজারের অথেনটিকেশন টোকেন বের করা
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        
+        // ২. ব্যাকএন্ডের URL সেট করা (আপনার VITE_API_URL না থাকলে সরাসরি Render লিংক কাজ করবে)
+        const baseUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
+        
+        // ৩. ব্যাকএন্ডে API কল করা (এটি কল হলেই আপনার ব্যাকএন্ডের স্ট্রিক জিরো করার লজিক রান হবে)
+        // নোট: আপনার ব্যাকএন্ড রাউটটি যদি ভিন্ন হয়, তবে '/growth/streak/stats' অংশটি সে অনুযায়ী পরিবর্তন করে নেবেন
+        const response = await fetch(`${baseUrl}/growth/streak/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const json = await response.json();
+          return json.data; // ব্যাকএন্ড থেকে আসা আপডেটেড ও সঠিক ডেটা
+        }
+      } catch (error) {
+        console.error('API Error, falling back to Supabase:', error);
+      }
+
+      // ৪. যদি কোনো কারণে ব্যাকএন্ড রেসপন্স না দেয়, তবে সরাসরি ডাটাবেস থেকে আনবে (Fallback)
       const { data, error } = await supabase
         .from('profiles')
         .select('current_streak, total_xp')
@@ -29,7 +55,7 @@ const Header: React.FC = () => {
       return data;
     },
     enabled: !!user?.id && isDashboardHome,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 0, // ক্যাশ ক্লিয়ার করে সবসময় ফ্রেশ ডেটা আনবে
   });
 
   // React Query for unread notifications count
