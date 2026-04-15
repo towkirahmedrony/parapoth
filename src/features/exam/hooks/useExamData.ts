@@ -8,7 +8,7 @@ export const useGenerateExam = (topicIds: string[], questionCount: number) => {
   return useQuery({
     queryKey: ['generate-exam', topicIds, questionCount],
     queryFn: async (): Promise<Question[]> => {
-      const response = await apiClient.post('/api/v1/exams/user/generate', {
+      const response = await apiClient.post('/exams/user/generate', {
         topics: topicIds,
         limit: questionCount
       });
@@ -22,7 +22,15 @@ export const useGenerateExam = (topicIds: string[], questionCount: number) => {
 export const useSubmitExamResult = () => {
   return useMutation({
     mutationFn: async (resultData: ExamResultData) => {
-      const response = await apiClient.post('/api/v1/exams/user/submit', resultData);
+      // 🌟 ফিক্স: ব্যাকএন্ডের SubmitExamDTO এর সাথে ফিল্ডগুলো ম্যাপ করা হলো
+      const payload = {
+        exam_id: resultData.exam_id,
+        answers: resultData.userAnswers,
+        time_taken: resultData.timeSpentSeconds
+      };
+
+      // 🌟 ফিক্স: পাথ থেকে '/api/v1/' সরানো হয়েছে
+      const response = await apiClient.post('/exams/user/submit', payload);
       return response.data.data;
     },
     onError: () => {
@@ -36,7 +44,7 @@ export const useLiveProgress = (examId: string) => {
   return useQuery({
     queryKey: ['live-progress', examId],
     queryFn: async (): Promise<ProgressEntry[]> => {
-      const response = await apiClient.get(`/api/v1/exams/${examId}/live-progress`);
+      const response = await apiClient.get(`/exams/${examId}/live-progress`);
       return response.data.data;
     },
     refetchInterval: 5000, // প্রতি ৫ সেকেন্ডে অটোমেটিক রিফ্রেশ হবে
@@ -50,7 +58,7 @@ export const useRecoverUserSession = () => {
   
   return useMutation({
     mutationFn: async (progressId: string) => {
-      const response = await apiClient.post(`/api/v1/exams/progress/${progressId}/recover`);
+      const response = await apiClient.post(`/exams/progress/${progressId}/recover`);
       return response.data.data;
     },
     onSuccess: () => {
@@ -70,12 +78,10 @@ export const useGetExamDetails = (examId: string | null) => {
     queryKey: ['exam-details', examId],
     queryFn: async () => {
       if (!examId) return null;
-      const response = await apiClient.get(`/api/v1/exams/${examId}`);
+      const response = await apiClient.get(`/exams/${examId}`);
       return response.data.data;
     },
-    // শুধুমাত্র তখনই ফেচ করবে যখন examId থাকবে
     enabled: !!examId,
-    // ক্যাশিং টাইম সেট করে দেওয়া হলো যাতে বারবার কল না হয়
     staleTime: 5 * 60 * 1000, 
   });
 };

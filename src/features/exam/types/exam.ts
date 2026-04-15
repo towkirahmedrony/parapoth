@@ -41,6 +41,7 @@ export interface ExamState {
 }
 
 export interface ExamResultData {
+  exam_id: string; // 🌟 এটি যুক্ত করা হয়েছে
   totalQuestions: number;
   correctCount: number;
   wrongCount: number;
@@ -57,11 +58,12 @@ export interface QuestionPayload {
 }
 
 export interface ExamResultPayload {
+  score: number;
+  total_marks: number;
   correct_count: number;
   wrong_count: number;
   skipped_count: number;
-  score: number;
-  total_marks: number;
+  time_taken: number;
   details_json: {
     questions: QuestionPayload[];
     userAnswers: Record<string, string>;
@@ -84,7 +86,6 @@ export interface QuestionOption {
 
 export interface ExamQuestion extends Omit<Question, 'options'> {
   options: QuestionOption[];
-  // Replaced 'any' with 'unknown' for strict type safety
   [key: string]: unknown; 
 }
 
@@ -107,7 +108,6 @@ export interface ProgressEntry {
   last_updated_at?: string | null;
 }
 
-// Added the missing ExamDetails interface based on ExamFormData requirements
 export interface ExamDetails {
   id: string;
   title: string;
@@ -120,12 +120,10 @@ export interface ExamDetails {
   duration_min: number;
   start_time: string | null;
   end_time: string | null;
-  result_publish_time: string | null;
-  syllabus_details: string | null;
-  instructions: string | null;
-  show_leaderboard: boolean;
-  is_premium: boolean;
-  is_published: boolean;
-  created_at?: string;
-  updated_at?: string;
+  result_publish_time?: string | null;
+  syllabus_details?: string | null;
+  instructions?: string | null;
+  show_leaderboard?: boolean;
+  is_premium?: boolean;
+  is_published?: boolean;
 }
