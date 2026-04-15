@@ -1,82 +1,98 @@
 import React, { memo } from 'react';
-import { Edit3, Coins } from 'lucide-react';
+import { Edit3, Coins, ShieldCheck } from 'lucide-react';
 import { UserProfileData } from '../types/profile';
 import { PROFILE_DEFAULTS } from '../utils/profileConstants';
 
 interface ProfileHeaderProps {
-  user: UserProfileData; 
+  user: UserProfileData | any; 
   onEdit: () => void;
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
-  // আপনার profile.ts অনুযায়ী সঠিক প্রপার্টি coin_balance ব্যবহার করা হলো
   const userCoins = user?.coin_balance || 0;
+  
+  // Data fallbacks
+  const fullName = user?.full_name || user?.user_metadata?.full_name || PROFILE_DEFAULTS.NAME;
+  const avatarUrl = user?.avatar_url || user?.user_metadata?.avatar_url || PROFILE_DEFAULTS.AVATAR_URL;
+  const institution = user?.institution || "আপনার প্রতিষ্ঠানের নাম যুক্ত করুন";
 
   return (
     <div 
-      className="pt-8 pb-6 px-4 rounded-b-3xl shadow-sm flex flex-col items-center relative z-10 transition-all duration-300"
-      style={{ backgroundColor: 'var(--dyn-card)' }}
+      className="relative pt-10 pb-8 px-6 rounded-3xl shadow-sm flex flex-col items-center overflow-hidden transition-all duration-300"
+      style={{ backgroundColor: 'var(--dyn-card)', border: '1px solid color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
     >
-      <div className="relative">
-        <img 
-          src={user?.avatar_url || PROFILE_DEFAULTS.AVATAR_URL} 
-          alt={user?.full_name || PROFILE_DEFAULTS.NAME} 
-          className="w-24 h-24 rounded-full object-cover shadow-md"
-          style={{ border: '4px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-        />
-        {user?.subscription_status === 'active' && (
-          <span 
-            className="absolute bottom-0 right-0 text-[10px] font-bold px-2 py-0.5 rounded-full border-2"
-            style={{ 
-              backgroundColor: 'var(--dyn-primary)', 
-              color: 'var(--dyn-card)',
-              borderColor: 'var(--dyn-card)'
-            }}
-          >
-            PRO
-          </span>
-        )}
+      {/* Background Subtle Gradient */}
+      <div 
+        className="absolute top-0 left-0 w-full h-24 opacity-20 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, var(--dyn-primary), transparent)' }}
+      />
+
+      {/* Coin Badge - Moved to Top Right corner */}
+      <div 
+        className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs shadow-sm font-['Hind_Siliguri']"
+        style={{ 
+          backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
+          color: 'var(--dyn-text)',
+          border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)',
+          backdropFilter: 'blur(4px)'
+        }}
+      >
+        <Coins size={14} style={{ color: '#F59E0B' }} />
+        <span>{userCoins}</span>
+      </div>
+
+      <div className="relative z-10 mt-2">
+        <div className="relative p-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' }}>
+          <img 
+            src={avatarUrl} 
+            alt={fullName} 
+            className="w-24 h-24 rounded-full object-cover shadow-md border-4"
+            style={{ borderColor: 'var(--dyn-card)' }}
+          />
+          {user?.subscription_status === 'active' && (
+            <span 
+              className="absolute bottom-1 right-0 text-[10px] font-bold px-2 py-0.5 rounded-full border-2 shadow-sm"
+              style={{ 
+                backgroundColor: 'var(--dyn-primary)', 
+                color: 'white',
+                borderColor: 'var(--dyn-card)'
+              }}
+            >
+              PRO
+            </span>
+          )}
+        </div>
       </div>
       
-      <div className="text-center mt-3">
+      <div className="text-center mt-4 relative z-10">
         <h1 
-          className="text-xl font-bold flex items-center justify-center gap-1 font-['Hind_Siliguri']"
+          className="text-2xl font-bold flex items-center justify-center gap-2 font-['Hind_Siliguri']"
           style={{ color: 'var(--dyn-text)' }}
         >
-          {user?.full_name || PROFILE_DEFAULTS.NAME}
+          {fullName}
           {user?.is_phone_verified && (
-            <span className="text-xs" style={{ color: 'var(--dyn-primary)' }} title="ভেরিফাইড ফোন">✅</span>
+            <ShieldCheck size={18} className="text-green-500" title="ভেরিফাইড" />
           )}
         </h1>
-        <p className="text-sm mt-1 font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
-          {user?.institution || "আপনার প্রতিষ্ঠানের নাম যুক্ত করুন"}
+        <p className="text-sm mt-1 font-['Hind_Siliguri'] font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+          {institution}
         </p>
       </div>
 
-      {/* Coin Balance Display Section */}
-      <div 
-        className="flex items-center gap-1.5 mt-3 px-4 py-1.5 rounded-full font-semibold text-sm shadow-sm border font-['Hind_Siliguri']"
-        style={{ 
-          backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)',
-          color: 'var(--dyn-primary)',
-          borderColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)'
-        }}
-      >
-        <Coins size={16} />
-        <span>{userCoins} কয়েন</span>
+      {/* Action Area */}
+      <div className="flex items-center gap-4 mt-6 relative z-10 w-full justify-center">
+        <button 
+          onClick={onEdit}
+          className="flex items-center gap-2 px-8 py-2.5 text-sm rounded-2xl font-bold shadow-md transition-all active:scale-95 hover:opacity-90 font-['Hind_Siliguri']"
+          style={{ 
+            backgroundColor: 'var(--dyn-primary)', 
+            color: 'white' 
+          }}
+        >
+          <Edit3 size={16} />
+          এডিট প্রোফাইল
+        </button>
       </div>
-
-      <button 
-        onClick={onEdit}
-        className="mt-4 flex items-center gap-2 px-6 py-2 text-sm rounded-full font-semibold shadow-lg transition-all active:scale-95 hover:[background-color:color-mix(in_srgb,var(--dyn-primary)_80%,#000)] font-['Hind_Siliguri']"
-        style={{ 
-          backgroundColor: 'var(--dyn-primary)', 
-          color: 'var(--dyn-card)' 
-        }}
-      >
-        <Edit3 size={16} />
-        প্রোফাইল এডিট
-      </button>
     </div>
   );
 });

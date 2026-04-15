@@ -1,15 +1,13 @@
 import apiClient from '@/shared/lib/apiClient';
-import { supabase } from '@/shared/lib/supabase';
 
 // Importing types based on project structure.
 import type { PublicProfile } from '../types/publicProfile';
 import type { UserProfileData } from '../types/profile';
 
-// Created a specific response interface to fix TS2339 errors in the UI
-export interface PublicProfileResponse {
-  profile: PublicProfile;
-  versusStats?: any; // Replace with proper type if available in your types
-  activityData?: any; // Replace with proper type if available in your types
+// ব্যাকএন্ডের রেসপন্সের সাথে মিলিয়ে ইন্টারফেস আপডেট করা হলো
+export interface PublicProfileResponse extends PublicProfile {
+  badges?: any; // Replace with actual Badge type
+  activity?: any; // Replace with actual Activity type
 }
 
 export const getPublicProfileData = async (targetId: string, currentUserId?: string): Promise<PublicProfileResponse> => {
@@ -20,6 +18,7 @@ export const getPublicProfileData = async (targetId: string, currentUserId?: str
       headers['x-user-id'] = currentUserId;
     }
 
+    // ব্যাকএন্ড থেকে আসা ডেটার টাইপ আপডেট করা হয়েছে
     const response = await apiClient.get<{ success: boolean; message: string; data: PublicProfileResponse }>(
       `/profiles/public/${targetId}`, 
       { headers }
@@ -41,26 +40,24 @@ export const getPublicProfileData = async (targetId: string, currentUserId?: str
 };
 
 /**
- * Fetches the current authenticated user's profile from Supabase.
- * Extracted from UserProfile component for better separation of concerns.
+ * Fetches the current authenticated user's profile from Express Backend.
+ * সরাসরি Supabase কল না করে API Client ব্যবহার করা হয়েছে।
  */
-export const getCurrentUserProfile = async (userId: string): Promise<UserProfileData> => {
+export const getCurrentUserProfile = async (): Promise<UserProfileData> => {
   try {
-    const { data: profileData, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    // আপনার ব্যাকএন্ডের /me রাউটে কল করা হচ্ছে
+    const response = await apiClient.get<{ success: boolean; message: string; data: UserProfileData }>(
+      '/profiles/me'
+    );
 
-    if (error) {
-      throw error;
+    if (!response.data?.success || !response.data?.data) {
+      throw new Error('Profile data not found');
     }
 
-    // Using 'as unknown as' to safely cast and prevent TS2352 strict overlap errors
-    return profileData as unknown as UserProfileData;
+    return response.data.data;
   } catch (error: unknown) {
-    const err = error as Error;
-    const errorMessage = err.message || 'Failed to fetch user profile';
+    const err = error as any;
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch user profile';
     throw new Error(errorMessage);
   }
 };

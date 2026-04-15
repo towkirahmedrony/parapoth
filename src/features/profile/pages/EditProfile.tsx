@@ -5,8 +5,37 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { UserProfileData } from '../types/profile';
 import { PROFILE_DEFAULTS, EDUCATION_BOARDS, CLASS_LEVELS, ACADEMIC_GROUPS, GENDERS } from '../utils/profileConstants';
-import { apiClient } from '@/shared/lib/apiClient';
+import apiClient from '@/shared/lib/apiClient';
 import { QUERY_KEYS } from '@/shared/constants/storageKeys';
+
+// --- Local Translation Helpers ---
+const translateBoard = (board: string) => {
+  const map: Record<string, string> = {
+    'Dhaka': 'ঢাকা', 'Rajshahi': 'রাজশাহী', 'Cumilla': 'কুমিল্লা', 'Jashore': 'যশোর',
+    'Chattogram': 'চট্টগ্রাম', 'Barishal': 'বরিশাল', 'Sylhet': 'সিলেট',
+    'Dinajpur': 'দিনাজপুর', 'Mymensingh': 'ময়মনসিংহ'
+  };
+  return map[board] || board;
+};
+
+const translateGroup = (group: string) => {
+  const map: Record<string, string> = {
+    'Science': 'বিজ্ঞান', 'Business': 'ব্যবসায় শিক্ষা', 'Humanities': 'মানবিক'
+  };
+  return map[group] || group;
+};
+
+const translateGender = (gender: string) => {
+  const map: Record<string, string> = {
+    'Male': 'পুরুষ', 'Female': 'মহিলা'
+  };
+  return map[gender] || gender;
+};
+
+const translateClass = (level: string) => {
+  return level.replace('HSC', 'এইচএসসি');
+};
+// ----------------------------------
 
 const EditProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -16,7 +45,6 @@ const EditProfile: React.FC = () => {
   const initialUser = location.state?.user as UserProfileData | undefined;
   const [formData, setFormData] = useState<UserProfileData>(initialUser || ({} as UserProfileData));
 
-  // Safe handler for primitive inputs
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -25,7 +53,6 @@ const EditProfile: React.FC = () => {
     }
   }, []);
 
-  // Safe handler for nested address object
   const handleAddressChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.value;
     setFormData((prev) => ({
@@ -40,7 +67,6 @@ const EditProfile: React.FC = () => {
     }
   }, []);
 
-  // React Query Mutation for Profile Update using Global apiClient
   const updateProfileMutation = useMutation({
     mutationFn: async (updateData: Partial<UserProfileData>) => {
       try {
@@ -54,9 +80,8 @@ const EditProfile: React.FC = () => {
       }
     },
     onSuccess: () => {
-      // Invalidate the cache to ensure the Profile Page fetches fresh data
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER_PROFILE });
-      // Go back to the previous page
+      const queryKey = Array.isArray(QUERY_KEYS.USER_PROFILE) ? QUERY_KEYS.USER_PROFILE : [QUERY_KEYS.USER_PROFILE];
+      queryClient.invalidateQueries({ queryKey });
       navigate(-1);
     }
   });
@@ -64,6 +89,7 @@ const EditProfile: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // নিখুঁত পেলোড (মোবাইল নাম্বার ছাড়া)
     const updatePayload = {
       full_name: formData.full_name,
       bio: formData.bio,
@@ -75,13 +101,11 @@ const EditProfile: React.FC = () => {
       study_goal: formData.study_goal,
       gender: formData.gender,
       address: formData.address,
-      guardian_phone: formData.guardian_phone,
     };
 
     updateProfileMutation.mutate(updatePayload);
   };
 
-  // Type-safe address extractor
   const getAddressValue = (address: UserProfileData['address']): string => {
     if (typeof address === 'string') return address;
     if (typeof address === 'object' && address !== null && 'full_address' in address) {
@@ -144,14 +168,35 @@ const EditProfile: React.FC = () => {
           <div className="space-y-3">
             <InputGroup label="প্রতিষ্ঠান" name="institution" value={formData.institution || ''} onChange={handleChange} disabled={isLoading} />
             <div className="grid grid-cols-2 gap-3">
-              <SelectGroup label="শ্রেণী/ক্লাস" name="class_level" value={formData.class_level || ''} onChange={handleChange} options={CLASS_LEVELS} disabled={isLoading} />
-              <SelectGroup label="বিভাগ/গ্রুপ" name="group" value={formData.group || ''} onChange={handleChange} options={ACADEMIC_GROUPS} disabled={isLoading} />
+              <SelectGroup 
+                label="শ্রেণী/ক্লাস" 
+                name="class_level" 
+                value={formData.class_level || ''} 
+                onChange={handleChange} 
+                options={CLASS_LEVELS.map(c => ({ label: translateClass(c), value: c }))} 
+                disabled={isLoading} 
+              />
+              <SelectGroup 
+                label="বিভাগ/গ্রুপ" 
+                name="group" 
+                value={formData.group || ''} 
+                onChange={handleChange} 
+                options={ACADEMIC_GROUPS.map(g => ({ label: translateGroup(g), value: g }))} 
+                disabled={isLoading} 
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <SelectGroup label="শিক্ষা বোর্ড" name="education_board" value={formData.education_board || ''} onChange={handleChange} options={EDUCATION_BOARDS} disabled={isLoading} />
+              <SelectGroup 
+                label="শিক্ষা বোর্ড" 
+                name="education_board" 
+                value={formData.education_board || ''} 
+                onChange={handleChange} 
+                options={EDUCATION_BOARDS.map(b => ({ label: translateBoard(b), value: b }))} 
+                disabled={isLoading} 
+              />
               <InputGroup label="ব্যাচ (বছর)" name="batch_year" value={formData.batch_year || ''} onChange={handleChange} placeholder="যেমন: ২০২৬" disabled={isLoading} />
             </div>
-            <InputGroup label="শিক্ষার লক্ষ্য" name="study_goal" value={formData.study_goal || ''} onChange={handleChange} placeholder="যেমন: BUET" disabled={isLoading} />
+            <InputGroup label="শিক্ষার লক্ষ্য" name="study_goal" value={formData.study_goal || ''} onChange={handleChange} placeholder="যেমন: বুয়েট (BUET)" disabled={isLoading} />
           </div>
         </section>
 
@@ -175,16 +220,15 @@ const EditProfile: React.FC = () => {
                 }}
               />
             </div>
-            <SelectGroup label="লিঙ্গ" name="gender" value={formData.gender || ''} onChange={handleChange} options={GENDERS} disabled={isLoading} />
+            <SelectGroup 
+              label="লিঙ্গ" 
+              name="gender" 
+              value={formData.gender || ''} 
+              onChange={handleChange} 
+              options={GENDERS.map(g => ({ label: translateGender(g), value: g }))} 
+              disabled={isLoading} 
+            />
             <InputGroup label="ঠিকানা" name="address" value={addressValue} onChange={handleAddressChange} placeholder="আপনার সম্পূর্ণ ঠিকানা লিখুন" disabled={isLoading} />
-          </div>
-        </section>
-
-        <section>
-          <h3 className="text-xs font-bold mb-3 tracking-wider" style={{ color: 'var(--dyn-primary)' }}>যোগাযোগের তথ্য</h3>
-          <div className="space-y-3">
-            <InputGroup label="ফোন নম্বর" name="phone_number" value={formData.phone_number || ''} onChange={handleChange} disabled={isLoading} />
-            <InputGroup label="অভিভাবকের ফোন নম্বর" name="guardian_phone" value={formData.guardian_phone || ''} onChange={handleChange} icon="📞" disabled={isLoading} />
           </div>
         </section>
       </form>
@@ -213,7 +257,6 @@ const EditProfile: React.FC = () => {
   );
 };
 
-// Inline components memoized for optimization
 interface InputGroupProps {
   label: string;
   name: string;
@@ -248,12 +291,17 @@ const InputGroup: React.FC<InputGroupProps> = React.memo(({ label, name, value, 
 ));
 InputGroup.displayName = 'InputGroup';
 
+interface SelectOption {
+  label: string;
+  value: string;
+}
+
 interface SelectGroupProps {
   label: string;
   name: string;
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  options: string[];
+  options: SelectOption[];
   disabled?: boolean;
 }
 
@@ -273,7 +321,11 @@ const SelectGroup: React.FC<SelectGroupProps> = React.memo(({ label, name, value
       }}
     >
       <option value="" style={{ color: '#000' }}>নির্বাচন করুন</option>
-      {options.map((opt) => <option key={opt} value={opt} style={{ color: '#000' }}>{opt}</option>)}
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value} style={{ color: '#000' }}>
+          {opt.label}
+        </option>
+      ))}
     </select>
   </div>
 ));
