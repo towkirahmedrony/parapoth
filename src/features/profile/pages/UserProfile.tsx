@@ -9,6 +9,12 @@ import MenuSection from '../components/MenuSection';
 import { InfoCard, InfoRow } from '../components/InfoCard';
 import { User, GraduationCap } from 'lucide-react';
 
+const getGenderText = (g?: string) => {
+  if (g === 'Male') return 'ছাত্র';
+  if (g === 'Female') return 'ছাত্রী';
+  return g;
+};
+
 const UserProfile: React.FC = () => {
   const { user: authUser } = useAuth();
   const navigate = useNavigate();
@@ -43,9 +49,29 @@ const UserProfile: React.FC = () => {
               value={user?.full_name || user?.user_metadata?.full_name} 
             />
             <InfoRow 
+              label="ইউজারনেম" 
+              value={user?.username ? `@${user.username}` : undefined} 
+            />
+            <InfoRow 
               label="ইমেইল" 
               value={user?.email || user?.user_metadata?.email} 
               isVerified={user?.is_email_verified || user?.user_metadata?.email_verified} 
+            />
+            <InfoRow 
+              label="বায়ো" 
+              value={user?.bio} 
+            />
+            <InfoRow 
+              label="লিঙ্গ" 
+              value={getGenderText(user?.gender)} 
+            />
+            <InfoRow 
+              label="জন্ম তারিখ" 
+              value={user?.date_of_birth} 
+            />
+            <InfoRow 
+              label="অভিভাবকের নম্বর" 
+              value={user?.guardian_phone} 
             />
             <InfoRow 
               label="ঠিকানা" 
@@ -63,12 +89,20 @@ const UserProfile: React.FC = () => {
               value={user?.class_level} 
             />
             <InfoRow 
+              label="বিভাগ/গ্রুপ" 
+              value={user?.group ? (user.group === 'Science' ? 'বিজ্ঞান' : user.group === 'Business' ? 'ব্যবসায় শিক্ষা' : user.group === 'Humanities' ? 'মানবিক' : user.group) : undefined} 
+            />
+            <InfoRow 
               label="ব্যাচ" 
               value={user?.batch_year} 
             />
             <InfoRow 
               label="বোর্ড" 
-              value={user?.education_board} 
+              value={user?.education_board ? (user.education_board === 'Dhaka' ? 'ঢাকা' : user.education_board) : undefined} 
+            />
+            <InfoRow 
+              label="শিক্ষার লক্ষ্য" 
+              value={user?.study_goal} 
             />
           </InfoCard>
 
