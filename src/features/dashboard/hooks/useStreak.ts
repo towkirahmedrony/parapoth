@@ -23,13 +23,15 @@ export interface UseStreakReturn extends StreakDataResponse {
   error: Error | string | null;
 }
 
-export const useStreak = (): UseStreakReturn => {
+export const useStreak = (targetUserId?: string): UseStreakReturn => {
   const { user } = useAuth();
 
+  const effectiveUserId = targetUserId || user?.id;
+
   const { data, isLoading, error } = useQuery({
-    queryKey: [...(QUERY_KEYS.STREAK_STATS || ['streak']), user?.id],
+    queryKey: [...(QUERY_KEYS.STREAK_STATS || ['streak']), effectiveUserId],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!effectiveUserId) return null;
 
       try {
         // ১. টোকেন সংগ্রহ
@@ -41,10 +43,10 @@ export const useStreak = (): UseStreakReturn => {
 
         // ৩. ব্যাকএন্ড থেকে stats এবং heatmap একসাথে ফেচ করা
         const [statsRes, heatmapRes] = await Promise.all([
-          fetch(`${baseUrl}/growth/streak/stats`, {
+          fetch(`${baseUrl}/growth/stats/${effectiveUserId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch(`${baseUrl}/growth/streak/heatmap`, {
+          fetch(`${baseUrl}/growth/heatmap/${effectiveUserId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);
@@ -66,27 +68,27 @@ export const useStreak = (): UseStreakReturn => {
       } catch (err) {
         console.error('API Error, falling back to direct DB fetch:', err);
         
-        // 💡 ফলব্যাক: যদি কোনো কারণে ব্যাকএন্ড রেসপন্স না দেয়, তখন ডাটাবেস থেকে সাধারণ কুয়েরি করবে (RPC বাদে)
+        // 💡 ফলব্যাক: যদি কোনো কারণে ব্যাকএন্ড রেসপন্স না দেয়, তখন ডাটাবেস থেকে সাধারণ কুয়েরি করবে
         const { data: profile } = await supabase
           .from('profiles')
           .select('current_streak, freezes_left')
-          .eq('id', user.id)
+          .eq('id', effectiveUserId)
           .single();
 
         const { data: activities } = await supabase
           .from('user_daily_activities')
           .select('activity_date, exams_taken, study_time_minutes, xp_earned, used_freeze')
-          .eq('user_id', user.id);
+          .eq('user_id', effectiveUserId);
 
         return {
           currentStreak: profile?.current_streak ?? 0,
-          longestStreak: null, // RPC যেহেতু কাজ করছে না, তাই এটি আপাতত null থাকবে
+          longestStreak: null, 
           freezesLeft: profile?.freezes_left ?? 2,
           activities: activities ?? [],
         } as StreakDataResponse;
       }
     },
-    enabled: !!user?.id,
+    enabled: !!effectiveUserId,
     staleTime: 0, // সবসময় ফ্রেশ ডেটা আনবে
   });
 

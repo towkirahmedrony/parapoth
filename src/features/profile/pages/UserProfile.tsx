@@ -58,10 +58,6 @@ const UserProfile: React.FC = () => {
               isVerified={user?.is_email_verified || user?.user_metadata?.email_verified} 
             />
             <InfoRow 
-              label="বায়ো" 
-              value={user?.bio} 
-            />
-            <InfoRow 
               label="লিঙ্গ" 
               value={getGenderText(user?.gender)} 
             />

@@ -14,7 +14,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
   // Data fallbacks
   const fullName = user?.full_name || user?.user_metadata?.full_name || PROFILE_DEFAULTS.NAME;
   const avatarUrl = user?.avatar_url || user?.user_metadata?.avatar_url || PROFILE_DEFAULTS.AVATAR_URL;
-  const institution = user?.institution || "আপনার প্রতিষ্ঠানের নাম যুক্ত করুন";
+  const bio = user?.bio || "আপনার সম্পর্কে কিছু লিখুন...";
 
   return (
     <div 
@@ -75,7 +75,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
           )}
         </h1>
         <p className="text-sm mt-1 font-['Hind_Siliguri'] font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
-          {institution}
+          {bio}
         </p>
       </div>
 
