@@ -6,7 +6,7 @@ import VersusStats from '../components/public/VersusStats';
 import ActivityChart from '../components/public/ActivityChart';
 import BadgeShowcase from '../components/public/BadgeShowcase';
 import SkillRadar from '../components/public/SkillRadar'; 
-import PvpStats from '../components/public/PvpStats'; // 👈 PvpStats ইম্পোর্ট করা হলো
+import PvpStats from '../components/public/PvpStats';
 import { ChevronLeft } from 'lucide-react';
 import { ProfileSkeleton } from '../components/public/ProfileSkeleton';
 import { ChallengeSetupModal } from '../../exam/components/ChallengeSetupModal';
@@ -60,6 +60,9 @@ const PublicProfile: React.FC = () => {
   const profile = profileData;
   const activityData = profileData.activity;
   const versusStats = (profileData as any).versusStats; 
+  
+  const isOwnProfile = user?.id === profile.id || user?.username === profile.username;
+  const opponentFirstName = profile.full_name?.split(' ')[0] || 'Opponent';
 
   return (
     <div className="min-h-screen pb-10 animate-in fade-in duration-500" style={{ backgroundColor: 'var(--dyn-bg)' }}>
@@ -67,19 +70,34 @@ const PublicProfile: React.FC = () => {
         <ChevronLeft className="w-6 h-6" />
       </button>
 
-      <ProfileHero profile={profile} onChallenge={handleChallenge} />
+      <ProfileHero 
+        profile={profile} 
+        onChallenge={handleChallenge} 
+        isOwnProfile={isOwnProfile} 
+      />
 
-      {versusStats && <VersusStats stats={versusStats} />}
+      {!isOwnProfile && versusStats && (
+        <VersusStats stats={versusStats} opponentName={opponentFirstName} />
+      )}
 
-      {/* 🟢 গেমিং ও স্ট্রিক স্ট্যাটস কার্ড */}
-      <PvpStats stats={profile} />
+      {/* 🟢 পিভিপি স্ট্যাটস এখন ইউজারের ডেটা সহ পাস হচ্ছে */}
+      <PvpStats 
+        myStats={user as any} 
+        theirStats={profile} 
+        opponentName={opponentFirstName} 
+        isOwnProfile={isOwnProfile}
+      />
 
       {profile.top_skills && profile.top_skills.length > 0 && (
         <SkillRadar data={profile.top_skills} />
       )}
 
       {activityData && (
-        <ActivityChart data={activityData} opponentName={profile.full_name?.split(' ')[0] || 'Opponent'} />
+        <ActivityChart 
+          data={activityData} 
+          opponentName={opponentFirstName} 
+          isOwnProfile={isOwnProfile} 
+        />
       )}
 
       {profile.badges && <BadgeShowcase badges={profile.badges} />}

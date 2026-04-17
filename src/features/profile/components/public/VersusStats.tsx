@@ -14,6 +14,7 @@ interface VersusStatsProps {
     my_stats: PlayerStats;
     their_stats: PlayerStats;
   };
+  opponentName?: string;
 }
 
 interface StatRowProps {
@@ -41,23 +42,13 @@ const StatRow: React.FC<StatRowProps> = ({ icon: Icon, label, myValue, theirValu
       </div>
       
       <div className="flex flex-col items-center justify-center">
-        <div 
-          className="w-8 h-8 rounded-full flex items-center justify-center mb-1"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
-        >
-          <Icon className="w-4 h-4" style={{ color: 'var(--dyn-primary)' }} />
-        </div>
-        <span 
-          className="text-[10px] uppercase font-bold tracking-wider font-['Hind_Siliguri']"
-          style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-        >
-          {label}
-        </span>
+        <Icon className="w-4 h-4 mb-1" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }} />
+        <span className="text-[10px] font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}>{label}</span>
       </div>
 
       <div 
         className="text-center font-bold text-sm font-['Inter']"
-        style={{ color: !iWin && !tie ? 'var(--dyn-primary)' : 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
+        style={{ color: (!iWin && !tie) ? 'var(--dyn-accent)' : 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
       >
         {theirValue}{unit}
       </div>
@@ -65,15 +56,14 @@ const StatRow: React.FC<StatRowProps> = ({ icon: Icon, label, myValue, theirValu
   );
 };
 
-const VersusStats: React.FC<VersusStatsProps> = ({ stats }) => {
+const VersusStats: React.FC<VersusStatsProps> = ({ stats, opponentName }) => {
   const { my_stats, their_stats } = stats;
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="mx-4 -mt-6 rounded-2xl shadow-xl border p-5 relative z-20"
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-4 -mt-6 relative z-10 rounded-2xl p-5 border shadow-xl"
       style={{ 
         backgroundColor: 'var(--dyn-card)', 
         borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
@@ -96,19 +86,20 @@ const VersusStats: React.FC<VersusStatsProps> = ({ stats }) => {
         >
           VS
         </span>
+        {/* 🟢 THEM এর পরিবর্তে আসল নাম */}
         <span 
-          className="text-xs font-bold font-['Inter']"
+          className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right"
           style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
         >
-          THEM
+          {opponentName || 'THEM'}
         </span>
       </div>
 
       <div className="space-y-1">
-        <StatRow icon={Trophy} label="XP" myValue={my_stats.total_xp} theirValue={their_stats.total_xp} />
-        <StatRow icon={Target} label="সঠিকতা" myValue={my_stats.accuracy} theirValue={their_stats.accuracy} unit="%" />
-        <StatRow icon={Flame} label="স্ট্রিক" myValue={my_stats.current_streak} theirValue={their_stats.current_streak} unit="d" />
-        <StatRow icon={BookOpen} label="এক্সাম" myValue={my_stats.total_exams} theirValue={their_stats.total_exams} />
+        <StatRow icon={Trophy} label="XP" myValue={my_stats?.total_xp || 0} theirValue={their_stats?.total_xp || 0} />
+        <StatRow icon={Target} label="সঠিকতা" myValue={my_stats?.accuracy || 0} theirValue={their_stats?.accuracy || 0} unit="%" />
+        <StatRow icon={Flame} label="স্ট্রিক" myValue={my_stats?.current_streak || 0} theirValue={their_stats?.current_streak || 0} />
+        <StatRow icon={BookOpen} label="পরীক্ষা" myValue={my_stats?.total_exams || 0} theirValue={their_stats?.total_exams || 0} />
       </div>
     </motion.div>
   );

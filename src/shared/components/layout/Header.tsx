@@ -29,8 +29,7 @@ const Header: React.FC = () => {
         const baseUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
         
         // ৩. ব্যাকএন্ডে API কল করা (এটি কল হলেই আপনার ব্যাকএন্ডের স্ট্রিক জিরো করার লজিক রান হবে)
-        // নোট: আপনার ব্যাকএন্ড রাউটটি যদি ভিন্ন হয়, তবে '/growth/streak/stats' অংশটি সে অনুযায়ী পরিবর্তন করে নেবেন
-        const response = await fetch(`${baseUrl}/growth/streak/stats`, {
+        const response = await fetch(`${baseUrl}/growth/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
