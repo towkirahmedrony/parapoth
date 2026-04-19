@@ -61,7 +61,7 @@ const PublicProfile: React.FC = () => {
   const activityData = profileData.activity;
   const versusStats = (profileData as any).versusStats; 
   
-  const isOwnProfile = user?.id === profile.id || user?.username === profile.username;
+  const isOwnProfile = user?.id === profile.id || (user as any)?.username === (profile as any).username;
   const opponentFirstName = profile.full_name?.split(' ')[0] || 'Opponent';
 
   return (
@@ -83,7 +83,7 @@ const PublicProfile: React.FC = () => {
       {/* 🟢 পিভিপি স্ট্যাটস এখন ইউজারের ডেটা সহ পাস হচ্ছে */}
       <PvpStats 
         myStats={user as any} 
-        theirStats={profile} 
+        theirStats={profile as any} 
         opponentName={opponentFirstName} 
         isOwnProfile={isOwnProfile}
       />

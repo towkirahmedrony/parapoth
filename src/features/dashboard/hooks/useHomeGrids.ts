@@ -17,11 +17,8 @@ interface HomeGridsResponse {
 }
 
 export const useHomeGrids = () => {
-  // Server state management via TanStack Query.
-  // Ad-hoc local storage sync (useEffect + useLocalStorage) has been completely removed 
-  // to prevent infinite render loops. React Query handles memory caching natively.
   const { data: features = [], isLoading, isFetching, error } = useQuery({
-    queryKey: [QUERY_KEYS.HOME_GRIDS], // Fixed: Strictly array based queryKey
+    queryKey: [QUERY_KEYS.HOME_GRIDS],
     queryFn: async () => {
       const { data } = await apiClient.get<HomeGridsResponse>('/system/home-grids');
       if (!data?.data) {
@@ -29,8 +26,10 @@ export const useHomeGrids = () => {
       }
       return data.data;
     },
-    staleTime: 1000 * 60 * 30, // 30 mins
-    gcTime: 1000 * 60 * 60,   // 60 mins
+    staleTime: 1000 * 60 * 2, // ২ মিনিট ক্যাশ ধরে রাখবে
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: true, // ইউজার অ্যাপে ঢুকলেই আপডেট চেক করবে
+    refetchInterval: 1000 * 15, // ম্যাজিক! প্রতি ১৫ সেকেন্ড পরপর ব্যাকগ্রাউন্ডে সাইলেন্টলি নতুন ডেটা চেক করবে
   });
 
   const loading = isLoading && features.length === 0;

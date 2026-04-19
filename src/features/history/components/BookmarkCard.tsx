@@ -7,14 +7,18 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-// Added strict type for the body object to replace 'any'
-type QuestionBody = string | { bn?: string; text?: string; [key: string]: unknown } | null | undefined;
+const getQuestionData = (questionsData: any) => {
+  if (!questionsData) return null;
+  return Array.isArray(questionsData) ? questionsData[0] : questionsData;
+};
 
 export const BookmarkCard: React.FC<Props> = memo(({ item, onDelete }) => {
-  const renderBody = (body: QuestionBody): string => {
+  const qData = getQuestionData(item.questions);
+
+  const renderBody = (body: any): string => {
     if (!body) return "প্রশ্ন লোড হয়নি";
     if (typeof body === 'string') return body;
-    return (body.bn as string) || (body.text as string) || "প্রশ্ন লোড হয়নি";
+    return body?.bn || body?.text || body?.en || body?.content || "প্রশ্ন লোড হয়নি";
   };
 
   return (
@@ -29,7 +33,7 @@ export const BookmarkCard: React.FC<Props> = memo(({ item, onDelete }) => {
         <div 
           className="mb-2 prose prose-sm dark:prose-invert max-w-none" 
           style={{ color: 'var(--dyn-text)' }}
-          dangerouslySetInnerHTML={{ __html: renderBody(item.questions?.body) }}
+          dangerouslySetInnerHTML={{ __html: renderBody(qData?.body) }}
         />
         {item.note && (
           <div 

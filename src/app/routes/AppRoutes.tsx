@@ -22,8 +22,10 @@ const Streak = lazy(() => import('@/features/dashboard/pages/Streak'));
 const Login = lazy(() => import('@/features/auth/pages/Login'));
 const Register = lazy(() => import('@/features/auth/pages/Register'));
 const ForgotPassword = lazy(() => import('@/features/auth/pages/ForgotPassword'));
+const ChangePassword = lazy(() => import('@/features/auth/pages/ChangePassword'));
 const Arena = lazy(() => import('@/features/exam/pages/Arena'));
 const Analysis = lazy(() => import('@/features/exam/pages/Analysis'));
+const QuestionBank = lazy(() => import('@/features/question-bank/pages/QuestionBank'));
 
 // AI Chat Integration (Lazy Loaded)
 const AIChatPage = lazy(() => import('@/features/ai/pages/AIChatPage'));
@@ -74,7 +76,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-        
+
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-conditions" element={<TermsConditions />} />
         <Route path="/about" element={<AboutUs />} />
@@ -85,56 +87,60 @@ const AppRoutes: React.FC = () => {
 
         {/* --- Fullscreen routes (No Sidebar/Header/BottomNav) --- */}
         <Route path="/exam/selection" element={<PermissionGuard><Selection /></PermissionGuard>} />
-        
+
         {/* জেনেরাল এবং ডাইনামিক সাবজেক্ট স্লাগ রাউট */}
         <Route path="/exam/live" element={<PermissionGuard><Arena /></PermissionGuard>} />
         <Route path="/exam/live/:subjectSlug" element={<PermissionGuard><Arena /></PermissionGuard>} />
-        
-        <Route path="/exam/analysis" element={<PermissionGuard><Analysis /></PermissionGuard>} />
+
+        <Route path="/exam/analysis/:id" element={<PermissionGuard><Analysis /></PermissionGuard>} />
         <Route path="/exam/challenge-play" element={<PermissionGuard><ChallengePlay /></PermissionGuard>} />
-        
+
         {/* প্যারা সাথী AI ফুলস্ক্রিন রাউট */}
         <Route path="/parasathi" element={<PermissionGuard><AIChatPage /></PermissionGuard>} />
-        
+
         <Route path="/premium/checkout/:planId" element={<PermissionGuard><Checkout /></PermissionGuard>} />
         <Route path="/notifications" element={<PermissionGuard><Notifications /></PermissionGuard>} />
         <Route path="/settings" element={<PermissionGuard><Settings /></PermissionGuard>} />
         <Route path="/edit-profile" element={<PermissionGuard><EditProfile /></PermissionGuard>} />
+        
+        {/* পাসওয়ার্ড পরিবর্তন রাউট */}
+        <Route path="/change-password" element={<PermissionGuard><ChangePassword /></PermissionGuard>} />
+        
         <Route path="/profile/view/:id" element={<PermissionGuard><PublicProfile /></PermissionGuard>} />
 
         {/* --- Main Layout Routes (With Sidebar & Header & BottomNav) --- */}
         <Route path="/" element={<PermissionGuard><MainLayout /></PermissionGuard>}>
           <Route index element={<Navigate to="/dashboard/home" replace />} />
-          
+
           <Route path="dashboard" element={<Navigate to="/dashboard/home" replace />} />
-          
+
           {/* Dashboard & Gamification */}
           <Route path="dashboard/home" element={<Home />} />
           <Route path="dashboard/streak" element={<Streak />} />
           <Route path="dashboard/leaderboard" element={<Leaderboard />} />
           <Route path="progress" element={<Progress />} />
-          
-          <Route path="quests" element={<Placeholder title="ডেইলি কোয়েস্ট (Missions)" />} /> 
-          
+
+          <Route path="quests" element={<Placeholder title="ডেইলি কোয়েস্ট (Missions)" />} />
+
           {/* History & Analytics */}
           <Route path="history" element={<History />} />
-          
+
           {/* User Profile & Economy */}
           <Route path="profile" element={<UserProfile />} />
-          
-          <Route path="referral" element={<Referral />} /> 
+
+          <Route path="referral" element={<Referral />} />
 
           {/* Premium Showcase */}
           <Route path="premium" element={<Plans />} />
 
           {/* Group & Social */}
           <Route path="group" element={<Lobby />} />
-          <Route path="group/:groupId/battle" element={<Placeholder title="গ্রুপ ব্যাটেল" />} /> 
-          <Route path="group/:groupId/focus" element={<Placeholder title="ফোকাস সেশন" />} /> 
+          <Route path="group/:groupId/battle" element={<Placeholder title="গ্রুপ ব্যাটেল" />} />
+          <Route path="group/:groupId/focus" element={<Placeholder title="ফোকাস সেশন" />} />
 
           {/* Academic & Materials */}
           <Route path="suggestion" element={<Placeholder title="সাজেশন" />} />
-          <Route path="bank" element={<Placeholder title="বোর্ড প্রশ্ন ব্যাংক" />} />
+          <Route path="bank" element={<QuestionBank />} />
           <Route path="materials" element={<Placeholder title="স্টাডি ম্যাটেরিয়ালস" />} />
 
           {/* Support & Moderation */}

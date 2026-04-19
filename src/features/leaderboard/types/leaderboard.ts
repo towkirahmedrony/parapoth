@@ -15,9 +15,10 @@ export interface LeaderboardUser {
 }
 
 export interface League {
-  id: string;
-  name: string;
-  min_xp: number;              
-  icon: string;                
-  color: string;
+  id: number;
+  name_bn: string;
+  name_en: string;
+  min_xp: number;
+  max_xp: number | null;
+  badge_url: string | null;
 }

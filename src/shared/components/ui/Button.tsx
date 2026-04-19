@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
 }
@@ -42,6 +42,8 @@ export const Button: React.FC<ButtonProps> = ({
         };
       case 'danger':
         return { backgroundColor: '#dc2626', color: '#ffffff' };
+      case 'ghost':
+        return { backgroundColor: 'transparent', color: 'inherit' };
       default:
         return {};
     }

@@ -2508,6 +2508,7 @@ export type Database = {
       }
       questions: {
         Row: {
+          answer: Json | null
           approved_at: string | null
           approved_by: string | null
           avg_time_spent: number | null
@@ -2543,6 +2544,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          answer?: Json | null
           approved_at?: string | null
           approved_by?: string | null
           avg_time_spent?: number | null
@@ -2578,6 +2580,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          answer?: Json | null
           approved_at?: string | null
           approved_by?: string | null
           avg_time_spent?: number | null
@@ -3560,6 +3563,7 @@ export type Database = {
       get_adaptive_random_questions: {
         Args: { p_limit: number; p_user_id: string }
         Returns: {
+          answer: Json | null
           approved_at: string | null
           approved_by: string | null
           avg_time_spent: number | null

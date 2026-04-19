@@ -26,7 +26,7 @@ const UserProfile: React.FC = () => {
   });
 
   // যদি ফ্রেশ ডাটা থাকে তবে সেটা ব্যবহার হবে, অন্যথায় authUser-এর ডাটা
-  const user = profileData || authUser;
+  const user: any = profileData || authUser;
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-300 pb-24">

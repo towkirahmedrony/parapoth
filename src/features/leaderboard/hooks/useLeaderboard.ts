@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/shared/lib/apiClient';
-import { LeaderboardUser } from '../types/leaderboard';
+import { LeaderboardUser, League } from '../types/leaderboard';
 import { GroupLeaderboardResponse } from '../types/groupLeaderboard';
 
 // Best Practice: Centralized Query Keys factory
@@ -9,6 +9,7 @@ export const LEADERBOARD_QUERY_KEYS = {
   // maxXp এখন null হতে পারে (১০ম লেভেলের জন্য)
   league: (minXp: number, maxXp: number | null) => [...LEADERBOARD_QUERY_KEYS.all, 'league', minXp, maxXp] as const,
   squads: () => [...LEADERBOARD_QUERY_KEYS.all, 'squads'] as const,
+  leaguesConfig: () => [...LEADERBOARD_QUERY_KEYS.all, 'leagues-config'] as const,
 };
 
 interface ApiResponse<T> {
@@ -16,7 +17,20 @@ interface ApiResponse<T> {
   message?: string;
 }
 
-export const useLeaderboard = (minXp: number, maxXp: number | null) => {
+export const useLeaguesConfig = () => {
+  return useQuery<League[]>({
+    queryKey: LEADERBOARD_QUERY_KEYS.leaguesConfig(),
+    queryFn: async () => {
+      const response = await apiClient.get<ApiResponse<League[]>>('/leaderboard/leagues');
+      // Sort by min_xp ensuring consistent order
+      return (response.data.data || []).sort((a, b) => a.min_xp - b.min_xp);
+    },
+    staleTime: 1000 * 60 * 60 * 24, // Config remains fresh for 24 hours
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useLeaderboard = (minXp: number, maxXp: number | null, enabled: boolean = true) => {
   return useQuery<LeaderboardUser[]>({
     queryKey: LEADERBOARD_QUERY_KEYS.league(minXp, maxXp),
     queryFn: async () => {
@@ -29,6 +43,7 @@ export const useLeaderboard = (minXp: number, maxXp: number | null) => {
     // Prevent excessive refetching of leaderboard data
     staleTime: 1000 * 60, // Data remains fresh for 1 minute
     refetchOnWindowFocus: false, // Don't refetch just because user switched tabs
+    enabled: enabled, // Prevents fetching before leagues are fully loaded
   });
 };
 

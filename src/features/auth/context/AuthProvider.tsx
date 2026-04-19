@@ -1,8 +1,8 @@
 import { createContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Session } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/shared/lib/supabase';
 import { authService } from '../services/authService';
-import { AppUser, AuthContextType } from '../types/auth';
+import type { AppUser, AuthContextType } from '../types/auth';
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -13,128 +13,152 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  // Default string value 'student' matches the AuthContextType restriction strictly
   const [role, setRole] = useState<string>('student');
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  
-  const fetchingRef = useRef<boolean>(false);
 
-  // Memoized sign out logic
+  const mountedRef = useRef(true);
+  const roleFetchRef = useRef(false);
+
+  const enrichUserWithProfile = useCallback(async (authUser: AppUser | null) => {
+    if (!authUser?.id || !mountedRef.current) return;
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, institution, total_xp')
+        .eq('id', authUser.id)
+        .single();
+
+      if (error || !profile || !mountedRef.current) return;
+
+      setUser(prev => {
+        if (!prev || prev.id !== authUser.id) return prev;
+
+        return {
+          ...prev,
+          username: profile.username ?? (prev as any).username ?? null,
+          full_name: profile.full_name ?? (prev as any).full_name ?? null,
+          avatar_url: profile.avatar_url ?? (prev as any).avatar_url ?? null,
+          institution: profile.institution ?? (prev as any).institution ?? null,
+          total_xp: profile.total_xp ?? 0,
+          total_score: profile.total_xp ?? 0
+        } as AppUser;
+      });
+    } catch (error) {
+      console.warn('Profile enrichment failed:', error);
+    }
+  }, []);
+
+  const fetchRoleData = useCallback(async () => {
+    if (roleFetchRef.current || !mountedRef.current) return;
+
+    roleFetchRef.current = true;
+
+    try {
+      const result = await authService.getRoleAndPermissions();
+      if (!mountedRef.current) return;
+
+      setRole(result?.role || 'student');
+      setPermissions(result?.permissions || []);
+    } catch (error) {
+      console.warn('Role fetch failed, fallback to student:', error);
+      if (!mountedRef.current) return;
+      setRole('student');
+      setPermissions([]);
+    } finally {
+      roleFetchRef.current = false;
+    }
+  }, []);
+
+  const applySession = useCallback((currentSession: Session | null) => {
+    setSession(currentSession);
+
+    if (!currentSession?.user) {
+      setUser(null);
+      setRole('student');
+      setPermissions([]);
+      setLoading(false);
+      return;
+    }
+
+    const baseUser = {
+      ...(currentSession.user as AppUser),
+      total_xp: (currentSession.user as any)?.total_xp ?? 0,
+      total_score: (currentSession.user as any)?.total_score ?? 0
+    } as AppUser;
+
+    setUser(baseUser);
+    setLoading(false);
+
+    void fetchRoleData();
+    void enrichUserWithProfile(baseUser);
+  }, [enrichUserWithProfile, fetchRoleData]);
+
   const signOut = useCallback(async () => {
     try {
       setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
-      // Local state cleanup
       setSession(null);
       setUser(null);
       setRole('student');
       setPermissions([]);
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error('Logout failed:', error);
     } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchUserRoleData = useCallback(async (isMounted: boolean) => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Role Fetch Timeout')), 5000)
-    );
-
-    try {
-      // Improved type safety for result
-      const result = await Promise.race([
-        authService.getRoleAndPermissions(),
-        timeoutPromise
-      ]) as { role: string; permissions: string[] };
-
-      if (isMounted) {
-        setRole(result.role);
-        setPermissions(result.permissions);
+      if (mountedRef.current) {
+        setLoading(false);
       }
-    } catch (error) {
-      console.warn("Auth role fetching error, falling back to student:", error);
-      if (isMounted) {
-        setRole('student'); 
-        setPermissions([]);
-      }
-    } finally {
-      fetchingRef.current = false;
-      if (isMounted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    mountedRef.current = true;
 
-    // Listen for global unauthorized events (from apiClient)
     const handleUnauthorized = () => {
-      console.warn("Session expired or unauthorized. Clearing local auth state...");
-      signOut();
+      console.warn('Unauthorized event received. Clearing auth state...');
+      void signOut();
     };
 
     window.addEventListener('auth:unauthorized', handleUnauthorized);
 
-    const initializeAuth = async () => {
+    const init = async () => {
       try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        const {
+          data: { session: initialSession },
+          error
+        } = await supabase.auth.getSession();
 
-        if (isMounted) {
-          const activeSession = initialSession;
-          setSession(activeSession);
-          setUser((activeSession?.user as AppUser) ?? null);
-          
-          if (activeSession?.user) {
-            await fetchUserRoleData(isMounted);
-          } else {
-            setLoading(false);
-          }
-        }
+        if (error) throw error;
+        if (!mountedRef.current) return;
+
+        applySession(initialSession);
       } catch (error) {
-        console.error("Auth initialization failed:", error);
-        if (isMounted) setLoading(false);
+        console.error('Auth initialization failed:', error);
+        if (!mountedRef.current) return;
+        setLoading(false);
       }
     };
 
-    initializeAuth();
+    void init();
 
-    // Listen for real-time auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!isMounted) return;
-        
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setSession(currentSession);
-          setUser((currentSession?.user as AppUser) ?? null);
-          if (currentSession?.user) {
-             fetchUserRoleData(isMounted);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUser(null);
-          setRole('student');
-          setPermissions([]);
-          setLoading(false);
-        }
-      }
-    );
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      if (!mountedRef.current) return;
+      applySession(currentSession);
+    });
 
     return () => {
-      isMounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
-  }, [signOut, fetchUserRoleData]);
+  }, [applySession, signOut]);
 
-  // Memoize the context value to prevent unnecessary re-renders of consuming components
-  const contextValue = useMemo<AuthContextType>(() => ({
+  const value = useMemo<AuthContextType>(() => ({
     session,
     user,
     role,
@@ -143,9 +167,5 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signOut
   }), [session, user, role, permissions, loading, signOut]);
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

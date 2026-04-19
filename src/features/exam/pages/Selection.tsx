@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FileText, Building2 } from 'lucide-react';
 import ModelTestTab from '../components/ModelTestTab';
 import BoardExamTab from '../components/BoardExamTab';
@@ -8,7 +9,16 @@ type TabType = 'model' | 'board';
 const MIN_SWIPE_DISTANCE = 50;
 
 const Selection: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('model');
+  // URL parameters ব্যবহারের জন্য
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('type') as TabType) || 'model';
+
+  // State এর বদলে URL parameter আপডেট করার ফাংশন
+  const setActiveTab = useCallback((tab: TabType) => {
+    // replace: true ব্যবহার করা হয়েছে যাতে প্রতিবার ট্যাব পরিবর্তনে ব্রাউজারের হিস্ট্রি ভারী না হয়
+    setSearchParams({ type: tab }, { replace: true });
+  }, [setSearchParams]);
+
   const [isDetailView, setIsDetailView] = useState<boolean>(false); 
   
   // Using useRef instead of useState to prevent continuous re-renders during swipe
@@ -36,7 +46,7 @@ const Selection: React.FC = () => {
 
     // Reset the touch tracking reference
     touchStartX.current = null;
-  }, [isDetailView, activeTab]);
+  }, [isDetailView, activeTab, setActiveTab]);
 
   return (
     <div 

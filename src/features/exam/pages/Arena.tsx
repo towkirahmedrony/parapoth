@@ -110,7 +110,6 @@ const Arena: React.FC = () => {
 
     let correct = 0, wrong = 0, skipped = 0;
     
-    // 🌟 আপডেট: Loop এর ভেতরেই stats ক্যালকুলেশন এবং detailedResults অ্যারে তৈরি করা হচ্ছে
     const detailedResults = questions.map(q => {
       const userAnswerId = userAnswers[q.id];
       const correctOption = q.options.find(o => o.isCorrect);
@@ -147,7 +146,6 @@ const Arena: React.FC = () => {
       time_taken: timeTaken,
       score: score,
       total_marks: questions.length * MARKS_PER_QUESTION,
-      // 🌟 আপডেট: details_json এর ভেতরে detailedResults পাঠানো হচ্ছে
       details_json: { questions, userAnswers, detailedResults } 
     };
 

@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
 import { Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { HistoryItem } from '../types/history';
 
-// Utility for formatting digits
 const toBanglaDigit = (s: number | string): string => 
   String(s).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
 
@@ -11,8 +11,7 @@ interface Props {
 }
 
 export const HistoryCard: React.FC<Props> = memo(({ item }) => {
-  // Type-safe property access using the updated HistoryItem interface.
-  // The 'Record' fallback is completely removed for clean and strictly typed code.
+  const navigate = useNavigate();
   const dateStr = item.submitted_at || item.created_at || item.taken_at || new Date().toISOString();
 
   return (
@@ -42,13 +41,13 @@ export const HistoryCard: React.FC<Props> = memo(({ item }) => {
           </span>
         </div>
         <button 
+          // এখানেই state পাস করা হয়েছে
+          onClick={() => navigate(`/exam/analysis/${item.id}`, { state: item })}
           className="text-xs hover:underline mt-1 transition-colors hover:opacity-80 active:scale-95" 
           style={{ color: 'var(--dyn-primary)' }}
-          aria-label="ফলাফল দেখুন"
-          // TODO: Add onClick handler to navigate to the detailed analysis page 
-          // Example: onClick={() => navigate(`/exam/analysis/${item.id}`)}
+          aria-label="বিস্তারিত দেখুন"
         >
-          ফলাফল দেখুন
+          বিস্তারিত দেখুন
         </button>
       </div>
     </div>

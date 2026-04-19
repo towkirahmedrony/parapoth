@@ -18,11 +18,6 @@ interface Props {
   onDragEnd: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
 }
 
-const getIconUrl = (iconName: string): string => {
-  const mappedName = iconName === 'Trophy' ? 'trophy' : iconName === 'Medal' ? '1st-place-medal' : 'shield';
-  return `https://api.iconify.design/noto:${mappedName}.svg`;
-};
-
 // ১০টি লেভেলের জন্য নতুন কালার গ্রেডিয়েন্ট লজিক
 const getLeagueGradientColors = (index: number) => {
   switch (index) {
@@ -83,11 +78,13 @@ export const LeagueHeader: React.FC<Props> = ({
                     style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' }}
                   ></div>
                   <div className="relative z-10 flex flex-col items-center">
-                      <img 
-                          src={getIconUrl(prevLeague.icon)} 
-                          className="w-10 h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] filter brightness-110" 
-                          alt="prev" 
-                      />
+                      {prevLeague.badge_url && (
+                        <img 
+                            src={prevLeague.badge_url} 
+                            className="w-10 h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] filter brightness-110 object-contain" 
+                            alt="prev" 
+                        />
+                      )}
                       <ChevronLeft className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3]" style={{ color: 'var(--dyn-text)' }} />
                   </div>
                 </>
@@ -122,7 +119,9 @@ export const LeagueHeader: React.FC<Props> = ({
                       {isLocked ? (
                           <Lock className="w-6 h-6" style={{ color: mutedTextColor }} />
                       ) : (
-                          <img src={getIconUrl(selectedLeague.icon)} className="w-8 h-8 drop-shadow-md" alt="icon" />
+                          selectedLeague.badge_url && (
+                            <img src={selectedLeague.badge_url} className="w-8 h-8 drop-shadow-md object-contain" alt="icon" />
+                          )
                       )}
                     </div>
 
@@ -138,7 +137,7 @@ export const LeagueHeader: React.FC<Props> = ({
                   className="text-lg font-bold tracking-wide mt-1 text-shadow-sm"
                   style={{ color: 'var(--dyn-text)' }}
                 >
-                  {selectedLeague.name}
+                  {selectedLeague.name_bn}
                 </h2>
               </motion.div>
             </AnimatePresence>
@@ -160,11 +159,13 @@ export const LeagueHeader: React.FC<Props> = ({
                     style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' }}
                   ></div>
                   <div className="relative z-10 flex flex-col items-center">
-                      <img 
-                          src={getIconUrl(nextLeague.icon)} 
-                          className="w-10 h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] filter brightness-110" 
-                          alt="next" 
-                      />
+                      {nextLeague.badge_url && (
+                        <img 
+                            src={nextLeague.badge_url} 
+                            className="w-10 h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] filter brightness-110 object-contain" 
+                            alt="next" 
+                        />
+                      )}
                       <ChevronRight className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3]" style={{ color: 'var(--dyn-text)' }} />
                   </div>
                 </>

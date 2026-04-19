@@ -71,7 +71,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
         >
           {fullName}
           {user?.is_phone_verified && (
-            <ShieldCheck size={18} className="text-green-500" title="ভেরিফাইড" />
+            <span title="ভেরিফাইড" className="inline-flex">
+              <ShieldCheck size={18} className="text-green-500" />
+            </span>
           )}
         </h1>
         <p className="text-sm mt-1 font-['Hind_Siliguri'] font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>

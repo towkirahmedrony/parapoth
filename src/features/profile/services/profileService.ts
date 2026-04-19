@@ -5,7 +5,7 @@ import type { PublicProfile } from '../types/publicProfile';
 import type { UserProfileData } from '../types/profile';
 
 // ব্যাকএন্ডের রেসপন্সের সাথে মিলিয়ে ইন্টারফেস আপডেট করা হলো
-export interface PublicProfileResponse extends PublicProfile {
+export interface PublicProfileResponse extends Omit<PublicProfile, 'badges' | 'activity'> {
   badges?: any; // Replace with actual Badge type
   activity?: any; // Replace with actual Activity type
 }
