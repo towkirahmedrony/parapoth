@@ -33,55 +33,34 @@ const LeaderboardRow = memo(({
 
   return (
     <div
-      className="flex flex-col md:flex-row items-center justify-between p-4 rounded-lg border transition-colors"
-      style={{
-        backgroundColor: fraud
-          ? 'color-mix(in srgb, var(--dyn-accent) 5%, transparent)'
-          : 'var(--dyn-card)',
-        borderColor: fraud
-          ? 'var(--dyn-accent)'
-          : 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-      }}
+      className={`flex flex-col md:flex-row items-center justify-between p-4 rounded-lg border transition-colors ${
+        fraud ? 'bg-secondary border-border-color' : 'bg-surface border-border-color'
+      }`}
     >
       <div className="flex items-center gap-4 w-full md:w-auto">
-        <div
-          className="font-bold text-lg w-8"
-          style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
-        >
+        <div className="font-bold text-lg w-8 text-text-secondary">
           #{idx + 1}
         </div>
         <div>
-          <div
-            className="font-medium flex items-center gap-2"
-            style={{ color: 'var(--dyn-text)' }}
-          >
+          <div className="font-medium flex items-center gap-2 text-text-primary">
             {entry.user_name}
             {fraud && (
               // Replaced missing Badge component with a standard Tailwind span mimicking a Badge
-              <span
-                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                style={{
-                  backgroundColor: 'var(--dyn-accent)',
-                  color: 'var(--dyn-card)'
-                }}
-              >
+              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-badge-bg text-badge-text">
                 <ShieldAlert className="h-3 w-3 mr-1" /> Fraud Detected
               </span>
             )}
           </div>
-          <div
-            className="text-sm flex gap-3 mt-1"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
-          >
+          <div className="text-sm flex gap-3 mt-1 text-text-secondary">
             <span>
               Score:{' '}
-              <strong style={{ color: 'var(--dyn-text)' }}>
+              <strong className="text-text-primary">
                 {entry.score}/{entry.total_marks}
               </strong>
             </span>
             <span>
               Time:{' '}
-              <strong style={{ color: 'var(--dyn-text)' }}>
+              <strong className="text-text-primary">
                 {entry.time_taken}s
               </strong>
             </span>
@@ -95,11 +74,7 @@ const LeaderboardRow = memo(({
             <Button
               disabled={isPending}
               onClick={() => onPunish(entry.user_id, 'zero_marks')}
-              className="w-full md:w-auto"
-              style={{
-                backgroundColor: 'var(--dyn-accent)',
-                color: 'var(--dyn-card)'
-              }}
+              className="w-full md:w-auto bg-accent text-primary-foreground disabled:opacity-50"
             >
               Zero Marks
             </Button>
@@ -107,12 +82,7 @@ const LeaderboardRow = memo(({
               disabled={isPending}
               variant="outline"
               onClick={() => onPunish(entry.user_id, 'ban_device')}
-              className="w-full md:w-auto border"
-              style={{
-                backgroundColor: 'transparent',
-                borderColor: 'var(--dyn-accent)',
-                color: 'var(--dyn-accent)'
-              }}
+              className="w-full md:w-auto border border-border-color text-text-primary hover:bg-surface disabled:opacity-50 bg-transparent"
             >
               <Ban className="h-4 w-4 mr-2" /> Ban Device
             </Button>
@@ -122,12 +92,7 @@ const LeaderboardRow = memo(({
             disabled={isPending}
             variant="outline"
             onClick={() => onApprove(entry.user_id)}
-            className="w-full md:w-auto border"
-            style={{
-              backgroundColor: 'transparent',
-              borderColor: 'var(--dyn-primary)',
-              color: 'var(--dyn-primary)'
-            }}
+            className="w-full md:w-auto border border-border-color text-text-primary hover:bg-surface disabled:opacity-50 bg-transparent"
           >
             <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
           </Button>
@@ -161,35 +126,24 @@ export const LeaderboardModerator: React.FC<Props> = memo(({ examId }) => {
   }, []);
 
   return (
-    <Card
-      style={{
-        backgroundColor: 'var(--dyn-card)',
-        borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-      }}
-    >
+    <Card className="bg-card-bg border-card-border">
       <div className="flex flex-col space-y-1.5 p-6">
-        <h3
-          className="font-semibold leading-none tracking-tight flex items-center gap-2"
-          style={{ color: 'var(--dyn-text)' }}
-        >
+        <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2 text-text-primary">
           Leaderboard Moderation
         </h3>
-        <p
-          className="text-sm text-muted-foreground"
-          style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
-        >
+        <p className="text-sm text-text-secondary">
           Review and approve results for {examId} before publishing.
         </p>
       </div>
       <div className="p-6 pt-0">
         {isLoading ? (
-          <div style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }} className="animate-pulse">
+          <div className="animate-pulse text-text-secondary">
             Loading results...
           </div>
         ) : isError ? (
-          <div className="text-red-500 font-medium">Failed to load leaderboard data. Please try again.</div>
+          <div className="font-medium text-text-secondary">Failed to load leaderboard data. Please try again.</div>
         ) : !leaderboard || leaderboard.length === 0 ? (
-          <div style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
+          <div className="text-text-secondary">
             No entries to moderate.
           </div>
         ) : (

@@ -10,55 +10,43 @@ const Lobby: React.FC = () => {
   // Data is already normalized by the hook, safely access my_group directly
   const myGroup = squadData?.my_group;
 
-  const mutedTextColor = 'color-mix(in srgb, var(--dyn-text) 70%, transparent)';
-  const borderColor = 'color-mix(in srgb, var(--dyn-text) 10%, transparent)';
-
   return (
-    <div 
-      className="flex flex-col min-h-screen relative pb-20"
-      style={{ backgroundColor: 'var(--dyn-bg)' }}
-    >
+    <div className="flex flex-col min-h-screen relative pb-20 bg-app">
       {/* Header Section */}
-      <div 
-        className="p-4 shadow-sm flex justify-between items-center border-b sticky top-0 z-10"
-        style={{ backgroundColor: 'var(--dyn-card)', borderColor: borderColor }}
-      >
+      <div className="p-4 shadow-sm flex justify-between items-center border-b sticky top-0 z-10 bg-card-bg border-border-color">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{myGroup?.icon || '🛡️'}</span>
           <div>
-            <h1 className="font-bold text-lg" style={{ color: 'var(--dyn-primary)' }}>
+            <h1 className="font-bold text-lg text-primary">
               {myGroup?.name || 'No Squad'}
             </h1>
-            <p className="text-xs font-medium" style={{ color: mutedTextColor }}>
+            <p className="text-xs font-medium text-text-secondary">
               {myGroup ? `Lvl ${myGroup.group_level}` : 'Join a squad to compete'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div 
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-accent) 20%, transparent)' }}
-          >
-            <Flame className="w-4 h-4" style={{ color: 'var(--dyn-accent)' }} />
-            <span className="font-bold text-sm" style={{ color: 'var(--dyn-accent)' }}>12</span>
+          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent/20">
+            <Flame className="w-4 h-4 text-accent" />
+            <span className="font-bold text-sm text-accent">12</span>
           </div>
           <button 
             onClick={() => setIsLeaderboardOpen(true)}
-            className="p-2 rounded-full hover:[background-color:color-mix(in_srgb,var(--dyn-text)_10%,transparent)]"
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
           >
-            <Trophy className="w-6 h-6" style={{ color: 'var(--dyn-primary)' }} />
+            <Trophy className="w-6 h-6 text-primary" />
           </button>
         </div>
       </div>
 
       {/* ... (বাকি ট্রায়াঙ্গেল এবং অ্যাকশন বাটন কোড আগের মতোই থাকবে) ... */}
       <div className="p-4 flex-1 flex items-center justify-center">
-         <p style={{ color: mutedTextColor }}>Triangle Visualizer active with dynamic theme...</p>
+         <p className="text-text-secondary">Triangle Visualizer active with dynamic theme...</p>
       </div>
 
       {/* Leaderboard Overlay */}
       {isLeaderboardOpen && (
-        <div className="fixed inset-0 z-[100] w-full h-[100dvh]" style={{ backgroundColor: 'var(--dyn-bg)' }}>
+        <div className="fixed inset-0 z-[100] w-full h-[100dvh] bg-app">
           <GroupLeaderboard 
             data={squadData || null}
             isLoading={isLoading}

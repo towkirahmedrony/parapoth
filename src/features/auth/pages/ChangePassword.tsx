@@ -7,7 +7,6 @@ const ChangePassword: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
-  // রিকভারি মোড স্টেট
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   const [oldPassword, setOldPassword] = useState('');
@@ -23,16 +22,13 @@ const ChangePassword: React.FC = () => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // ১. URL প্যারামিটার চেক করা (Supabase v2 PKCE flow-তে 'code' পাঠায়)
     const hasCode = searchParams.has('code');
-    // ২. URL Hash বা Search চেক করা (পুরনো ফ্লো বা ম্যানুয়াল লিংকের জন্য)
     const hasRecoveryKeyword = window.location.href.includes('type=recovery');
 
     if (hasCode || hasRecoveryKeyword) {
       setIsRecoveryMode(true);
     }
 
-    // ৩. Auth State Change ইভেন্ট লিসেন করা (নিরাপত্তার জন্য)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecoveryMode(true);
@@ -47,7 +43,6 @@ const ChangePassword: React.FC = () => {
     setError(null);
     setSuccess(false);
 
-    // বেসিক ভ্যালিডেশন
     if (!isRecoveryMode && !oldPassword) {
       setError('বর্তমান পাসওয়ার্ড দিতে হবে।');
       return;
@@ -71,7 +66,6 @@ const ChangePassword: React.FC = () => {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user?.email) throw new Error('ইউজারের তথ্য পাওয়া যায়নি। আবার লগ-ইন করুন।');
 
-      // যদি সাধারণ পরিবর্তন হয় (রিকভারি না হয়), তবে আগের পাসওয়ার্ড যাচাই করুন
       if (!isRecoveryMode) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: user.email,
@@ -83,7 +77,6 @@ const ChangePassword: React.FC = () => {
         }
       }
 
-      // নতুন পাসওয়ার্ড আপডেট করা
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -95,10 +88,8 @@ const ChangePassword: React.FC = () => {
       setNewPassword('');
       setConfirmPassword('');
       
-      // সফল হলে URL থেকে Hash এবং Code ক্লিয়ার করা যাতে রিলোড দিলে আবার রিকভারি মোডে না থাকে
       window.history.replaceState(null, '', window.location.pathname);
 
-      // ৩ সেকেন্ড পর প্রোফাইল বা ড্যাশবোর্ডে রিডাইরেক্ট
       setTimeout(() => {
         navigate('/dashboard/home', { replace: true });
       }, 3000);
@@ -111,33 +102,35 @@ const ChangePassword: React.FC = () => {
     }
   };
 
+  const inputClasses = "w-full px-4 py-3.5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-focus-ring text-base bg-input-bg border border-input-border text-text-primary placeholder:text-text-secondary disabled:cursor-not-allowed disabled:opacity-70";
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-app transition-colors duration-300">
       {/* Header */}
-      <div className="sticky top-0 z-10 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 px-4 py-4 flex items-center gap-3">
+      <div className="sticky top-0 z-10 backdrop-blur-md bg-nav-bg/80 border-b border-border-color px-4 py-4 flex items-center gap-3">
         <button 
           onClick={() => navigate(-1)} 
-          className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300"
+          className="p-2 rounded-full hover:bg-surface-elevated transition-colors text-nav-text"
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-lg font-semibold text-slate-800 dark:text-white">
+        <h1 className="text-lg font-semibold text-nav-text">
           {isRecoveryMode ? 'পাসওয়ার্ড রিসেট' : 'পাসওয়ার্ড পরিবর্তন'}
         </h1>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 py-8">
-        <div className="max-w-md w-full mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 sm:p-8">
+        <div className="max-w-md w-full mx-auto bg-card-bg rounded-2xl shadow-sm border border-card-border p-6 sm:p-8">
           
           <div className="text-center mb-8">
-            <div className="bg-blue-50 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400">
+            <div className="bg-surface-elevated w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-text-primary">
               {isRecoveryMode ? <KeyRound size={32} /> : <Lock size={32} />}
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            <h2 className="text-2xl font-bold text-text-primary mb-2">
               {isRecoveryMode ? 'নতুন পাসওয়ার্ড সেট করুন' : 'পাসওয়ার্ড আপডেট করুন'}
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-text-secondary">
               {isRecoveryMode 
                 ? 'আপনার অ্যাকাউন্টের জন্য একটি নতুন এবং শক্তিশালী পাসওয়ার্ড দিন।' 
                 : 'নিরাপত্তার স্বার্থে প্রথমে আপনার বর্তমান পাসওয়ার্ডটি দিন।'}
@@ -146,16 +139,16 @@ const ChangePassword: React.FC = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-              <AlertCircle size={18} className="mt-0.5 shrink-0" />
-              <p>{error}</p>
+            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg text-sm bg-surface-elevated border border-border-color text-text-primary">
+              <AlertCircle size={18} className="mt-0.5 shrink-0 text-text-primary" />
+              <p className="font-medium">{error}</p>
             </div>
           )}
 
           {/* Success Message */}
           {success && (
-            <div className="mb-6 flex items-start gap-2 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm border border-emerald-200 dark:border-emerald-800/30">
-              <CheckCircle size={20} className="mt-0.5 shrink-0" />
+            <div className="mb-6 flex items-start gap-2 p-4 rounded-lg text-sm bg-surface-elevated border border-border-color text-text-primary">
+              <CheckCircle size={20} className="mt-0.5 shrink-0 text-text-primary" />
               <div>
                 <p className="font-semibold mb-1">পাসওয়ার্ড সফলভাবে {isRecoveryMode ? 'রিসেট' : 'পরিবর্তিত'} হয়েছে!</p>
                 <p className="opacity-90">আপনাকে মূল পেজে নিয়ে যাওয়া হচ্ছে...</p>
@@ -163,19 +156,19 @@ const ChangePassword: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* Old Password Input - Only shown if NOT in recovery mode */}
+            {/* Old Password Input */}
             {!isRecoveryMode && (
               <>
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-text-primary">
                       বর্তমান পাসওয়ার্ড
                     </label>
                     <Link 
                       to="/auth/forgot-password" 
-                      className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+                      className="text-sm font-medium text-text-secondary hover:text-text-primary hover:underline transition-colors"
                     >
                       পাসওয়ার্ড ভুলে গেছেন?
                     </Link>
@@ -186,27 +179,27 @@ const ChangePassword: React.FC = () => {
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
                       placeholder="বর্তমান পাসওয়ার্ড দিন"
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
+                      className={inputClasses}
                       required={!isRecoveryMode}
                       disabled={isLoading || success}
                     />
                     <button
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 focus:outline-none text-text-secondary hover:text-text-primary"
                     >
                       {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-700"></div>
+                <div className="pt-2 border-t border-border-color"></div>
               </>
             )}
 
             {/* New Password Input */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-text-primary">
                 নতুন পাসওয়ার্ড
               </label>
               <div className="relative">
@@ -215,14 +208,14 @@ const ChangePassword: React.FC = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="নতুন পাসওয়ার্ড দিন"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
+                  className={inputClasses}
                   required
                   disabled={isLoading || success}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 focus:outline-none text-text-secondary hover:text-text-primary"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -230,8 +223,8 @@ const ChangePassword: React.FC = () => {
             </div>
 
             {/* Confirm Password Input */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-text-primary">
                 নতুন পাসওয়ার্ড নিশ্চিত করুন
               </label>
               <div className="relative">
@@ -240,14 +233,14 @@ const ChangePassword: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="আবার নতুন পাসওয়ার্ড দিন"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
+                  className={inputClasses}
                   required
                   disabled={isLoading || success}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 focus:outline-none text-text-secondary hover:text-text-primary"
                 >
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -257,10 +250,10 @@ const ChangePassword: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading || success || (!isRecoveryMode && !oldPassword) || !newPassword || !confirmPassword}
-              className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium rounded-xl transition-colors disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+              className="w-full mt-2 flex items-center justify-center gap-2 rounded-full px-4 py-3.5 text-lg font-bold transition-all duration-200 bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
                 isRecoveryMode ? 'পাসওয়ার্ড সেভ করুন' : 'পাসওয়ার্ড পরিবর্তন করুন'
               )}

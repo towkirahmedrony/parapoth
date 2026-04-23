@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
@@ -15,7 +15,6 @@ export default function LoginForm() {
     password: ''
   });
 
-  // Clear session on mount safely
   useEffect(() => {
     const clearOldSession = async () => {
       try {
@@ -29,7 +28,6 @@ export default function LoginForm() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: typeof formData) => {
-      // Magic string removed, using centralized constant
       const { data, error: functionError } = await supabase.functions.invoke(API_ENDPOINTS.AUTH.LOGIN, {
         body: credentials,
       });
@@ -67,13 +65,7 @@ export default function LoginForm() {
   return (
     <div className="w-full">
       {customError && (
-        <div 
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, #ef4444 10%, transparent)', 
-            color: '#ef4444' 
-          }}
-          className="mb-4 p-3 flex items-start gap-2 rounded-lg text-sm"
-        >
+        <div className="mb-4 p-3 flex items-start gap-2 rounded-lg text-sm bg-surface-elevated border border-accent text-accent">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <p className="font-medium">{customError}</p>
         </div>
@@ -84,12 +76,7 @@ export default function LoginForm() {
           <input
             type="text"
             required
-            style={{ 
-              backgroundColor: 'var(--dyn-card)', 
-              color: 'var(--dyn-text)', 
-              border: '1px solid color-mix(in srgb, var(--dyn-text) 20%, transparent)' 
-            }}
-            className="w-full px-4 py-3.5 rounded-xl focus:outline-none focus:border-[var(--dyn-primary)] transition-colors placeholder:text-[color-mix(in_srgb,var(--dyn-text)_40%,transparent)] text-base"
+            className="w-full px-4 py-3.5 rounded-xl bg-input-bg text-text-primary border border-input-border focus:outline-none focus:ring-2 focus:ring-focus-ring transition-colors placeholder:text-text-secondary text-base"
             placeholder="ইমেইল বা ইউজার নেম"
             value={formData.identifier}
             onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
@@ -97,41 +84,42 @@ export default function LoginForm() {
           />
         </div>
 
-        <div className="relative">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            required
-            style={{ 
-              backgroundColor: 'var(--dyn-card)', 
-              color: 'var(--dyn-text)', 
-              border: '1px solid color-mix(in srgb, var(--dyn-text) 20%, transparent)' 
-            }}
-            className="w-full pl-4 pr-12 py-3.5 rounded-xl focus:outline-none focus:border-[var(--dyn-primary)] transition-colors placeholder:text-[color-mix(in_srgb,var(--dyn-text)_40%,transparent)] text-base"
-            placeholder="পাসওয়ার্ড"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            disabled={isPending}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 focus:outline-none"
-            aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখুন"}
-            disabled={isPending}
-          >
-            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-          </button>
+        <div>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              className="w-full pl-4 pr-12 py-3.5 rounded-xl bg-input-bg text-text-primary border border-input-border focus:outline-none focus:ring-2 focus:ring-focus-ring transition-colors placeholder:text-text-secondary text-base"
+              placeholder="পাসওয়ার্ড"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              disabled={isPending}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-text-secondary hover:text-text-primary focus:outline-none transition-colors"
+              aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখুন"}
+              disabled={isPending}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
+          
+          <div className="flex justify-end pt-2 pb-1">
+            <Link 
+              to="/auth/forgot-password" 
+              className="text-sm font-medium text-primary hover:underline transition-colors"
+            >
+              পাসওয়ার্ড ভুলে গেছেন?
+            </Link>
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={isPending}
-          style={{ 
-            backgroundColor: 'var(--dyn-primary)', 
-            color: 'var(--dyn-bg)' 
-          }}
-          className="w-full mt-2 py-3.5 px-4 font-bold text-lg rounded-full transition-all duration-200 flex justify-center items-center gap-2 hover:opacity-95 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full mt-2 py-3.5 px-4 font-bold text-lg rounded-full bg-primary text-primary-foreground transition-all duration-200 flex justify-center items-center gap-2 hover:opacity-90 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {isPending ? <Loader2 className="animate-spin h-6 w-6" /> : 'লগ ইন'}
         </button>

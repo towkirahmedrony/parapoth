@@ -15,18 +15,12 @@ export const HistoryCard: React.FC<Props> = memo(({ item }) => {
   const dateStr = item.submitted_at || item.created_at || item.taken_at || new Date().toISOString();
 
   return (
-    <div 
-      className="p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow flex justify-between items-center group"
-      style={{ 
-        backgroundColor: 'var(--dyn-card)',
-        border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-      }}
-    >
+    <div className="bg-card-bg border border-card-border p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow flex justify-between items-center group">
       <div className="flex-1 overflow-hidden pr-4">
-        <h3 className="text-lg font-bold mb-1 truncate" style={{ color: 'var(--dyn-text)' }}>
+        <h3 className="text-text-primary text-lg font-bold mb-1 truncate">
           {item.details_json?.exam_title || "মডেল টেস্ট"}
         </h3>
-        <div className="flex items-center text-sm space-x-3" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+        <div className="text-text-secondary flex items-center text-sm space-x-3">
           <span className="flex items-center">
             <Clock className="w-3 h-3 mr-1 shrink-0"/> 
             {new Date(dateStr).toLocaleDateString('bn-BD')}
@@ -34,17 +28,15 @@ export const HistoryCard: React.FC<Props> = memo(({ item }) => {
         </div>
       </div>
       <div className="text-right shrink-0">
-        <div className="text-2xl font-bold" style={{ color: 'var(--dyn-primary)' }}>
+        <div className="text-primary text-2xl font-bold">
           {toBanglaDigit(item.score)}
-          <span className="text-sm" style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}>
+          <span className="text-text-secondary text-sm ml-1">
             /{toBanglaDigit(item.total_marks)}
           </span>
         </div>
         <button 
-          // এখানেই state পাস করা হয়েছে
           onClick={() => navigate(`/exam/analysis/${item.id}`, { state: item })}
-          className="text-xs hover:underline mt-1 transition-colors hover:opacity-80 active:scale-95" 
-          style={{ color: 'var(--dyn-primary)' }}
+          className="text-primary text-xs hover:underline mt-1 transition-colors hover:opacity-80 active:scale-95" 
           aria-label="বিস্তারিত দেখুন"
         >
           বিস্তারিত দেখুন

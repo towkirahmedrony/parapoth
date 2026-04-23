@@ -23,37 +23,27 @@ export const Button: React.FC<ButtonProps> = ({
     lg: "px-6 py-3 text-lg"
   };
 
-  // ডাইনামিক স্টাইল জেনারেটর
-  const getDynamicStyle = () => {
+  const getVariantClasses = () => {
     switch(variant) {
       case 'primary':
-        return { backgroundColor: 'var(--dyn-primary, #3b82f6)', color: '#ffffff' };
+        return 'bg-primary text-primary-foreground';
       case 'secondary':
-        return { 
-          backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)', 
-          color: 'var(--dyn-text)',
-          border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-        };
+        return 'bg-secondary text-text-primary border border-border-color';
       case 'outline':
-        return { 
-          backgroundColor: 'transparent', 
-          color: 'var(--dyn-primary, #3b82f6)',
-          border: '2px solid var(--dyn-primary, #3b82f6)'
-        };
+        return 'bg-transparent text-text-primary border-2 border-border-color hover:bg-surface';
       case 'danger':
-        return { backgroundColor: '#dc2626', color: '#ffffff' };
+        return 'bg-red-600 text-white hover:bg-red-700'; // Standard tailwind fallback for danger
       case 'ghost':
-        return { backgroundColor: 'transparent', color: 'inherit' };
+        return 'bg-transparent text-text-primary hover:bg-surface';
       default:
-        return {};
+        return '';
     }
   };
 
   return (
     <button 
-      className={`${baseStyle} ${sizes[size]} ${className}`} 
+      className={`${baseStyle} ${sizes[size]} ${getVariantClasses()} ${className}`} 
       disabled={isLoading || disabled}
-      style={getDynamicStyle()}
       {...props}
     >
       {isLoading ? 'Loading...' : children}

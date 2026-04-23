@@ -27,18 +27,18 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ referrerBonus, refereeBo
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-3 px-1 text-[var(--dyn-text)]">কীভাবে কাজ করে?</h3>
-      <div className="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar" style={{ scrollbarWidth: 'none' }}>
+      <h3 className="text-sm font-semibold mb-3 px-1 text-text-primary">কীভাবে কাজ করে?</h3>
+      <div className="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
         {steps.map((step, idx) => (
           <div 
             key={idx} 
-            className="min-w-[140px] flex-1 snap-start flex flex-col items-start p-4 rounded-xl bg-[var(--dyn-card)] border border-[color-mix(in_srgb,var(--dyn-text)_5%,transparent)]"
+            className="min-w-[140px] flex-1 snap-start flex flex-col items-start p-4 rounded-xl bg-card-bg border border-card-border"
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[color-mix(in_srgb,var(--dyn-primary)_10%,transparent)] text-[var(--dyn-primary)] mb-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-secondary text-primary mb-2">
               {step.icon}
             </div>
-            <h4 className="text-sm font-semibold text-[var(--dyn-text)] mb-0.5">{step.title}</h4>
-            <p className="text-xs text-[color-mix(in_srgb,var(--dyn-text)_60%,transparent)] leading-tight">
+            <h4 className="text-sm font-semibold text-text-primary mb-0.5">{step.title}</h4>
+            <p className="text-xs text-text-secondary leading-tight">
               {step.description}
             </p>
           </div>

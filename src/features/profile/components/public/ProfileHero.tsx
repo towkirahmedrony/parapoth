@@ -23,17 +23,8 @@ interface ProfileHeroProps {
 
 const ProfileHero: React.FC<ProfileHeroProps> = ({ profile, onChallenge, isOwnProfile = false }) => {
   return (
-    <div 
-      className="relative pb-8 pt-6 px-4 overflow-hidden rounded-b-[2rem] border-b"
-      style={{ 
-        backgroundColor: 'var(--dyn-bg)',
-        borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-      }}
-    >
-      <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-[80px] pointer-events-none"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)' }}
-      ></div>
+    <div className="relative pb-8 pt-6 px-4 overflow-hidden rounded-b-[2rem] border-b bg-app border-border-color">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-[80px] pointer-events-none bg-primary/15"></div>
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -41,39 +32,31 @@ const ProfileHero: React.FC<ProfileHeroProps> = ({ profile, onChallenge, isOwnPr
         className="flex flex-col items-center text-center relative z-10"
       >
         <div className="relative mb-4">
-          <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-[var(--dyn-primary)] to-[var(--dyn-accent)]">
+          <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-primary to-accent">
             <img 
               src={profile.avatar_url || '/avatars/default-avatar.webp'} 
               alt="Profile" 
-              className="w-full h-full rounded-full object-cover border-[3px]"
-              style={{ borderColor: 'var(--dyn-card)' }}
+              className="w-full h-full rounded-full object-cover border-[3px] border-card-bg"
             />
           </div>
-          <div 
-            className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold shadow-md flex items-center border"
-            style={{ 
-              backgroundColor: 'var(--dyn-card)',
-              borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-              color: 'var(--dyn-accent)'
-            }}
-          >
-            <Shield className="w-3 h-3 mr-1" style={{ fill: 'var(--dyn-accent)' }} />
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold shadow-md flex items-center border bg-card-bg border-border-color text-accent">
+            <Shield className="w-3 h-3 mr-1 fill-current" />
             <span className="font-['Hind_Siliguri']">Rating: {profile.pvp_rating || PROFILE_DEFAULTS.RATING}</span>
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold mb-1 font-['Hind_Siliguri']" style={{ color: 'var(--dyn-text)' }}>
+        <h1 className="text-2xl font-bold mb-1 font-['Hind_Siliguri'] text-text-primary">
           {profile.full_name || PROFILE_DEFAULTS.NAME}
         </h1>
 
         {/* 🟢 ডায়নামিক শিক্ষাপ্রতিষ্ঠান ও ক্লাস */}
         {(profile.institution || profile.class_level) && (
-          <p className="text-sm font-medium mb-1 font-['Hind_Siliguri']" style={{ color: 'var(--dyn-primary)' }}>
+          <p className="text-sm font-medium mb-1 font-['Hind_Siliguri'] text-primary">
             {profile.institution || ''} {profile.class_level ? `• ${profile.class_level}` : ''}
           </p>
         )}
 
-        <p className="text-sm mb-5 font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+        <p className="text-sm mb-5 font-['Hind_Siliguri'] text-text-secondary">
           {profile.batch_year ? `Batch ${profile.batch_year}` : ''} {profile.bio ? `• ${profile.bio}` : ''}
         </p>
 
@@ -82,12 +65,7 @@ const ProfileHero: React.FC<ProfileHeroProps> = ({ profile, onChallenge, isOwnPr
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onChallenge}
-            className="flex items-center gap-2 px-8 py-2.5 rounded-full font-bold shadow-lg transition-all font-['Hind_Siliguri']"
-            style={{ 
-              backgroundColor: 'var(--dyn-primary)', 
-              color: '#ffffff', 
-              boxShadow: '0 4px 14px 0 color-mix(in srgb, var(--dyn-primary) 40%, transparent)' 
-            }}
+            className="flex items-center gap-2 px-8 py-2.5 rounded-full font-bold shadow-lg transition-all font-['Hind_Siliguri'] bg-primary text-primary-foreground shadow-primary/40"
           >
             <Swords className="w-5 h-5" />
             ব্যাটল করুন ⚔️

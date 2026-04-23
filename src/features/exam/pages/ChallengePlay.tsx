@@ -112,7 +112,7 @@ export const ChallengePlay: React.FC = () => {
   // Render Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
+      <div className="min-h-screen flex items-center justify-center bg-app text-text-primary">
         <Loader />
       </div>
     );
@@ -121,14 +121,13 @@ export const ChallengePlay: React.FC = () => {
   // Render Error State
   if (isError || questions.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 text-center" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
-        <div className="p-6 rounded-xl max-w-sm w-full" style={{ backgroundColor: 'var(--dyn-card)' }}>
-          <p className="font-bold text-lg mb-4 text-red-500">চ্যালেঞ্জ লোড করা সম্ভব হয়নি।</p>
+      <div className="min-h-screen flex items-center justify-center p-4 text-center bg-app text-text-primary">
+        <div className="p-6 rounded-xl max-w-sm w-full bg-card-bg border border-card-border shadow-sm">
+          <p className="font-bold text-lg mb-4 text-accent">চ্যালেঞ্জ লোড করা সম্ভব হয়নি।</p>
           <button 
             type="button"
             onClick={() => navigate('/dashboard/home')} 
-            className="px-6 py-2 rounded-lg font-bold transition-opacity w-full"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)', color: 'var(--dyn-text)' }}
+            className="px-6 py-2 rounded-lg font-bold transition-opacity w-full bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             হোমে ফিরে যান
           </button>
@@ -140,25 +139,24 @@ export const ChallengePlay: React.FC = () => {
   // Render Finished State
   if (isFinished) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
-        <div className="p-8 rounded-2xl text-center shadow-lg w-full max-w-sm" style={{ backgroundColor: 'var(--dyn-card)' }}>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-app text-text-primary">
+        <div className="p-8 rounded-2xl text-center shadow-lg w-full max-w-sm bg-card-bg border border-card-border">
           <h2 className="text-2xl font-bold mb-4">চ্যালেঞ্জ সমাপ্ত! 🏆</h2>
           <div className="flex justify-between my-6 px-4">
             <div>
-              <p className="text-sm font-bold" style={{ color: 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }}>আপনার স্কোর</p>
-              <p className="text-4xl font-black mt-2" style={{ color: 'var(--dyn-primary)' }}>{challengerData.score}</p>
+              <p className="text-sm font-bold text-text-secondary">আপনার স্কোর</p>
+              <p className="text-4xl font-black mt-2 text-primary">{challengerData.score}</p>
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }}>{opponentData.name}</p>
-              <p className="text-4xl font-black mt-2" style={{ color: 'var(--dyn-accent)' }}>{opponentData.score}</p>
+              <p className="text-sm font-bold text-text-secondary">{opponentData.name}</p>
+              <p className="text-4xl font-black mt-2 text-accent">{opponentData.score}</p>
             </div>
           </div>
           <button 
             type="button"
             onClick={handleSubmitResult} 
             disabled={submitChallengeMutation.isPending}
-            className="px-6 py-4 rounded-xl font-bold w-full disabled:opacity-50 transition-all mt-4" 
-            style={{ backgroundColor: 'var(--dyn-primary)', color: 'var(--dyn-bg)' }}
+            className="px-6 py-4 rounded-xl font-bold w-full disabled:opacity-50 transition-all mt-4 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" 
           >
             {submitChallengeMutation.isPending ? 'সেভ হচ্ছে...' : 'রেজাল্ট সেভ করুন'}
           </button>
@@ -171,34 +169,33 @@ export const ChallengePlay: React.FC = () => {
   const currentQuestion = questions[currentQIndex];
 
   return (
-    <div className="min-h-screen flex flex-col relative pb-32" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
+    <div className="min-h-screen flex flex-col relative pb-32 bg-app text-text-primary">
       {/* Header */}
-      <div className="sticky top-0 z-30 shadow-sm transition-colors duration-300" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-bg) 95%, transparent)', borderBottom: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
+      <div className="sticky top-0 z-30 shadow-sm transition-colors duration-300 bg-surface border-b border-border-color">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="font-bold" style={{ color: 'var(--dyn-primary)' }}>আপনি: {challengerData.score}</div>
-          <div className="flex items-center gap-1 font-mono font-bold text-lg" style={{ color: timeLeft <= 5 ? 'var(--dyn-accent)' : 'var(--dyn-primary)' }}>
-            <Clock size={20} className={timeLeft <= 5 ? "animate-pulse" : ""} />
+          <div className="font-bold text-primary">আপনি: {challengerData.score}</div>
+          <div className={`flex items-center gap-1 font-mono font-bold text-lg ${timeLeft <= 5 ? 'text-accent animate-pulse' : 'text-primary'}`}>
+            <Clock size={20} />
             <span>{String(timeLeft).padStart(2, '0')}s</span>
           </div>
-          <div className="font-bold" style={{ color: 'var(--dyn-accent)' }}>{opponentData.name}: {opponentData.score}</div>
+          <div className="font-bold text-accent">{opponentData.name}: {opponentData.score}</div>
         </div>
       </div>
       
       {/* Question Content */}
       <div className="flex-1 p-4 w-full max-w-3xl mx-auto mt-4">
-        <h2 className="text-xl font-bold mb-8 leading-relaxed">{currentQuestion?.text}</h2>
+        <h2 className="text-xl font-bold mb-8 leading-relaxed text-text-primary">{currentQuestion?.text}</h2>
         <div className="space-y-4">
           {currentQuestion?.options.map((opt) => (
             <button 
               key={opt.id} 
               type="button"
               onClick={() => setSelectedOption(opt.id)}
-              className="w-full p-5 rounded-xl text-left font-medium transition-all duration-200"
-              style={{
-                backgroundColor: selectedOption === opt.id ? 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)' : 'var(--dyn-card)',
-                border: selectedOption === opt.id ? '2px solid var(--dyn-primary)' : '2px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                color: 'var(--dyn-text)'
-              }}
+              className={`w-full p-5 rounded-xl text-left font-medium transition-all duration-200 border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                selectedOption === opt.id 
+                  ? 'bg-surface-elevated border-border-color ring-2 ring-focus-ring text-text-primary' 
+                  : 'bg-card-bg border-card-border text-text-primary hover:bg-surface-elevated'
+              }`}
             >
               {opt.text}
             </button>
@@ -207,13 +204,12 @@ export const ChallengePlay: React.FC = () => {
       </div>
 
       {/* Footer Action */}
-      <div className="fixed bottom-0 left-0 w-full p-4 z-30" style={{ backgroundColor: 'var(--dyn-card)', borderTop: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
+      <div className="fixed bottom-0 left-0 w-full p-4 z-30 bg-surface border-t border-border-color">
         <div className="max-w-3xl mx-auto flex justify-end">
           <button 
             type="button"
             onClick={handleNext} 
-            className="px-8 py-4 font-bold rounded-xl flex gap-2 items-center transition-all active:scale-95" 
-            style={{ backgroundColor: 'var(--dyn-primary)', color: 'var(--dyn-bg)' }}
+            className="px-8 py-4 font-bold rounded-xl flex gap-2 items-center transition-all active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" 
           >
             পরবর্তী <ChevronRight size={20} />
           </button>

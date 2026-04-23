@@ -1,1 +1,0 @@
-import{j as n}from"./query-vendor-e5DHZMrM.js";const s=({className:r="",...t})=>n.jsx("input",{className:`w-full px-4 py-2 rounded-lg transition-all focus:outline-none ${r}`,style:{backgroundColor:"color-mix(in srgb, var(--dyn-text) 5%, transparent)",border:"1px solid color-mix(in srgb, var(--dyn-text) 20%, transparent)",color:"var(--dyn-text, #0f172a)"},...t});export{s as I};

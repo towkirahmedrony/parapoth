@@ -16,7 +16,7 @@ export const MainLayout: React.FC = () => {
   }, [user?.id]);
 
   return (
-    <div className="flex h-screen overflow-hidden transition-colors duration-500 bg-dyn-bg text-dyn-text">
+    <div className="flex h-screen overflow-hidden transition-colors duration-500 bg-app text-text-primary">
       <Sidebar />
       <div className="flex-1 flex flex-col w-full relative">
         <Header />
@@ -27,7 +27,7 @@ export const MainLayout: React.FC = () => {
             </Suspense>
           </div>
         </main>
-        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-dyn-card">
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-nav-bg">
           <BottomNav />
         </div>
       </div>

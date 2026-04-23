@@ -24,32 +24,19 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, on
   return (
     <div 
       onClick={() => onClick(item)}
-      className="relative group flex gap-4 p-4 rounded-xl border transition-all active:scale-[0.99] cursor-pointer shadow-sm"
-      style={{
-        backgroundColor: isRead ? 'color-mix(in srgb, var(--dyn-text) 3%, transparent)' : 'var(--dyn-card)',
-        borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-        color: isRead ? 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' : 'var(--dyn-text)'
-      }}
+      className={`relative group flex gap-4 p-4 rounded-xl border transition-all active:scale-[0.99] cursor-pointer shadow-sm border-border-color ${
+        isRead ? 'bg-surface text-text-secondary' : 'bg-card-bg text-text-primary'
+      }`}
     >
       <div className="shrink-0">
         {item.image_url ? (
           <img 
             src={item.image_url} 
             alt="icon" 
-            className="w-10 h-10 rounded-full object-cover border"
-            style={{ 
-              borderColor: 'color-mix(in srgb, var(--dyn-text) 15%, transparent)',
-              backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' 
-            }}
+            className="w-10 h-10 rounded-full object-cover border border-border-color bg-secondary"
           />
         ) : (
-          <div 
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)',
-              color: 'var(--dyn-primary)'
-            }}
-          >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary">
             {activeTab === 'notifications' ? <Bell size={20} /> : <Megaphone size={20} />}
           </div>
         )}
@@ -57,38 +44,23 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, on
 
       <div className="flex-1 space-y-1">
         <div className="flex justify-between items-start">
-          <h3 
-            className={`text-sm ${isRead ? 'font-medium' : 'font-bold'}`}
-            style={{ color: isRead ? 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' : 'var(--dyn-text)' }}
-          >
+          <h3 className={`text-sm ${isRead ? 'font-medium text-text-secondary' : 'font-bold text-text-primary'}`}>
             {item.title_bn || item.title_en}
           </h3>
           {!isRead && (
-            <span 
-              className="w-2 h-2 rounded-full mt-1.5 animate-pulse" 
-              style={{ backgroundColor: 'var(--dyn-accent)' }} 
-            />
+            <span className="w-2 h-2 rounded-full mt-1.5 animate-pulse bg-accent" />
           )}
         </div>
-        <p 
-          className="text-xs leading-relaxed line-clamp-2"
-          style={{ color: isRead ? 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' : 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }}
-        >
+        <p className={`text-xs leading-relaxed line-clamp-2 ${isRead ? 'text-text-secondary/80' : 'text-text-secondary'}`}>
           {item.body_bn || item.body_en}
         </p>
         <div className="flex items-center gap-3 pt-1">
-          <div 
-            className="flex items-center gap-1"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
-          >
+          <div className="flex items-center gap-1 text-text-secondary opacity-80">
             <Clock size={12} />
             <span className="text-[10px]">{formatTime(item.created_at)}</span>
           </div>
           {item.action_link && (
-            <div 
-              className="flex items-center gap-1 text-[10px] hover:underline"
-              style={{ color: 'var(--dyn-primary)' }}
-            >
+            <div className="flex items-center gap-1 text-[10px] text-primary hover:underline">
               <span>ভিজিট করুন</span>
               <ExternalLink size={10} />
             </div>
@@ -96,10 +68,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, on
         </div>
       </div>
 
-      <div 
-        className="flex items-center justify-center"
-        style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }}
-      >
+      <div className="flex items-center justify-center text-text-secondary opacity-60">
         <ChevronRight size={16} />
       </div>
     </div>

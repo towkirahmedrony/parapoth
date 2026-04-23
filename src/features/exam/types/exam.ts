@@ -41,7 +41,7 @@ export interface ExamState {
 }
 
 export interface ExamResultData {
-  exam_id: string; // 🌟 এটি যুক্ত করা হয়েছে
+  exam_id: string;
   totalQuestions: number;
   correctCount: number;
   wrongCount: number;
@@ -58,6 +58,8 @@ export interface QuestionPayload {
 }
 
 export interface ExamResultPayload {
+  id: string;          // 🌟 Analysis.tsx এর জন্য যোগ করা হয়েছে
+  exam_id?: string;    // 🌟 ব্যাকএন্ড থেকে আসলে কাজে লাগবে
   score: number;
   total_marks: number;
   correct_count: number;
@@ -65,8 +67,9 @@ export interface ExamResultPayload {
   skipped_count: number;
   time_taken: number;
   details_json: {
-    questions: QuestionPayload[];
+    questions: Question[]; // 🌟 QuestionPayload[] এর বদলে Question[] দেওয়া হয়েছে
     userAnswers: Record<string, string>;
+    bookmarked_ids?: string[]; // 🌟 বুকমার্কের জন্য যোগ করা হয়েছে
   };
 }
 

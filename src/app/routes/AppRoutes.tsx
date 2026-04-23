@@ -19,6 +19,7 @@ import Selection from '@/features/exam/pages/Selection';
 // ২. বাকি পেজগুলো (Lazy Loaded - মেমোরি বাঁচানোর জন্য)
 // ==========================================
 const Streak = lazy(() => import('@/features/dashboard/pages/Streak'));
+const Marketplace = lazy(() => import('@/features/economy/pages/Marketplace'));
 const Login = lazy(() => import('@/features/auth/pages/Login'));
 const Register = lazy(() => import('@/features/auth/pages/Register'));
 const ForgotPassword = lazy(() => import('@/features/auth/pages/ForgotPassword'));
@@ -92,7 +93,10 @@ const AppRoutes: React.FC = () => {
         <Route path="/exam/live" element={<PermissionGuard><Arena /></PermissionGuard>} />
         <Route path="/exam/live/:subjectSlug" element={<PermissionGuard><Arena /></PermissionGuard>} />
 
+        {/* 👇 এখানে Analysis এর জন্য ২ টি রাউট দেওয়া হয়েছে যাতে id ছাড়াও কাজ করে 👇 */}
+        <Route path="/exam/analysis" element={<PermissionGuard><Analysis /></PermissionGuard>} />
         <Route path="/exam/analysis/:id" element={<PermissionGuard><Analysis /></PermissionGuard>} />
+        
         <Route path="/exam/challenge-play" element={<PermissionGuard><ChallengePlay /></PermissionGuard>} />
 
         {/* প্যারা সাথী AI ফুলস্ক্রিন রাউট */}
@@ -118,6 +122,7 @@ const AppRoutes: React.FC = () => {
           <Route path="dashboard/home" element={<Home />} />
           <Route path="dashboard/streak" element={<Streak />} />
           <Route path="dashboard/leaderboard" element={<Leaderboard />} />
+          <Route path="dashboard/marketplace" element={<Marketplace />} />
           <Route path="progress" element={<Progress />} />
 
           <Route path="quests" element={<Placeholder title="ডেইলি কোয়েস্ট (Missions)" />} />

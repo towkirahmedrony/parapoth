@@ -4,30 +4,34 @@ import { ArrowLeft, LucideIcon } from 'lucide-react';
 interface ExamHeaderProps {
   title: string;
   icon?: LucideIcon;
-  iconColor?: string; // Optional: Could be replaced by dynamic vars in parent
+  iconColor?: string;
   onBack: () => void;
+  rightContent?: React.ReactNode;
 }
 
-const ExamHeader: React.FC<ExamHeaderProps> = ({ title, icon: Icon, iconColor, onBack }) => {
+const ExamHeader: React.FC<ExamHeaderProps> = ({ title, icon: Icon, iconColor, onBack, rightContent }) => {
   return (
-    <div className="sticky top-0 z-20 backdrop-blur-md px-4 py-3 flex items-center gap-3 transition-colors"
-         style={{ 
-           backgroundColor: 'color-mix(in srgb, var(--dyn-card) 95%, transparent)', 
-           borderBottom: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-         }}>
-      <button 
-        onClick={onBack}
-        className="p-2 -ml-2 rounded-full transition-colors"
-        style={{ color: 'var(--dyn-text)' }}
-      >
-        <ArrowLeft size={20} />
-      </button>
-      <div className="flex items-center gap-2">
-        {Icon && <Icon size={18} className={iconColor} />}
-        <span className="font-['Hind_Siliguri'] font-medium text-lg" style={{ color: 'var(--dyn-text)' }}>
-          {title}
-        </span>
+    <div className="sticky top-0 z-40 backdrop-blur-xl px-4 py-3 flex items-center justify-between transition-colors shadow-sm bg-surface-elevated border-b border-border-color">
+      <div className="flex items-center gap-3">
+        <button 
+          onClick={onBack}
+          className="p-2 -ml-2 rounded-full transition-opacity hover:opacity-70 active:scale-95 text-text-primary"
+        >
+          <ArrowLeft size={22} />
+        </button>
+        <div className="flex items-center gap-2 text-text-primary">
+          {Icon && <Icon size={18} className={iconColor} />}
+          <span className="font-['Hind_Siliguri'] font-semibold text-lg">
+            {title}
+          </span>
+        </div>
       </div>
+      
+      {rightContent && (
+        <div className="flex items-center">
+          {rightContent}
+        </div>
+      )}
     </div>
   );
 };

@@ -5,22 +5,58 @@
 @tailwind utilities;
 
 @layer base {
-  /* --- Theme Variables (Default Fallbacks) --- */
+  /* --- Semantic Theme Variables (Default Fallbacks) --- */
   :root {
-    --dyn-bg: #F8FAFC;
-    --dyn-card: #FFFFFF;
-    --dyn-text: #0F172A;
-    --dyn-primary: #2563EB;
-    --dyn-accent: #4F46E5;
+    --bg-app: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-surface-elevated: #FFFFFF;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --border-color: #E2E8F0;
+    --input-bg: #FFFFFF;
+    --input-border: #CBD5E1;
+    --primary: #2563EB;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F1F5F9;
+    --accent: #4F46E5;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #0EA5E9;
+    --nav-bg: #FFFFFF;
+    --nav-text: #64748B;
+    --card-bg: #FFFFFF;
+    --card-border: #E2E8F0;
+    --badge-bg: #DBEAFE;
+    --badge-text: #1E40AF;
+    --focus-ring: #93C5FD;
     color-scheme: light;
   }
 
   .dark {
-    --dyn-bg: #0F172A;
-    --dyn-card: #1E293B;
-    --dyn-text: #F8FAFC;
-    --dyn-primary: #3B82F6;
-    --dyn-accent: #6366F1;
+    --bg-app: #0F1115;
+    --bg-surface: #1E293B;
+    --bg-surface-elevated: #334155;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --border-color: #334155;
+    --input-bg: #0F172A;
+    --input-border: #475569;
+    --primary: #3B82F6;
+    --primary-foreground: #FFFFFF;
+    --secondary: #1E293B;
+    --accent: #6366F1;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #0EA5E9;
+    --nav-bg: #1E293B;
+    --nav-text: #94A3B8;
+    --card-bg: #1E293B;
+    --card-border: #334155;
+    --badge-bg: #1E3A8A;
+    --badge-text: #DBEAFE;
+    --focus-ring: #3B82F6;
     color-scheme: dark;
   }
 
@@ -28,61 +64,30 @@
   body,
   #root {
     min-height: 100%;
-    background-color: var(--dyn-bg);
-    color: var(--dyn-text);
+    background-color: var(--bg-app);
+    color: var(--text-primary);
   }
 
   body {
-    /* Keep startup paint stable. Avoid animating theme colors during initial load. */
-    @apply bg-dyn-bg text-dyn-text font-sans;
+    @apply bg-app text-text-primary font-sans;
   }
 }
 
 @layer components {
-  /* --- Feature Grid Custom Classes --- */
-  .feature-item {
-    @apply flex flex-col items-center justify-center gap-2 transition-transform active:scale-95 p-2 rounded-2xl bg-dyn-card border border-slate-200/50 dark:border-slate-700/50 shadow-sm hover:brightness-95 dark:hover:brightness-110;
-  }
-
-  .feature-img {
-    @apply w-24 h-24 object-contain drop-shadow-md rounded-2xl;
-  }
-
-  .feature-text {
-    @apply text-dyn-text font-bold text-sm font-['Hind_Siliguri'] text-center mt-1;
-  }
-
-  /* --- Global Text Helpers --- */
+  /* Shared Base Helpers */
   .page-title {
-    @apply text-2xl font-bold text-dyn-text font-['Hind_Siliguri'];
+    @apply text-2xl font-bold text-text-primary font-['Hind_Siliguri'];
   }
-
   .page-subtitle {
-    @apply opacity-80 text-dyn-text font-['Hind_Siliguri'];
-  }
-
-  /* --- Bottom Navigation Bar --- */
-  .bottom-nav-container {
-    @apply fixed bottom-0 left-0 right-0 z-50 h-16 bg-dyn-card shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)];
+    @apply text-text-secondary font-['Hind_Siliguri'];
   }
 }
 
-/* --- Utilities (Scrollbar & Animation) --- */
+/* Utilities */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
 }

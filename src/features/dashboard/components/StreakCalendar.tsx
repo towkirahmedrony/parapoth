@@ -2,7 +2,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Flame, Snowflake } from 'lucide-react';
 
-// Assuming you have this interface somewhere, or keep it local
 export interface DailyActivity {
   activity_date: string;
   exams_taken?: number;
@@ -28,8 +27,6 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
   const [currentDate, setCurrentDate] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1)
   );
-
-  const fireColor = '#FF6B00';
 
   // Memoize activity map for O(1) lookups. Handles timezone safely.
   const activityMap = useMemo(() => {
@@ -90,31 +87,13 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
     return { hasTakenExam, hasUsedFreeze, isFuture, dateStr };
   };
 
-  const getNumberColor = (hasTakenExam: boolean, hasUsedFreeze: boolean) => {
-    if (hasTakenExam) return fireColor;
-    if (hasUsedFreeze) return 'var(--dyn-accent)';
-    return 'color-mix(in srgb, var(--dyn-text) 70%, transparent)';
-  };
-
   return (
-    <div
-      className="rounded-2xl p-5 sm:p-6 shadow-sm"
-      style={{
-        backgroundColor: 'var(--dyn-card)',
-        border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-      }}
-    >
+    <div className="rounded-2xl p-5 sm:p-6 shadow-sm bg-card-bg border border-card-border">
       {/* Header Controls */}
       <div className="flex items-center justify-between mb-6">
-        <h3
-          className="text-xl font-bold flex items-center gap-2 py-1 leading-normal"
-          style={{ color: 'var(--dyn-text)' }}
-        >
+        <h3 className="text-xl font-bold flex items-center gap-2 py-1 leading-normal text-text-primary">
           {MONTHS[month]}{' '}
-          <span
-            className="font-medium"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-          >
+          <span className="font-medium text-text-secondary">
             {toBn(year)}
           </span>
         </h3>
@@ -122,8 +101,7 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevMonth}
-            className="p-2 rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
+            className="p-2 rounded-full transition-colors text-text-secondary hover:bg-surface-elevated hover:text-text-primary"
             aria-label="Previous Month"
           >
             <ChevronLeft size={20} />
@@ -134,12 +112,9 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
             disabled={isCurrentMonth}
             className={`p-2 rounded-full transition-colors ${
               isCurrentMonth
-                ? 'cursor-not-allowed opacity-50'
-                : 'hover:bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]'
+                ? 'cursor-not-allowed opacity-50 text-text-secondary'
+                : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
             }`}
-            style={{
-              color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)',
-            }}
             aria-label="Next Month"
           >
             <ChevronRight size={20} />
@@ -152,8 +127,7 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
         {DAYS.map((day) => (
           <div
             key={day}
-            className="text-center text-[10px] sm:text-xs font-semibold py-2 leading-normal whitespace-nowrap"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
+            className="text-center text-[10px] sm:text-xs font-semibold py-2 leading-normal whitespace-nowrap text-text-secondary"
           >
             {day}
           </div>
@@ -169,7 +143,21 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
         {days.map((day) => {
           const { hasTakenExam, hasUsedFreeze, isFuture, dateStr } = getCellState(day);
           const isToday = isCurrentMonth && day === today.getDate();
-          const numberColor = getNumberColor(hasTakenExam, hasUsedFreeze);
+
+          // Determine semantic classes based on cell state
+          let cellBgClass = 'bg-surface hover:bg-surface-elevated';
+          let cellShadowClass = '';
+          let numberTextColor = 'text-text-secondary';
+
+          if (isFuture) {
+            cellBgClass = 'bg-transparent';
+          } else if (hasTakenExam) {
+            cellShadowClass = 'shadow-[0_0_15px_rgba(255,107,0,0.3)]';
+            numberTextColor = 'text-[#FF6B00]';
+          } else if (hasUsedFreeze) {
+            cellBgClass = 'bg-secondary';
+            numberTextColor = 'text-primary';
+          }
 
           return (
             <div
@@ -187,27 +175,15 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
               }
               className={`
                 aspect-square rounded-xl relative transition-all duration-300
-                flex items-center justify-center
-                ${isFuture ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]'}
+                flex items-center justify-center overflow-hidden
+                ${isFuture ? 'opacity-30 cursor-not-allowed' : ''}
+                ${cellBgClass}
+                ${cellShadowClass}
+                ${isToday ? 'ring-2 ring-[#FF6B00] ring-offset-2 ring-offset-card-bg' : ''}
               `}
-              style={{
-                backgroundColor: isFuture
-                  ? 'transparent'
-                  : hasUsedFreeze
-                    ? 'color-mix(in srgb, var(--dyn-accent) 15%, transparent)'
-                    : 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                outline: isToday ? `2px solid ${fireColor}` : 'none',
-                outlineOffset: isToday ? '2px' : '0px',
-                boxShadow: hasTakenExam
-                  ? `0 0 15px color-mix(in srgb, ${fireColor} 30%, transparent)`
-                  : hasUsedFreeze
-                    ? '0 0 15px color-mix(in srgb, var(--dyn-accent) 30%, transparent)'
-                    : 'none',
-                overflow: 'hidden',
-              }}
             >
               {/* Day Number */}
-              <div className="relative z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center">
+              <div className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center ${numberTextColor}`}>
                 <svg
                   viewBox="0 0 32 32"
                   className="w-7 h-7 sm:w-8 sm:h-8"
@@ -218,7 +194,7 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
                     y="19"
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill={numberColor}
+                    fill="currentColor"
                     style={{
                       fontSize: '18px',
                       fontWeight: 600,
@@ -236,28 +212,17 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
                   {hasTakenExam ? (
                     <Flame
                       size={28}
-                      className="scale-110"
-                      style={{
-                        color: fireColor,
-                        fill: fireColor,
-                        filter: `drop-shadow(0 0 8px ${fireColor})`,
-                      }}
+                      className="scale-110 text-[#FF6B00] fill-[#FF6B00] drop-shadow-[0_0_8px_rgba(255,107,0,1)]"
                     />
                   ) : hasUsedFreeze ? (
                     <Snowflake
                       size={26}
-                      className="scale-110"
-                      style={{
-                        color: 'var(--dyn-accent)',
-                        fill: 'var(--dyn-accent)',
-                        filter: 'drop-shadow(0 0 8px var(--dyn-accent))',
-                      }}
+                      className="scale-110 text-primary fill-primary drop-shadow-md"
                     />
                   ) : (
                     <Flame
                       size={28}
-                      className="grayscale"
-                      style={{ color: 'color-mix(in srgb, var(--dyn-text) 30%, transparent)' }}
+                      className="grayscale text-text-secondary"
                     />
                   )}
                 </div>
@@ -268,44 +233,19 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
       </div>
 
       {/* Legend Footer */}
-      <div
-        className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-8 pt-4 border-t text-sm leading-normal"
-        style={{
-          borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-          color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)',
-        }}
-      >
+      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-8 pt-4 border-t border-border-color text-sm leading-normal text-text-secondary">
         <div className="flex items-center gap-2 py-1">
-          <Flame
-            size={16}
-            className="grayscale opacity-50"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }}
-          />
+          <Flame size={16} className="grayscale opacity-50 text-text-secondary" />
           <span>মিস করেছেন</span>
         </div>
 
         <div className="flex items-center gap-2 py-1">
-          <Snowflake
-            size={16}
-            style={{
-              color: 'var(--dyn-accent)',
-              fill: 'var(--dyn-accent)',
-              filter:
-                'drop-shadow(0 0 4px color-mix(in srgb, var(--dyn-accent) 50%, transparent))',
-            }}
-          />
+          <Snowflake size={16} className="text-primary fill-primary drop-shadow-sm" />
           <span>ফ্রিজ ব্যবহার</span>
         </div>
 
         <div className="flex items-center gap-2 py-1">
-          <Flame
-            size={16}
-            style={{
-              color: fireColor,
-              fill: fireColor,
-              filter: `drop-shadow(0 0 4px color-mix(in srgb, ${fireColor} 50%, transparent))`,
-            }}
-          />
+          <Flame size={16} className="text-[#FF6B00] fill-[#FF6B00] drop-shadow-sm" />
           <span>পরীক্ষা দিয়েছেন</span>
         </div>
       </div>

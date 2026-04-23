@@ -29,7 +29,7 @@ const UserProfile: React.FC = () => {
   const user: any = profileData || authUser;
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-300 pb-24">
+    <div className="container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-300 pb-24 bg-app text-text-primary">
       
       {/* Profile Header */}
       <ProfileHeader 

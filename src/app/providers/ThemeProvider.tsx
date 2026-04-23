@@ -4,7 +4,6 @@ import {
   useCallback,
   useMemo,
   useLayoutEffect,
-  useRef,
   type ReactNode,
 } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -17,21 +16,30 @@ import { STORAGE_KEYS } from '@/shared/constants/storageKeys';
 
 export type Theme = 'dark' | 'light' | 'system';
 
-type ThemeColors = {
-  primaryBackground?: string;
-  cardBackground?: string;
-  cardColor?: string;
-  textColor?: string;
-  buttonColor?: string;
-  accentColor?: string;
-};
-
-type RequiredThemeColors = {
-  primaryBackground: string;
-  cardBackground: string;
-  textColor: string;
-  buttonColor: string;
-  accentColor: string;
+export type ThemeColors = {
+  bgApp?: string;
+  bgSurface?: string;
+  bgSurfaceElevated?: string;
+  textPrimary?: string;
+  textSecondary?: string;
+  borderColor?: string;
+  inputBg?: string;
+  inputBorder?: string;
+  primary?: string;
+  primaryForeground?: string;
+  secondary?: string;
+  accent?: string;
+  success?: string;
+  warning?: string;
+  danger?: string;
+  info?: string;
+  navBg?: string;
+  navText?: string;
+  cardBg?: string;
+  cardBorder?: string;
+  badgeBg?: string;
+  badgeText?: string;
+  focusRing?: string;
 };
 
 type GlobalThemeConfig = {
@@ -43,8 +51,6 @@ type GlobalThemeConfig = {
   active_theme?: string | null;
   bgType?: string | null;
   bgMediaUrl?: string | null;
-  show_special_banner?: boolean | null;
-  special_banner_text?: string | null;
 };
 
 type ThemeProviderState = {
@@ -63,26 +69,9 @@ const initialState: ThemeProviderState = {
 
 export const ThemeContext = createContext<ThemeProviderState>(initialState);
 
-type ThemeProviderProps = {
-  children: ReactNode;
-};
-
-const THEME_PRESET_CLASS_PREFIX = 'theme-';
-
-function removeThemePresetClasses(root: HTMLElement) {
-  const presetClasses = Array.from(root.classList).filter((className) =>
-    className.startsWith(THEME_PRESET_CLASS_PREFIX)
-  );
-
-  if (presetClasses.length > 0) {
-    root.classList.remove(...presetClasses);
-  }
-}
-
 function getResolvedMode(theme: Theme): 'light' | 'dark' {
   if (theme === 'dark') return 'dark';
   if (theme === 'light') return 'light';
-
   if (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
@@ -90,121 +79,115 @@ function getResolvedMode(theme: Theme): 'light' | 'dark' {
   ) {
     return 'dark';
   }
-
   return 'light';
 }
 
-function getFallbackDynamicColors(mode: 'light' | 'dark'): RequiredThemeColors {
+function getFallbackSemanticColors(mode: 'light' | 'dark'): Required<ThemeColors> {
   return mode === 'dark'
     ? {
-        primaryBackground: '#0F1115',
-        cardBackground: '#1E293B',
-        textColor: '#F8FAFC',
-        buttonColor: '#3B82F6',
-        accentColor: '#6366F1',
+        bgApp: '#0F1115',
+        bgSurface: '#1E293B',
+        bgSurfaceElevated: '#334155',
+        textPrimary: '#F8FAFC',
+        textSecondary: '#94A3B8',
+        borderColor: '#334155',
+        inputBg: '#0F172A',
+        inputBorder: '#475569',
+        primary: '#3B82F6',
+        primaryForeground: '#FFFFFF',
+        secondary: '#1E293B',
+        accent: '#6366F1',
+        success: '#10B981',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        info: '#0EA5E9',
+        navBg: '#1E293B',
+        navText: '#94A3B8',
+        cardBg: '#1E293B',
+        cardBorder: '#334155',
+        badgeBg: '#1E3A8A',
+        badgeText: '#DBEAFE',
+        focusRing: '#3B82F6',
       }
     : {
-        primaryBackground: '#F8FAFC',
-        cardBackground: '#FFFFFF',
-        textColor: '#0F172A',
-        buttonColor: '#2563EB',
-        accentColor: '#4F46E5',
+        bgApp: '#F8FAFC',
+        bgSurface: '#FFFFFF',
+        bgSurfaceElevated: '#FFFFFF',
+        textPrimary: '#0F172A',
+        textSecondary: '#64748B',
+        borderColor: '#E2E8F0',
+        inputBg: '#FFFFFF',
+        inputBorder: '#CBD5E1',
+        primary: '#2563EB',
+        primaryForeground: '#FFFFFF',
+        secondary: '#F1F5F9',
+        accent: '#4F46E5',
+        success: '#10B981',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        info: '#0EA5E9',
+        navBg: '#FFFFFF',
+        navText: '#64748B',
+        cardBg: '#FFFFFF',
+        cardBorder: '#E2E8F0',
+        badgeBg: '#DBEAFE',
+        badgeText: '#1E40AF',
+        focusRing: '#93C5FD',
       };
 }
 
-function normalizeThemeColors(
-  colors: ThemeColors | null | undefined,
-  fallback: RequiredThemeColors
-): RequiredThemeColors {
-  return {
-    primaryBackground: colors?.primaryBackground?.trim() || fallback.primaryBackground,
-    cardBackground:
-      colors?.cardBackground?.trim() || colors?.cardColor?.trim() || fallback.cardBackground,
-    textColor: colors?.textColor?.trim() || fallback.textColor,
-    buttonColor: colors?.buttonColor?.trim() || fallback.buttonColor,
-    accentColor: colors?.accentColor?.trim() || fallback.accentColor,
-  };
+function extractColorsForMode(configColors: GlobalThemeConfig['colors'], mode: 'light' | 'dark'): ThemeColors | null {
+  if (!configColors) return null;
+  if ('dark' in configColors || 'light' in configColors || 'default' in configColors) {
+    const structured = configColors as { dark?: ThemeColors; light?: ThemeColors; default?: ThemeColors };
+    if (mode === 'dark' && structured.dark) return structured.dark;
+    if (mode === 'light' && structured.light) return structured.light;
+    if (structured.default) return structured.default;
+    return null;
+  }
+  if (mode === 'dark') return null; // Fallback to local dark mode if API only gave flat light colors
+  return configColors as ThemeColors;
 }
 
-function extractColorsForMode(configColors: GlobalThemeConfig['colors'], mode: 'light' | 'dark'): ThemeColors | null | undefined {
-    if (!configColors) return null;
-
-    if ('dark' in configColors || 'light' in configColors || 'default' in configColors) {
-        const structuredColors = configColors as { dark?: ThemeColors; light?: ThemeColors; default?: ThemeColors };
-        
-        if (mode === 'dark' && structuredColors.dark) return structuredColors.dark;
-        if (mode === 'light' && structuredColors.light) return structuredColors.light;
-        if (structuredColors.default) return structuredColors.default;
-        
-        return null;
-    }
-
-    // FIX: If the API sends a flat structure (usually light colors) but the user is in dark mode,
-    // we ignore the API colors so the app falls back to the default dark theme!
-    if (mode === 'dark') {
-        return null; 
-    }
-
-    return configColors as ThemeColors;
+function toKebabCase(str: string): string {
+  return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
 }
 
-
-function applyResolvedThemeToDom(
-  theme: Theme,
-  config?: GlobalThemeConfig | null
-) {
+function applyResolvedThemeToDom(theme: Theme, config?: GlobalThemeConfig | null) {
   if (typeof window === 'undefined') return;
 
   const root = window.document.documentElement;
   const body = window.document.body;
-  const reactRoot = window.document.getElementById('root');
-  
-  const colors = config?.colors;
-  const bgType = config?.bgType;
-  const bgMediaUrl = config?.bgMediaUrl;
-
   const resolvedMode = getResolvedMode(theme);
 
   root.classList.remove('light', 'dark');
   root.classList.add(resolvedMode);
   root.style.colorScheme = resolvedMode;
 
-  const fallbackColors = getFallbackDynamicColors(resolvedMode);
-  let activeColors: RequiredThemeColors;
+  const fallbackColors = getFallbackSemanticColors(resolvedMode);
+  const apiColors = extractColorsForMode(config?.colors, resolvedMode);
 
-  const modeSpecificColors = extractColorsForMode(colors, resolvedMode);
+  const activeColors = { ...fallbackColors, ...apiColors };
 
-  if (modeSpecificColors) {
-     activeColors = normalizeThemeColors(modeSpecificColors, fallbackColors);
-  } else {
-     activeColors = fallbackColors;
-  }
+  // Set CSS variables dynamically
+  Object.entries(activeColors).forEach(([key, value]) => {
+    if (value) {
+      root.style.setProperty(`--${toKebabCase(key)}`, value as string);
+    }
+  });
 
-  root.style.setProperty('--dyn-bg', activeColors.primaryBackground);
-  root.style.setProperty('--dyn-card', activeColors.cardBackground);
-  root.style.setProperty('--dyn-text', activeColors.textColor);
-  root.style.setProperty('--dyn-primary', activeColors.buttonColor);
-  root.style.setProperty('--dyn-accent', activeColors.accentColor);
-
-  let bgImage = 'none';
-  if (bgType === 'image' && bgMediaUrl) {
-    bgImage = `url("${bgMediaUrl}")`;
-  }
-
-  root.style.backgroundColor = activeColors.primaryBackground;
-  
+  // Background implementations
   if (body) {
-    body.style.backgroundColor = activeColors.primaryBackground;
+    let bgImage = 'none';
+    if (config?.bgType === 'image' && config.bgMediaUrl) {
+      bgImage = `url("${config.bgMediaUrl}")`;
+    }
+    body.style.backgroundColor = activeColors.bgApp;
     body.style.backgroundImage = bgImage;
     body.style.backgroundSize = 'cover';
     body.style.backgroundPosition = 'center';
     body.style.backgroundAttachment = 'fixed';
-    body.style.color = activeColors.textColor;
-  }
-  
-  if (reactRoot) {
-    reactRoot.style.backgroundColor = 'transparent';
-    reactRoot.style.color = activeColors.textColor;
+    body.style.color = activeColors.textPrimary;
   }
 
   if (config) {
@@ -212,145 +195,70 @@ function applyResolvedThemeToDom(
   }
 }
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [theme, setThemeState] = useLocalStorage<Theme>(STORAGE_KEYS.THEME, 'system');
-
-  const rafRef = useRef<number | null>(null);
-  const timeoutRef = useRef<number | null>(null);
 
   const { data: globalConfig = null } = useQuery<GlobalThemeConfig | null>({
     queryKey: ['theme-config'],
     queryFn: async () => {
-      const response = await apiClient.get('/system/theme-config');
-      const rawData = response.data?.data;
-      
-      const parsedData = rawData?.value ? rawData.value : rawData;
-      return (parsedData as GlobalThemeConfig | null) ?? null;
+      const res = await apiClient.get('/system/theme-config');
+      return (res.data?.data?.value ?? res.data?.data ?? null) as GlobalThemeConfig | null;
     },
-    staleTime: 1000 * 15, 
+    staleTime: 1000 * 15,
     refetchOnWindowFocus: true,
-    retry: 1,
   });
 
-  const syncThemeToDom = useCallback(
-    (nextTheme: Theme) => {
-      const cachedConfig = StorageUtils.get(STORAGE_KEYS.DYN_THEME_CONFIG) as GlobalThemeConfig | null;
-      const configSource = globalConfig ?? cachedConfig;
-      applyResolvedThemeToDom(nextTheme, configSource);
-    },
-    [globalConfig]
-  );
+  const syncThemeToDom = useCallback((nextTheme: Theme) => {
+    const cachedConfig = StorageUtils.get(STORAGE_KEYS.DYN_THEME_CONFIG) as GlobalThemeConfig | null;
+    applyResolvedThemeToDom(nextTheme, globalConfig ?? cachedConfig);
+  }, [globalConfig]);
 
   useEffect(() => {
     const fetchUserTheme = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('settings')
-        .eq('id', session.user.id)
-        .single();
-
+      const { data } = await supabase.from('profiles').select('settings').eq('id', session.user.id).single();
       if (data?.settings && typeof data.settings === 'object') {
         const dbTheme = (data.settings as Record<string, unknown>).theme;
-        if (dbTheme && ['light', 'dark', 'system'].includes(dbTheme as string)) {
+        if (['light', 'dark', 'system'].includes(dbTheme as string)) {
           setThemeState(dbTheme as Theme);
         }
       }
     };
     void fetchUserTheme();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) void fetchUserTheme();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') void fetchUserTheme();
     });
     return () => subscription.unsubscribe();
   }, [setThemeState]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    removeThemePresetClasses(window.document.documentElement);
-    const activeThemePreset = globalConfig?.active_theme;
-    if (activeThemePreset && activeThemePreset !== 'default') {
-      window.document.documentElement.classList.add(`${THEME_PRESET_CLASS_PREFIX}${activeThemePreset}`);
-    }
-  }, [globalConfig?.active_theme]);
-
   useLayoutEffect(() => {
     syncThemeToDom(theme);
-  }, [theme, location.pathname, location.key, syncThemeToDom]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    syncThemeToDom(theme);
-
-    const localRafId = window.requestAnimationFrame(() => syncThemeToDom(theme));
-    const localTimeoutId = window.setTimeout(() => syncThemeToDom(theme), 80);
-
-    return () => {
-      window.cancelAnimationFrame(localRafId);
-      window.clearTimeout(localTimeoutId);
-    };
-  }, [location.key, theme, syncThemeToDom]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleSync = () => {
-      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-
-      syncThemeToDom(theme);
-      rafRef.current = window.requestAnimationFrame(() => syncThemeToDom(theme));
-      timeoutRef.current = window.setTimeout(() => syncThemeToDom(theme), 80);
-    };
-
-    window.addEventListener('pageshow', handleSync);
-    window.addEventListener('popstate', handleSync);
-
-    return () => {
-      window.removeEventListener('pageshow', handleSync);
-      window.removeEventListener('popstate', handleSync);
-      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
-      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    };
-  }, [theme, syncThemeToDom]);
+  }, [theme, location.key, syncThemeToDom]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || theme !== 'system') return;
-    
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => syncThemeToDom('system');
-    
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
   }, [theme, syncThemeToDom]);
 
-  const setTheme = useCallback(
-    (newTheme: Theme) => {
-      setThemeState(newTheme);
-      syncThemeToDom(newTheme);
-      void (async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session?.user) return;
-          const { data: profile } = await supabase.from('profiles').select('settings').eq('id', session.user.id).single();
-          const currentSettings = profile?.settings && typeof profile.settings === 'object' ? (profile.settings as Record<string, unknown>) : {};
-          await supabase.from('profiles').update({ settings: { ...currentSettings, theme: newTheme } }).eq('id', session.user.id);
-        } catch {}
-      })();
-    },
-    [setThemeState, syncThemeToDom]
-  );
+  const setTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
+    syncThemeToDom(newTheme);
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: profile } = await supabase.from('profiles').select('settings').eq('id', session.user.id).single();
+      const currentSettings = profile?.settings && typeof profile.settings === 'object' ? (profile.settings as Record<string, unknown>) : {};
+      await supabase.from('profiles').update({ settings: { ...currentSettings, theme: newTheme } }).eq('id', session.user.id);
+    })();
+  }, [setThemeState, syncThemeToDom]);
 
   const toggleTheme = useCallback(() => setTheme(theme === 'dark' ? 'light' : 'dark'), [setTheme, theme]);
-
   const value = useMemo(() => ({ theme, setTheme, toggleTheme, globalConfig }), [theme, setTheme, toggleTheme, globalConfig]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

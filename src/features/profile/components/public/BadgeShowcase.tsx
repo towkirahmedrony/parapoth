@@ -15,16 +15,10 @@ const BadgeShowcase: React.FC<{ badges: Badge[] }> = ({ badges }) => {
   return (
     <div className="py-2 mb-20">
       <div className="px-6 mb-4 flex justify-between items-end">
-        <h3 
-          className="text-lg font-bold font-['Hind_Siliguri']"
-          style={{ color: 'var(--dyn-text)' }}
-        >
+        <h3 className="text-lg font-bold font-['Hind_Siliguri'] text-text-primary">
           অর্জনসমূহ 🎖️
         </h3>
-        <span 
-          className="text-xs font-['Hind_Siliguri']"
-          style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-        >
+        <span className="text-xs font-['Hind_Siliguri'] text-text-secondary">
           {badges.filter(b => b.is_earned).length} / {badges.length} টি আনলক হয়েছে
         </span>
       </div>
@@ -42,12 +36,12 @@ const BadgeShowcase: React.FC<{ badges: Badge[] }> = ({ badges }) => {
             )}
           >
             <div 
-              className="relative w-16 h-16 flex items-center justify-center rounded-full border shadow-sm overflow-hidden p-3 transition-colors"
-              style={{
-                backgroundColor: badge.is_earned ? 'var(--dyn-card)' : 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                borderColor: badge.is_earned ? 'color-mix(in srgb, var(--dyn-primary) 30%, transparent)' : 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                boxShadow: badge.is_earned ? '0 4px 15px -3px color-mix(in srgb, var(--dyn-primary) 15%, transparent)' : 'none'
-              }}
+              className={clsx(
+                "relative w-16 h-16 flex items-center justify-center rounded-full border overflow-hidden p-3 transition-colors",
+                badge.is_earned 
+                  ? "bg-surface-elevated border-border-color shadow-md" 
+                  : "bg-surface border-border-color shadow-sm"
+              )}
             >
               {/* Image render করা হচ্ছে icon_url এর জন্য */}
               {badge.icon_url ? (
@@ -57,21 +51,12 @@ const BadgeShowcase: React.FC<{ badges: Badge[] }> = ({ badges }) => {
               )}
               
               {!badge.is_earned && (
-                <div 
-                  className="absolute inset-0 flex items-center justify-center backdrop-blur-[1px]"
-                  style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-bg) 60%, transparent)' }}
-                >
-                  <Lock 
-                    className="w-5 h-5" 
-                    style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }} 
-                  />
+                <div className="absolute inset-0 flex items-center justify-center backdrop-blur-[1px] bg-surface/60">
+                  <Lock className="w-5 h-5 text-text-secondary" />
                 </div>
               )}
             </div>
-            <span 
-              className="text-xs text-center font-medium line-clamp-2 leading-tight font-['Hind_Siliguri']"
-              style={{ color: 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }}
-            >
+            <span className="text-xs text-center font-medium line-clamp-2 leading-tight font-['Hind_Siliguri'] text-text-primary">
               {badge.title}
             </span>
           </motion.div>

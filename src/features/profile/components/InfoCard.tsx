@@ -8,21 +8,12 @@ interface InfoCardProps {
 
 export const InfoCard: React.FC<InfoCardProps> = memo(({ title, icon, children }) => {
   return (
-    <div 
-      className="p-5 rounded-3xl shadow-sm transition-all duration-300"
-      style={{ 
-        backgroundColor: 'var(--dyn-card)',
-        border: '1px solid color-mix(in srgb, var(--dyn-text) 5%, transparent)'
-      }}
-    >
-      <div className="flex items-center gap-3 mb-5 pb-3" style={{ borderBottom: '1px dashed color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
-        <div className="p-2 rounded-xl" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)', color: 'var(--dyn-primary)' }}>
+    <div className="p-5 rounded-3xl shadow-sm transition-all duration-300 bg-card-bg border border-card-border">
+      <div className="flex items-center gap-3 mb-5 pb-3 border-b border-dashed border-border-color">
+        <div className="p-2 rounded-xl bg-surface-elevated text-primary">
           {icon}
         </div>
-        <h3 
-          className="text-sm font-bold uppercase tracking-wider font-['Hind_Siliguri']"
-          style={{ color: 'var(--dyn-text)' }}
-        >
+        <h3 className="text-sm font-bold uppercase tracking-wider font-['Hind_Siliguri'] text-text-primary">
           {title}
         </h3>
       </div>
@@ -43,27 +34,15 @@ interface InfoRowProps {
 
 export const InfoRow: React.FC<InfoRowProps> = memo(({ label, value, isVerified }) => (
   <div className="flex justify-between items-center group">
-    <span 
-      className="text-sm font-medium font-['Hind_Siliguri'] transition-colors"
-      style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-    >
+    <span className="text-sm font-medium font-['Hind_Siliguri'] transition-colors text-text-secondary">
       {label}
     </span>
     <div className="text-right flex items-center gap-2">
-      <span 
-        className="text-sm font-semibold font-['Hind_Siliguri']"
-        style={{ color: value ? 'var(--dyn-text)' : 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }}
-      >
+      <span className={`text-sm font-semibold font-['Hind_Siliguri'] ${value ? 'text-text-primary' : 'text-text-secondary'}`}>
         {value || "দেওয়া নেই"}
       </span>
       {isVerified && (
-        <span 
-          className="text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wide font-['Hind_Siliguri']"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, #10B981 15%, transparent)',
-            color: '#10B981'
-          }}
-        >
+        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wide font-['Hind_Siliguri'] bg-badge-bg text-badge-text">
           ভেরিফাইড
         </span>
       )}

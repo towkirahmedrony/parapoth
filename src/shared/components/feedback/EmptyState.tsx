@@ -24,20 +24,14 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(({ title, messag
       
       {/* টাইটেল টেক্সট (যদি দেওয়া থাকে) */}
       {title && (
-        <h3 
-          className="font-['Hind_Siliguri'] text-xl font-bold mb-2"
-          style={{ color: 'var(--dyn-text)' }}
-        >
+        <h3 className="font-['Hind_Siliguri'] text-xl font-bold mb-2 text-text-primary">
           {title}
         </h3>
       )}
 
       {/* মেসেজ টেক্সট (যদি দেওয়া থাকে) */}
       {message && (
-        <p 
-          className="font-['Hind_Siliguri'] text-base md:text-lg font-medium max-w-sm mx-auto leading-relaxed"
-          style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-        >
+        <p className="font-['Hind_Siliguri'] text-base md:text-lg font-medium max-w-sm mx-auto leading-relaxed text-text-secondary">
           {message}
         </p>
       )}

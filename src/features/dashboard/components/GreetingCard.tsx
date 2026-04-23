@@ -1,12 +1,11 @@
 import React, { memo, useMemo } from 'react';
 import { Sun, CloudSun, Moon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/shared/lib/apiClient'; // Fixed to named import for consistency
+import { apiClient } from '@/shared/lib/apiClient';
 import { QUERY_KEYS } from '@/shared/constants/storageKeys';
 
 interface GreetingCardProps {
-  // Broadened type to handle runtime edge cases safely
-  userName: string | { full_name?: string } | any;
+  userName: string | { full_name?: string } | unknown;
 }
 
 interface ScheduledQuote {
@@ -19,73 +18,107 @@ interface QuoteConfig {
   scheduled?: ScheduledQuote[];
 }
 
+interface DailyQuoteResponse {
+  success?: unknown;
+  data?: {
+    value?: unknown;
+  };
+}
+
 const DEFAULT_QUOTE = 'আজকের প্রস্তুতি শুরু করা যাক!';
 
-// Extracted fetcher function for React Query
-const fetchDailyQuote = async (): Promise<string> => {
-  const { data } = await apiClient.get('/system/configs/daily_quote');
-  
-  if (data?.success && data?.data?.value) {
-    const config = data.data.value;
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (typeof config === 'object' && config !== null) {
-      const typedConfig = config as QuoteConfig;
-      
-      if (Array.isArray(typedConfig.scheduled)) {
-        const scheduledQuote = typedConfig.scheduled.find(q => q.date === today);
-        if (scheduledQuote && scheduledQuote.text) {
-          return scheduledQuote.text;
-        }
-      }
-      return typedConfig.defaultText || DEFAULT_QUOTE;
-    }
-    return String(config);
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const normalizeQuoteConfig = (value: unknown): string => {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
   }
-  
-  throw new Error('Invalid quote response format');
+
+  if (!isRecord(value)) {
+    return DEFAULT_QUOTE;
+  }
+
+  const config = value as QuoteConfig;
+  const today = new Date().toISOString().split('T')[0];
+
+  if (Array.isArray(config.scheduled)) {
+    const scheduledQuote = config.scheduled.find(
+      item => item?.date === today && typeof item?.text === 'string' && item.text.trim()
+    );
+
+    if (scheduledQuote) {
+      return scheduledQuote.text;
+    }
+  }
+
+  if (typeof config.defaultText === 'string' && config.defaultText.trim()) {
+    return config.defaultText;
+  }
+
+  return DEFAULT_QUOTE;
+};
+
+const fetchDailyQuote = async (): Promise<string> => {
+  const { data } = await apiClient.get<DailyQuoteResponse>('/system/configs/daily_quote');
+
+  if (data?.success === true) {
+    return normalizeQuoteConfig(data.data?.value);
+  }
+
+  return DEFAULT_QUOTE;
 };
 
 const GreetingCard: React.FC<GreetingCardProps> = memo(({ userName }) => {
-  // Determine greeting message and icon stably
   const { greeting, Icon } = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour >= 12 && hour < 17) return { greeting: 'শুভ দুপুর', Icon: CloudSun };
-    if (hour >= 17) return { greeting: 'শুভ সন্ধ্যা', Icon: Moon };
+
+    if (hour >= 12 && hour < 17) {
+      return { greeting: 'শুভ দুপুর', Icon: CloudSun };
+    }
+
+    if (hour >= 17) {
+      return { greeting: 'শুভ সন্ধ্যা', Icon: Moon };
+    }
+
     return { greeting: 'শুভ সকাল', Icon: Sun };
   }, []);
 
-  // TanStack React Query for reliable server state management.
-  // Manual local storage sync (useEffect + useLocalStorage) is removed 
-  // because the global persister now handles offline hydration.
   const { data: dailyQuote } = useQuery({
-    queryKey: QUERY_KEYS.DAILY_QUOTE, // Assumes this is an array in storageKeys.ts
+    queryKey: QUERY_KEYS.DAILY_QUOTE,
     queryFn: fetchDailyQuote,
-    staleTime: 1000 * 60 * 60 * 2, // Consider data fresh for 2 hours
+    staleTime: 1000 * 60 * 60 * 2,
+    retry: 1,
   });
 
-  // DEFENSIVE PROGRAMMING: Safely extract user name.
-  // This explicitly prevents the "Objects are not valid as a React child" error 
-  // if the parent accidentally passes a raw profile object instead of a string.
   const safeUserName = useMemo(() => {
     if (!userName) return 'শিক্ষার্থী';
-    if (typeof userName === 'string') return userName;
-    if (typeof userName === 'object' && 'full_name' in userName) {
-      return userName.full_name || 'শিক্ষার্থী';
+
+    if (typeof userName === 'string') {
+      return userName.trim() || 'শিক্ষার্থী';
     }
-    return String(userName);
+
+    if (typeof userName === 'object' && userName !== null && 'full_name' in userName) {
+      const fullName = (userName as { full_name?: string }).full_name;
+      return typeof fullName === 'string' && fullName.trim() ? fullName : 'শিক্ষার্থী';
+    }
+
+    return 'শিক্ষার্থী';
   }, [userName]);
 
   return (
     <div className="mb-6 mt-2 px-4">
-      <div className="flex items-center gap-2 text-yellow-500 dark:text-yellow-400 mb-1">
+      <div className="flex items-center gap-2 text-text-secondary mb-1">
         <Icon size={18} />
-        <span className="text-sm font-medium">{greeting} ,</span>
+        <span className="text-sm font-medium">{greeting},</span>
       </div>
-      <h1 className="text-3xl font-bold font-['Hind_Siliguri']">
+
+      <h1 className="text-3xl font-bold font-['Hind_Siliguri'] text-text-primary">
         {safeUserName}
       </h1>
-      <p className="opacity-80 text-sm mt-1 font-['Hind_Siliguri'] transition-all duration-500">
+
+      <p className="text-sm mt-1 font-['Hind_Siliguri'] transition-all duration-500 text-text-secondary">
         {dailyQuote || DEFAULT_QUOTE}
       </p>
     </div>

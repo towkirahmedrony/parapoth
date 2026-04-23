@@ -83,10 +83,7 @@ const Leaderboard: React.FC = () => {
 
   if (authLoading || isLeaguesLoading || !hasResolvedXP || !selectedLeague) {
     return (
-      <div
-        className="w-full min-h-screen flex flex-col items-center justify-center pt-[135px]"
-        style={{ backgroundColor: 'var(--dyn-bg)' }}
-      >
+      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-[135px] bg-app">
         <Loader />
       </div>
     );
@@ -132,10 +129,7 @@ const Leaderboard: React.FC = () => {
   };
 
   return (
-    <div
-      className="w-full min-h-screen font-['Hind_Siliguri'] pb-24 pt-[135px]"
-      style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}
-    >
+    <div className="w-full min-h-screen font-['Hind_Siliguri'] pb-24 pt-[135px] bg-app text-text-primary">
       <LeagueHeader
         selectedLeagueIndex={selectedLeagueIndex}
         selectedLeague={selectedLeague}
@@ -167,14 +161,7 @@ const Leaderboard: React.FC = () => {
 
       {!isLocked && currentUser && (
         <div className="fixed bottom-[80px] md:bottom-4 left-0 right-0 z-40 px-3 pointer-events-none">
-          <div
-            className="max-w-md mx-auto backdrop-blur-md rounded-xl border-t p-1 pointer-events-auto"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--dyn-card) 95%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--dyn-primary) 50%, transparent)',
-              boxShadow: '0 -5px 15px color-mix(in srgb, var(--dyn-text) 15%, transparent)'
-            }}
-          >
+          <div className="max-w-md mx-auto backdrop-blur-md rounded-xl border-t p-1 pointer-events-auto bg-surface-elevated border-primary/50 shadow-xl">
             <UserRow user={currentUser} index={999} isFooter={true} />
           </div>
         </div>

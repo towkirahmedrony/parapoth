@@ -39,8 +39,8 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
   if (!method) return null;
 
   const isBkash = method.id.toLowerCase() === 'bkash';
-  // Using brand colors explicitly for bKash/Nagad recognition, but adapting to theme
-  const brandColor = isBkash ? '#e11471' : '#f97316'; // bKash Pink : Nagad Orange
+  // Using brand colors explicitly for bKash/Nagad recognition only
+  const brandColor = isBkash ? '#e11471' : '#f97316'; 
   
   // Safe initial character extraction
   const brandInitial = method.name?.charAt(0)?.toUpperCase() || '?';
@@ -48,29 +48,24 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
   return (
     <div 
       onClick={onSelect}
-      className="cursor-pointer rounded-xl border-2 p-4 transition-all duration-200"
+      className={`cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
+        isSelected ? 'bg-surface-elevated' : 'bg-card-bg border-card-border'
+      }`}
       style={{
-        backgroundColor: isSelected ? `color-mix(in srgb, ${brandColor} 10%, var(--dyn-card))` : 'var(--dyn-card)',
-        borderColor: isSelected ? brandColor : 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
+        borderColor: isSelected ? brandColor : undefined
       }}
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div 
-            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-primary-foreground"
             style={{ backgroundColor: brandColor }}
           >
             {brandInitial}
           </div>
           <div>
-            <h4 className="font-bold" style={{ color: 'var(--dyn-text)' }}>{method.name}</h4>
-            <span 
-              className="text-xs px-2 py-0.5 rounded"
-              style={{ 
-                backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)'
-              }}
-            >
+            <h4 className="font-bold text-text-primary">{method.name}</h4>
+            <span className="text-xs px-2 py-0.5 rounded bg-badge-bg text-badge-text">
               {method.type}
             </span>
           </div>
@@ -81,25 +76,19 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
       </div>
 
       {isSelected && (
-        <div 
-          className="mt-2 rounded-lg p-3 flex items-center justify-between border"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-          }}
-        >
-          <span className="font-mono text-lg font-semibold tracking-wider" style={{ color: 'var(--dyn-text)' }}>
+        <div className="mt-2 rounded-lg p-3 flex items-center justify-between border bg-surface border-border-color">
+          <span className="font-mono text-lg font-semibold tracking-wider text-text-primary">
             {method.number}
           </span>
           <button 
             onClick={handleCopy}
-            className="p-2 rounded-full transition-colors hover:[background-color:color-mix(in_srgb,var(--dyn-text)_10%,transparent)]"
+            className="p-2 rounded-full transition-colors hover:bg-secondary text-text-secondary hover:text-text-primary"
             title="Copy Number"
           >
             {copied ? (
-               <CheckCircle size={18} style={{ color: '#10b981' }} />
+               <CheckCircle size={18} className="text-primary" />
             ) : (
-               <Copy size={18} style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }} />
+               <Copy size={18} />
             )}
           </button>
         </div>

@@ -28,19 +28,19 @@ const StatRow: React.FC<StatRowProps> = ({ icon: Icon, label, myValue, theirValu
   const tie = myValue === theirValue;
 
   return (
-    <div className="grid grid-cols-3 items-center py-3 border-b last:border-0" style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
-      <div className="text-center font-bold text-sm font-['Inter']" style={{ color: iWin ? 'var(--dyn-primary)' : 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}>
+    <div className="grid grid-cols-3 items-center py-3 border-b border-border-color last:border-0">
+      <div className={`text-center font-bold text-sm font-['Inter'] ${iWin ? 'text-primary' : 'text-text-secondary'}`}>
         {myValue}{unit}
       </div>
       <div className="flex flex-col items-center justify-center">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}>
-          <Icon className="w-4 h-4" style={{ color: 'var(--dyn-primary)' }} />
+        <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1 bg-surface">
+          <Icon className="w-4 h-4 text-primary" />
         </div>
-        <span className="text-[10px] uppercase font-bold tracking-wider font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+        <span className="text-[10px] uppercase font-bold tracking-wider font-['Hind_Siliguri'] text-text-secondary">
           {label}
         </span>
       </div>
-      <div className="text-center font-bold text-sm font-['Inter']" style={{ color: !iWin && !tie ? 'var(--dyn-accent)' : 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}>
+      <div className={`text-center font-bold text-sm font-['Inter'] ${!iWin && !tie ? 'text-accent' : 'text-text-secondary'}`}>
         {theirValue}{unit}
       </div>
     </div>
@@ -57,33 +57,38 @@ const PvpStats: React.FC<PvpStatsProps> = ({ myStats, theirStats, opponentName, 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="m-4 p-5 rounded-2xl shadow-lg border"
-        style={{ backgroundColor: 'var(--dyn-card)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
+        className="m-4 p-5 rounded-2xl shadow-lg border bg-card-bg border-card-border"
       >
         <div className="mb-4">
-          <h3 className="text-lg font-bold font-['Hind_Siliguri']" style={{ color: 'var(--dyn-text)' }}>গেমিং স্ট্যাটস 🎮</h3>
-          <p className="text-xs font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>আপনার পিভিপি (PvP) লড়াইয়ের পরিসংখ্যান</p>
+          <h3 className="text-lg font-bold font-['Hind_Siliguri'] text-text-primary">গেমিং স্ট্যাটস 🎮</h3>
+          <p className="text-xs font-['Hind_Siliguri'] text-text-secondary">আপনার পিভিপি (PvP) লড়াইয়ের পরিসংখ্যান</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 rounded-xl flex items-center gap-3 border" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 5%, transparent)', borderColor: 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)' }}>
-            <div className="p-2 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)' }}><Target className="w-5 h-5" style={{ color: 'var(--dyn-primary)' }} /></div>
+          <div className="p-3 rounded-xl flex items-center gap-3 border bg-surface border-border-color">
+            <div className="p-2 rounded-full bg-surface-elevated">
+              <Target className="w-5 h-5 text-primary" />
+            </div>
             <div>
-              <div className="text-xl font-bold font-['Inter'] leading-none" style={{ color: 'var(--dyn-text)' }}>{theirWinRate}%</div>
-              <div className="text-[10px] font-bold font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>জয়ের হার</div>
+              <div className="text-xl font-bold font-['Inter'] leading-none text-text-primary">{theirWinRate}%</div>
+              <div className="text-[10px] font-bold font-['Hind_Siliguri'] text-text-secondary">জয়ের হার</div>
             </div>
           </div>
-          <div className="p-3 rounded-xl flex items-center gap-3 border" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
-            <div className="p-2 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}><Swords className="w-5 h-5" style={{ color: 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }} /></div>
+          <div className="p-3 rounded-xl flex items-center gap-3 border bg-surface border-border-color">
+            <div className="p-2 rounded-full bg-surface-elevated">
+              <Swords className="w-5 h-5 text-text-secondary" />
+            </div>
             <div>
-              <div className="text-xl font-bold font-['Inter'] leading-none" style={{ color: 'var(--dyn-text)' }}>{theirStats.pvp_matches_played || 0}</div>
-              <div className="text-[10px] font-bold font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>মোট ব্যাটল</div>
+              <div className="text-xl font-bold font-['Inter'] leading-none text-text-primary">{theirStats.pvp_matches_played || 0}</div>
+              <div className="text-[10px] font-bold font-['Hind_Siliguri'] text-text-secondary">মোট ব্যাটল</div>
             </div>
           </div>
-          <div className="p-3 rounded-xl flex items-center gap-3 border col-span-2" style={{ backgroundColor: 'color-mix(in srgb, #EAB308 5%, transparent)', borderColor: 'color-mix(in srgb, #EAB308 20%, transparent)' }}>
-            <div className="p-2 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, #EAB308 15%, transparent)' }}><Crown className="w-5 h-5" style={{ color: '#EAB308' }} /></div>
+          <div className="p-3 rounded-xl flex items-center gap-3 border col-span-2 bg-surface border-border-color">
+            <div className="p-2 rounded-full bg-surface-elevated">
+              <Crown className="w-5 h-5 text-accent" />
+            </div>
             <div>
-              <div className="text-xl font-bold font-['Inter'] leading-none" style={{ color: 'var(--dyn-text)' }}>{theirStats.pvp_win_streak || 0}</div>
-              <div className="text-[10px] font-bold font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>টানা জয় (PvP)</div>
+              <div className="text-xl font-bold font-['Inter'] leading-none text-text-primary">{theirStats.pvp_win_streak || 0}</div>
+              <div className="text-[10px] font-bold font-['Hind_Siliguri'] text-text-secondary">টানা জয় (PvP)</div>
             </div>
           </div>
         </div>
@@ -99,13 +104,12 @@ const PvpStats: React.FC<PvpStatsProps> = ({ myStats, theirStats, opponentName, 
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="mx-4 mb-4 rounded-2xl shadow-xl border p-5 relative z-20"
-      style={{ backgroundColor: 'var(--dyn-card)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
+      className="mx-4 mb-4 rounded-2xl shadow-xl border p-5 relative z-20 bg-card-bg border-card-border"
     >
       <div className="flex justify-between items-center mb-4 px-4">
-        <span className="text-xs font-bold font-['Inter']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>YOU</span>
-        <span className="text-xs font-bold px-3 py-1 rounded-full border" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)', color: 'var(--dyn-primary)', borderColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' }}>VS</span>
-        <span className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>{opponentName}</span>
+        <span className="text-xs font-bold font-['Inter'] text-text-secondary">YOU</span>
+        <span className="text-xs font-bold px-3 py-1 rounded-full border bg-badge-bg text-badge-text border-border-color">VS</span>
+        <span className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right text-text-secondary">{opponentName}</span>
       </div>
 
       <div className="space-y-1">

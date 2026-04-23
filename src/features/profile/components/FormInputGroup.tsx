@@ -16,7 +16,7 @@ const FormInputGroup: React.FC<FormInputGroupProps> = React.memo(({
   label, name, value, onChange, placeholder, disabled, icon, isTextArea, type 
 }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-xs font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
+    <label className="text-xs font-medium text-text-secondary">
       {label}
     </label>
     <div className="relative">
@@ -28,12 +28,7 @@ const FormInputGroup: React.FC<FormInputGroupProps> = React.memo(({
           placeholder={placeholder}
           disabled={disabled}
           rows={3}
-          className="w-full rounded-xl p-3 text-sm focus:ring-2 focus:outline-none transition-all focus:ring-[var(--dyn-primary)] disabled:opacity-50"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-text) 3%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)',
-            color: 'var(--dyn-text)'
-          }}
+          className="w-full rounded-xl p-3 text-sm focus:outline-none transition-all disabled:opacity-50 bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring"
         />
       ) : (
         <input 
@@ -43,16 +38,10 @@ const FormInputGroup: React.FC<FormInputGroupProps> = React.memo(({
           onChange={onChange} 
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full rounded-xl p-3.5 text-sm focus:ring-2 focus:outline-none disabled:opacity-50 transition-all focus:ring-[var(--dyn-primary)]"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-text) 3%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)',
-            color: 'var(--dyn-text)',
-            colorScheme: 'var(--dyn-color-scheme, light)'
-          }}
+          className="w-full rounded-xl p-3.5 text-sm focus:outline-none disabled:opacity-50 transition-all bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring"
         />
       )}
-      {icon && <span className="absolute right-4 top-3.5 text-lg">{icon}</span>}
+      {icon && <span className="absolute right-4 top-3.5 text-lg text-text-secondary">{icon}</span>}
     </div>
   </div>
 ));

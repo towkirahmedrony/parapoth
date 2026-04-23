@@ -28,12 +28,9 @@ const Plans: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen pb-20 bg-dyn-bg text-dyn-text">
+    <div className="min-h-screen pb-20 bg-app text-text-primary">
       {/* Hero Section */}
-      <div 
-        className="pt-12 pb-24 px-4 rounded-b-[3rem] relative overflow-hidden bg-dyn-primary"
-        style={{ color: 'var(--dyn-bg)' }}
-      >
+      <div className="pt-12 pb-24 px-4 rounded-b-[3rem] relative overflow-hidden bg-primary text-primary-foreground">
         <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/20 pointer-events-none"></div>
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div 
@@ -41,11 +38,8 @@ const Plans: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="flex justify-center mb-4"
           >
-            <div 
-              className="backdrop-blur-md p-3 rounded-full"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-bg) 20%, transparent)' }}
-            >
-              <Crown size={40} className="text-yellow-300 fill-yellow-300" />
+            <div className="backdrop-blur-md p-3 rounded-full bg-surface-elevated">
+              <Crown size={40} className="text-yellow-500 fill-yellow-500" />
             </div>
           </motion.div>
           <h1 className="text-3xl md:text-5xl font-extrabold mb-4">Unlock Your Potential</h1>
@@ -61,20 +55,14 @@ const Plans: React.FC = () => {
           {features.map((feat, idx) => (
             <div 
               key={idx} 
-              className="p-4 rounded-xl shadow-sm border flex items-center gap-4 bg-dyn-card"
-              style={{ 
-                borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-              }}
+              className="p-4 rounded-xl shadow-sm border flex items-center gap-4 bg-card-bg border-card-border"
             >
-              <div 
-                className="p-2 rounded-lg"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
-              >
+              <div className="p-2 rounded-lg bg-surface">
                 {feat.icon}
               </div>
               <div>
                 <h4 className="font-bold">{feat.title}</h4>
-                <p className="text-xs" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+                <p className="text-xs text-text-secondary">
                   {feat.desc}
                 </p>
               </div>
@@ -88,7 +76,7 @@ const Plans: React.FC = () => {
             Array.from({ length: 3 }).map((_, i) => (
               <div 
                 key={`skeleton-${i}`} 
-                className="h-96 rounded-2xl p-6 bg-dyn-card"
+                className="h-96 rounded-2xl p-6 border bg-card-bg border-card-border"
               >
                 <Skeleton className="h-8 w-3/4 mb-4" />
                 <Skeleton className="h-16 w-1/2 mb-8" />

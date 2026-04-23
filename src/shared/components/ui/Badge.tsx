@@ -10,7 +10,7 @@ export const Badge = memo(
       return (
         <span
           ref={ref}
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors ${className}`}
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors bg-badge-bg text-badge-text ${className}`}
           {...props}
         >
           {children}

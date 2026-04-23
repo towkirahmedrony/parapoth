@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Edit3, Coins, ShieldCheck } from 'lucide-react';
 import { UserProfileData } from '../types/profile';
 import { PROFILE_DEFAULTS } from '../utils/profileConstants';
@@ -9,6 +10,7 @@ interface ProfileHeaderProps {
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
+  const navigate = useNavigate();
   const userCoins = user?.coin_balance || 0;
   
   // Data fallbacks
@@ -17,47 +19,29 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
   const bio = user?.bio || "আপনার সম্পর্কে কিছু লিখুন...";
 
   return (
-    <div 
-      className="relative pt-10 pb-8 px-6 rounded-3xl shadow-sm flex flex-col items-center overflow-hidden transition-all duration-300"
-      style={{ backgroundColor: 'var(--dyn-card)', border: '1px solid color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
-    >
+    <div className="relative pt-10 pb-8 px-6 rounded-3xl shadow-sm flex flex-col items-center overflow-hidden transition-all duration-300 bg-card-bg border border-card-border">
       {/* Background Subtle Gradient */}
-      <div 
-        className="absolute top-0 left-0 w-full h-24 opacity-20 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, var(--dyn-primary), transparent)' }}
-      />
+      <div className="absolute top-0 left-0 w-full h-24 opacity-20 pointer-events-none bg-gradient-to-b from-primary to-transparent" />
 
-      {/* Coin Badge - Moved to Top Right corner */}
-      <div 
-        className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs shadow-sm font-['Hind_Siliguri']"
-        style={{ 
-          backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-          color: 'var(--dyn-text)',
-          border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-          backdropFilter: 'blur(4px)'
-        }}
+      {/* Coin Badge - Clickable to navigate to Marketplace */}
+      <button 
+        onClick={() => navigate('/dashboard/marketplace')}
+        title="মার্কেটপ্লেসে যান"
+        className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs shadow-sm font-['Hind_Siliguri'] cursor-pointer transition-transform hover:scale-105 active:scale-95 bg-surface-elevated text-text-primary border border-border-color backdrop-blur-sm"
       >
         <Coins size={14} style={{ color: '#F59E0B' }} />
         <span>{userCoins}</span>
-      </div>
+      </button>
 
       <div className="relative z-10 mt-2">
-        <div className="relative p-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' }}>
+        <div className="relative p-1 rounded-full bg-surface-elevated">
           <img 
             src={avatarUrl} 
             alt={fullName} 
-            className="w-24 h-24 rounded-full object-cover shadow-md border-4"
-            style={{ borderColor: 'var(--dyn-card)' }}
+            className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-surface"
           />
           {user?.subscription_status === 'active' && (
-            <span 
-              className="absolute bottom-1 right-0 text-[10px] font-bold px-2 py-0.5 rounded-full border-2 shadow-sm"
-              style={{ 
-                backgroundColor: 'var(--dyn-primary)', 
-                color: 'white',
-                borderColor: 'var(--dyn-card)'
-              }}
-            >
+            <span className="absolute bottom-1 right-0 text-[10px] font-bold px-2 py-0.5 rounded-full border-2 shadow-sm bg-primary text-primary-foreground border-surface">
               PRO
             </span>
           )}
@@ -65,10 +49,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
       </div>
       
       <div className="text-center mt-4 relative z-10">
-        <h1 
-          className="text-2xl font-bold flex items-center justify-center gap-2 font-['Hind_Siliguri']"
-          style={{ color: 'var(--dyn-text)' }}
-        >
+        <h1 className="text-2xl font-bold flex items-center justify-center gap-2 font-['Hind_Siliguri'] text-text-primary">
           {fullName}
           {user?.is_phone_verified && (
             <span title="ভেরিফাইড" className="inline-flex">
@@ -76,7 +57,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
             </span>
           )}
         </h1>
-        <p className="text-sm mt-1 font-['Hind_Siliguri'] font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+        <p className="text-sm mt-1 font-['Hind_Siliguri'] font-medium text-text-secondary">
           {bio}
         </p>
       </div>
@@ -85,11 +66,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
       <div className="flex items-center gap-4 mt-6 relative z-10 w-full justify-center">
         <button 
           onClick={onEdit}
-          className="flex items-center gap-2 px-8 py-2.5 text-sm rounded-2xl font-bold shadow-md transition-all active:scale-95 hover:opacity-90 font-['Hind_Siliguri']"
-          style={{ 
-            backgroundColor: 'var(--dyn-primary)', 
-            color: 'white' 
-          }}
+          className="flex items-center gap-2 px-8 py-2.5 text-sm rounded-2xl font-bold shadow-md transition-all active:scale-95 hover:opacity-90 font-['Hind_Siliguri'] bg-primary text-primary-foreground"
         >
           <Edit3 size={16} />
           এডিট প্রোফাইল

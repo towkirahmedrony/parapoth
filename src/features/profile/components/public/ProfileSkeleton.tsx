@@ -6,19 +6,11 @@ const BADGE_PLACEHOLDERS = [1, 2, 3, 4];
 
 export const ProfileSkeleton: React.FC = () => {
   return (
-    <div className="min-h-screen pb-10 animate-pulse" style={{ backgroundColor: 'var(--dyn-bg)' }}>
+    <div className="min-h-screen pb-10 animate-pulse bg-app">
       {/* Hero Section Skeleton */}
-      <div 
-        className="pb-8 pt-16 px-4 rounded-b-[2rem] border-b flex flex-col items-center relative"
-        style={{ 
-          backgroundColor: 'var(--dyn-bg)', 
-          borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-        }}
-      >
+      <div className="pb-8 pt-16 px-4 rounded-b-[2rem] border-b flex flex-col items-center relative bg-app border-border-color">
         {/* Fixed TS Error: Used Tailwind class for border color instead of style prop on Skeleton */}
-        <Skeleton 
-          className="w-28 h-28 rounded-full mb-4 border-4 border-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" 
-        />
+        <Skeleton className="w-28 h-28 rounded-full mb-4 border-4 border-border-color" />
         <Skeleton className="h-8 w-48 mb-2" />
         <Skeleton className="h-4 w-64 mb-6" />
         <Skeleton className="h-10 w-40 rounded-full" />
@@ -26,13 +18,7 @@ export const ProfileSkeleton: React.FC = () => {
 
       {/* Versus Stats Skeleton (Floating Card) */}
       <div className="mx-4 -mt-6 relative z-10">
-        <div 
-          className="rounded-2xl p-5 border shadow-xl h-40 flex flex-col justify-between"
-          style={{ 
-            backgroundColor: 'var(--dyn-card)', 
-            borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-          }}
-        >
+        <div className="rounded-2xl p-5 border shadow-xl h-40 flex flex-col justify-between bg-card-bg border-border-color">
             <div className="flex justify-between px-4">
                 <Skeleton className="h-4 w-10" />
                 <Skeleton className="h-6 w-12 rounded-full" />
@@ -48,13 +34,7 @@ export const ProfileSkeleton: React.FC = () => {
 
       {/* Activity Chart Skeleton */}
       <div className="m-4 mt-6">
-        <div 
-          className="rounded-2xl p-5 border shadow-lg h-[300px]"
-          style={{ 
-            backgroundColor: 'var(--dyn-card)', 
-            borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-          }}
-        >
+        <div className="rounded-2xl p-5 border shadow-lg h-[300px] bg-card-bg border-border-color">
             <div className="flex justify-between mb-6">
                 <div className="space-y-2">
                     <Skeleton className="h-6 w-32" />

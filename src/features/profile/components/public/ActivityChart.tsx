@@ -8,62 +8,80 @@ interface ActivityChartProps {
   isOwnProfile?: boolean;
 }
 
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card-bg border border-card-border p-3 rounded-lg shadow-sm">
+        <p className="text-text-secondary text-xs mb-2 font-['Hind_Siliguri']">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-text-primary text-xs font-medium font-['Hind_Siliguri']">
+            {entry.name}: {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 const ActivityChart: React.FC<ActivityChartProps> = ({ data, opponentName, isOwnProfile = false }) => {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
-      className="m-4 p-5 rounded-2xl shadow-lg border"
-      style={{ backgroundColor: 'var(--dyn-card)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
+      className="m-4 p-5 rounded-2xl shadow-lg border bg-card-bg border-card-border"
     >
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-lg font-bold font-['Hind_Siliguri']" style={{ color: 'var(--dyn-text)' }}>
+          <h3 className="text-lg font-bold font-['Hind_Siliguri'] text-text-primary">
             {isOwnProfile ? 'আমার অ্যাক্টিভিটি 📊' : 'পরীক্ষার তুলনা 📊'}
           </h3>
-          <p className="text-xs font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+          <p className="text-xs font-['Hind_Siliguri'] text-text-secondary">
             গত ৭ দিনের অ্যাক্টিভিটি
           </p>
         </div>
         
         <div className="flex gap-4 text-xs font-['Hind_Siliguri'] font-medium">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--dyn-primary)' }}></div>
-            <span style={{ color: 'var(--dyn-text)' }}>{isOwnProfile ? 'আমি' : 'You'}</span>
+            <div className="w-3 h-3 rounded-full bg-primary"></div>
+            <span className="text-text-primary">{isOwnProfile ? 'আমি' : 'You'}</span>
           </div>
           {!isOwnProfile && (
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--dyn-accent)' }}></div>
-              <span style={{ color: 'var(--dyn-text)' }}>{opponentName}</span>
+              <div className="w-3 h-3 rounded-full bg-accent"></div>
+              <span className="text-text-primary">{opponentName}</span>
             </div>
           )}
         </div>
       </div>
 
-      <div className="h-[200px] w-full mt-4 text-xs">
+      <div className="h-[200px] w-full mt-4 text-xs text-text-secondary">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorYouActivity" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--dyn-primary)" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="var(--dyn-primary)" stopOpacity={0}/>
+                <stop offset="5%" stopColor="var(--primary, #3b82f6)" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="var(--primary, #3b82f6)" stopOpacity={0}/>
               </linearGradient>
               <linearGradient id="colorThemActivity" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--dyn-accent)" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="var(--dyn-accent)" stopOpacity={0}/>
+                <stop offset="5%" stopColor="var(--accent, #8b5cf6)" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="var(--accent, #8b5cf6)" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="color-mix(in srgb, var(--dyn-text) 10%, transparent)" />
-            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--dyn-text)', opacity: 0.6, fontSize: 12, fontFamily: 'Hind Siliguri' }} dy={10} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--dyn-text)', opacity: 0.6, fontSize: 11 }} />
-            <Tooltip 
-              contentStyle={{ backgroundColor: 'var(--dyn-card)', border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)', borderRadius: '8px', color: 'var(--dyn-text)' }}
-              labelStyle={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)', marginBottom: '0.5rem' }}
-            />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color, #e5e7eb)" opacity={0.5} />
+            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'currentColor', fontSize: 12, fontFamily: 'Hind Siliguri' }} dy={10} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: 'currentColor', fontSize: 11 }} />
+            <Tooltip content={<CustomTooltip />} />
             {!isOwnProfile && (
-              <Area type="monotone" dataKey="them" name={opponentName} stroke="var(--dyn-accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorThemActivity)" />
+              <Area type="monotone" dataKey="them" name={opponentName} stroke="var(--accent, #8b5cf6)" strokeWidth={3} fillOpacity={1} fill="url(#colorThemActivity)" />
             )}
-            <Area type="monotone" dataKey="you" name={isOwnProfile ? "আমি" : "You"} stroke="var(--dyn-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorYouActivity)" />
+            <Area type="monotone" dataKey="you" name={isOwnProfile ? "আমি" : "You"} stroke="var(--primary, #3b82f6)" strokeWidth={3} fillOpacity={1} fill="url(#colorYouActivity)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

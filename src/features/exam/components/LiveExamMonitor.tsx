@@ -13,7 +13,6 @@ interface Props {
 
 type ConnectionStatus = 'active' | 'disconnected' | 'submitted';
 
-// Pure function extracted outside with safe null handling
 const getDerivedStatus = (lastUpdatedAt?: string | null): ConnectionStatus => {
   if (!lastUpdatedAt) return 'disconnected';
   
@@ -26,7 +25,6 @@ const getDerivedStatus = (lastUpdatedAt?: string | null): ConnectionStatus => {
   return 'active';
 };
 
-// Extracted formatting logic for cleaner JSX
 const formatTimeRemaining = (seconds?: number | null): string => {
   const safeSeconds = Math.max(0, seconds || 0);
   const m = Math.floor(safeSeconds / 60);
@@ -38,7 +36,6 @@ export const LiveExamMonitor: React.FC<Props> = memo(({ examId }) => {
   const { data: progressList, isLoading, isError } = useLiveProgress(examId);
   const { mutate: recoverSession, isPending } = useRecoverUserSession();
 
-  // Removed unnecessary useMemo for simple array length check
   const activeUsersCount = progressList?.length || 0;
 
   const handleRecoverSession = (userId: string) => {
@@ -53,101 +50,54 @@ export const LiveExamMonitor: React.FC<Props> = memo(({ examId }) => {
   };
 
   return (
-    <Card
-      style={{
-        backgroundColor: 'var(--dyn-card)',
-        borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-      }}
-    >
+    <Card className="bg-card-bg border-card-border">
       <div className="flex flex-row items-center justify-between p-6">
         <div>
-          <h3
-            className="font-semibold leading-none tracking-tight flex items-center gap-2"
-            style={{ color: 'var(--dyn-text)' }}
-          >
+          <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2 text-text-primary">
             <span className="relative flex h-3 w-3">
-              <span
-                className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                style={{ backgroundColor: 'var(--dyn-primary)' }}
-              ></span>
-              <span
-                className="relative inline-flex rounded-full h-3 w-3"
-                style={{ backgroundColor: 'var(--dyn-primary)' }}
-              ></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-primary"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
             </span>
             Live Exam Control Room
           </h3>
-          <p
-            className="text-sm text-muted-foreground mt-1"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
-          >
+          <p className="text-sm mt-1 text-text-secondary">
             Monitoring active sessions for {examId}
           </p>
         </div>
-        <Badge
-          className="border"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)',
-            color: 'var(--dyn-primary)',
-            borderColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)'
-          }}
-        >
+        <Badge className="border border-border-color bg-badge-bg text-badge-text">
           {activeUsersCount} Active Users
         </Badge>
       </div>
       
       <div className="p-6 pt-0">
         {isLoading ? (
-          <div
-            className="text-sm"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
-          >
+          <div className="text-sm text-text-secondary">
             Connecting to progress stream...
           </div>
         ) : isError ? (
-          <div className="text-red-500 text-sm">Failed to connect to progress stream.</div>
+          <div className="text-sm text-accent">Failed to connect to progress stream.</div>
         ) : activeUsersCount === 0 ? (
-           <div style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
+           <div className="text-text-secondary">
              No active sessions found.
            </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
-              <thead
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                  color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)'
-                }}
-              >
+              <thead className="bg-surface text-text-secondary">
                 <tr>
-                  <th
-                    className="p-3 font-medium border-b"
-                    style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-                  >
+                  <th className="p-3 font-medium border-b border-border-color">
                     Candidate
                   </th>
-                  <th
-                    className="p-3 font-medium border-b"
-                    style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-                  >
+                  <th className="p-3 font-medium border-b border-border-color">
                     Progress
                   </th>
-                  <th
-                    className="p-3 font-medium border-b"
-                    style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-                  >
+                  <th className="p-3 font-medium border-b border-border-color">
                     Time Remaining
                   </th>
-                  <th
-                    className="p-3 font-medium border-b"
-                    style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-                  >
+                  <th className="p-3 font-medium border-b border-border-color">
                     Connection Status
                   </th>
-                  <th
-                    className="p-3 font-medium border-b text-right"
-                    style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-                  >
+                  <th className="p-3 font-medium border-b border-border-color text-right">
                     Actions
                   </th>
                 </tr>
@@ -159,58 +109,33 @@ export const LiveExamMonitor: React.FC<Props> = memo(({ examId }) => {
                   return (
                     <tr
                       key={p.id}
-                      className="border-b transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                      style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
+                      className="border-b transition-colors hover:bg-surface-elevated border-border-color"
                     >
                       <td className="p-3">
-                        <div className="font-medium" style={{ color: 'var(--dyn-text)' }}>
+                        <div className="font-medium text-text-primary">
                           {p.user_name || 'Unknown User'}
                         </div>
-                        <div
-                          className="text-xs"
-                          style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}
-                        >
+                        <div className="text-xs text-text-secondary">
                           {p.user_id}
                         </div>
                       </td>
-                      <td className="p-3" style={{ color: 'var(--dyn-text)' }}>
+                      <td className="p-3 text-text-primary">
                         Question {p.current_question_index ?? '-'}
                       </td>
-                      <td className="p-3 font-mono" style={{ color: 'var(--dyn-text)' }}>
+                      <td className="p-3 font-mono text-text-primary">
                         {formatTimeRemaining(p.time_remaining)}
                       </td>
                       <td className="p-3">
                         {currentStatus === 'active' ? (
-                          <Badge
-                            className="border"
-                            style={{
-                              backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)',
-                              color: 'var(--dyn-primary)',
-                              borderColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)'
-                            }}
-                          >
+                          <Badge className="border border-border-color bg-badge-bg text-badge-text">
                             <Activity className="h-3 w-3 mr-1" /> Active
                           </Badge>
                         ) : currentStatus === 'disconnected' ? (
-                          <Badge
-                            className="border"
-                            style={{
-                              backgroundColor: 'color-mix(in srgb, var(--dyn-accent) 10%, transparent)',
-                              color: 'var(--dyn-accent)',
-                              borderColor: 'color-mix(in srgb, var(--dyn-accent) 20%, transparent)'
-                            }}
-                          >
+                          <Badge className="border border-border-color bg-accent text-primary-foreground">
                             <WifiOff className="h-3 w-3 mr-1" /> Disconnected
                           </Badge>
                         ) : (
-                          <Badge
-                            className="border"
-                            style={{
-                              backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                              color: 'var(--dyn-text)',
-                              borderColor: 'color-mix(in srgb, var(--dyn-text) 20%, transparent)'
-                            }}
-                          >
+                          <Badge className="border border-border-color bg-surface-elevated text-text-primary">
                             <CheckCircle className="h-3 w-3 mr-1" /> Submitted
                           </Badge>
                         )}
@@ -221,12 +146,7 @@ export const LiveExamMonitor: React.FC<Props> = memo(({ examId }) => {
                             disabled={isPending}
                             variant="outline"
                             onClick={() => handleRecoverSession(p.id)}
-                            className={`border hover:opacity-80 transition-opacity ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            style={{
-                              backgroundColor: 'transparent',
-                              borderColor: 'var(--dyn-primary)',
-                              color: 'var(--dyn-primary)'
-                            }}
+                            className={`border border-border-color hover:bg-surface-elevated text-text-primary transition-colors ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <RefreshCcw className={`h-3 w-3 mr-2 ${isPending ? 'animate-spin' : ''}`} /> 
                             {isPending ? 'Recovering...' : 'Recover'}
@@ -245,5 +165,4 @@ export const LiveExamMonitor: React.FC<Props> = memo(({ examId }) => {
   );
 });
 
-// For debug tools
 LiveExamMonitor.displayName = 'LiveExamMonitor';

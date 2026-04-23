@@ -57,7 +57,6 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
   const [descriptionText, setDescriptionText] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Lock body scroll when modal is open to prevent background scrolling
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -69,7 +68,6 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
     };
   }, [isOpen]);
 
-  // Reset form state cleanly whenever the modal closes
   useEffect(() => {
     if (!isOpen) {
       setIssueCategory('');
@@ -78,7 +76,6 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
     }
   }, [isOpen]);
 
-  // Prevent closing the modal while a submission is in progress
   const handleClose = useCallback(() => {
     if (!isSubmitting) {
       onClose();
@@ -109,11 +106,11 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
       };
 
       await onSubmit(reportPayload);
-      handleClose(); // Form reset is now handled by the useEffect above
+      handleClose();
     } catch (error) {
       console.error("Failed to submit report:", error);
       toast.error("রিপোর্ট সাবমিট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
-      setIsSubmitting(false); // Only set to false on error, success will unmount/hide
+      setIsSubmitting(false);
     }
   }, [issueCategory, descriptionText, type, questionData, onSubmit, handleClose]);
 
@@ -126,40 +123,26 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200 bg-black/70"
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
     >
       <div 
-        className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
+        className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 bg-surface-elevated border border-border-color"
         onClick={(e) => e.stopPropagation()}
-        style={{ 
-          backgroundColor: 'var(--dyn-card, #ffffff)',
-          borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-          borderWidth: '1px',
-          borderStyle: 'solid'
-        }}
       >
         {/* Header */}
-        <div 
-          className="p-4 flex justify-between items-center"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-            borderBottom: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-          }}
-        >
-          <div className="flex items-center gap-2 font-bold text-lg" style={{ color: 'var(--dyn-text)' }}>
-            <Icon style={{ color: 'var(--dyn-primary)' }} size={20} aria-hidden="true" />
+        <div className="p-4 flex justify-between items-center bg-secondary/30 border-b border-border-color">
+          <div className="flex items-center gap-2 font-bold text-lg text-text-primary">
+            <Icon className="text-primary" size={20} aria-hidden="true" />
             {title}
           </div>
           <button 
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="p-1 rounded-full hover:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ color: 'var(--dyn-text)' }}
+            className="p-1 rounded-full text-text-primary hover:bg-secondary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -171,20 +154,14 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
           
           {/* Context Info */}
           {isQuestion && questionData && (
-            <div 
-              className="rounded-lg p-3 flex items-start gap-3"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--dyn-accent) 10%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--dyn-accent) 20%, transparent)',
-              }}
-            >
-              <AlertTriangle className="flex-shrink-0 mt-0.5" size={16} style={{ color: 'var(--dyn-accent)' }} aria-hidden="true" />
-              <div className="text-xs space-y-1" style={{ color: 'var(--dyn-text)' }}>
+            <div className="rounded-lg p-3 flex items-start gap-3 bg-accent/10 border border-accent/20">
+              <AlertTriangle className="flex-shrink-0 mt-0.5 text-accent" size={16} aria-hidden="true" />
+              <div className="text-xs space-y-1 text-text-primary">
                 <p className="font-semibold">আপনি একটি প্রশ্নে রিপোর্ট করছেন:</p>
                 {questionData.questionText && (
                   <p className="line-clamp-2 italic opacity-80">"{questionData.questionText}"</p>
                 )}
-                <p className="text-[10px] uppercase tracking-wider opacity-60">ID: {questionData.questionId}</p>
+                <p className="text-[10px] uppercase tracking-wider text-text-secondary">ID: {questionData.questionId}</p>
               </div>
             </div>
           )}
@@ -193,28 +170,21 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
           <div className="space-y-2">
             <label 
               htmlFor="issueCategory"
-              className="text-sm font-medium flex items-center gap-2"
-              style={{ color: 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }}
+              className="text-sm font-medium flex items-center gap-2 text-text-secondary"
             >
-              <CheckCircle size={14} style={{ color: 'var(--dyn-primary)' }} aria-hidden="true" />
-              সমস্যার ধরণ নির্বাচন করুন <span style={{ color: 'var(--dyn-accent)' }}>*</span>
+              <CheckCircle className="text-primary" size={14} aria-hidden="true" />
+              সমস্যার ধরণ নির্বাচন করুন <span className="text-accent">*</span>
             </label>
             <select
               id="issueCategory"
               value={issueCategory}
               onChange={(e) => setIssueCategory(e.target.value)}
               disabled={isSubmitting}
-              className="w-full text-sm rounded-lg px-3 py-3 outline-none transition-all appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--dyn-text) 20%, transparent)',
-                color: 'var(--dyn-text)',
-                borderWidth: '1px'
-              }}
+              className="w-full text-sm rounded-lg px-3 py-3 outline-none transition-all appearance-none cursor-pointer bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring disabled:opacity-60"
             >
-              <option value="" disabled>-- একটি অপশন বেছে নিন --</option>
+              <option value="" disabled className="bg-surface">-- একটি অপশন বেছে নিন --</option>
               {options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <option key={opt.value} value={opt.value} className="bg-surface">
                   {opt.label}
                 </option>
               ))}
@@ -225,10 +195,9 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
           <div className="space-y-2">
             <label 
               htmlFor="descriptionText"
-              className="text-sm font-medium flex items-center gap-2"
-              style={{ color: 'color-mix(in srgb, var(--dyn-text) 80%, transparent)' }}
+              className="text-sm font-medium flex items-center gap-2 text-text-secondary"
             >
-              <MessageSquare size={14} style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }} aria-hidden="true" />
+              <MessageSquare size={14} aria-hidden="true" />
               বিস্তারিত মতামত (ঐচ্ছিক)
             </label>
             <textarea
@@ -238,31 +207,18 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
               disabled={isSubmitting}
               placeholder="আপনার সমস্যাটি বিস্তারিত লিখুন..."
               rows={4}
-              className="w-full text-sm rounded-lg px-3 py-3 outline-none transition-all resize-none disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--dyn-text) 20%, transparent)',
-                color: 'var(--dyn-text)',
-                borderWidth: '1px'
-              }}
+              className="w-full text-sm rounded-lg px-3 py-3 outline-none transition-all resize-none bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring disabled:opacity-60"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div 
-          className="p-4 flex gap-3 justify-end"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-text) 2%, transparent)',
-            borderTop: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-          }}
-        >
+        <div className="p-4 flex gap-3 justify-end bg-secondary/10 border-t border-border-color">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-70 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ color: 'var(--dyn-text)' }}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-text-secondary hover:text-text-primary disabled:opacity-50"
           >
             বাতিল করুন
           </button>
@@ -270,15 +226,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || !issueCategory}
-            className={`px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition-all flex items-center gap-2 ${
-              isSubmitting || !issueCategory
-                ? 'cursor-not-allowed opacity-50'
-                : 'active:scale-95 hover:opacity-90'
-            }`}
-            style={{ 
-              backgroundColor: 'var(--dyn-primary)', 
-              color: '#ffffff' 
-            }}
+            className="px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition-all flex items-center gap-2 bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-95"
           >
             {isSubmitting ? 'সাবমিট হচ্ছে...' : 'সাবমিট করুন'}
           </button>

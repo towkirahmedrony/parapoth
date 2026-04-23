@@ -10,7 +10,6 @@ interface Props {
   type: TabType;
 }
 
-// Moved config outside to prevent unnecessary recreations on every render
 const EMPTY_STATE_CONFIG: Record<TabType, { title: string; desc: string; btnText: string; link: string }> = {
   history: {
     title: "এখনো কোনো পরীক্ষা দেননি?",
@@ -36,13 +35,11 @@ export const EmptyState: React.FC<Props> = memo(({ type }) => {
   const navigate = useNavigate();
   const current = EMPTY_STATE_CONFIG[type];
 
-  // Fallback in case an invalid type is passed
   if (!current) return null;
 
   return (
     <div className="flex flex-col items-center justify-center py-10 px-4 text-center animate-in fade-in zoom-in duration-500">
       
-      {/* Lottie Animation Wrapper */}
       <div className="w-48 h-48 md:w-60 md:h-60 mb-2 pointer-events-none">
         <Lottie 
           animationData={searchAnim} 
@@ -52,27 +49,21 @@ export const EmptyState: React.FC<Props> = memo(({ type }) => {
         />
       </div>
 
-      {/* Text Content */}
-      <h3 className="text-xl font-bold mb-2 font-['Hind_Siliguri']" style={{ color: 'var(--dyn-text)' }}>
+      <h3 className="text-text-primary text-xl font-bold mb-2 font-['Hind_Siliguri']">
         {current.title}
       </h3>
-      <p className="max-w-xs mx-auto mb-8 font-['Hind_Siliguri'] text-sm" style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
+      <p className="text-text-secondary max-w-xs mx-auto mb-8 font-['Hind_Siliguri'] text-sm">
         {current.desc}
       </p>
 
-      {/* Action Button */}
       <button 
         onClick={() => navigate(current.link)}
-        className="group flex items-center space-x-2 px-6 py-3 rounded-full shadow-sm transition-all duration-300 hover:shadow-md active:scale-95"
-        style={{ 
-          backgroundColor: 'var(--dyn-card)',
-          border: '1px solid color-mix(in srgb, var(--dyn-primary) 50%, transparent)'
-        }}
+        className="bg-card-bg border border-border-color hover:bg-surface-elevated group flex items-center space-x-2 px-6 py-3 rounded-full shadow-sm transition-all duration-300 hover:shadow-md active:scale-95"
       >
-        <span className="text-sm font-semibold font-['Hind_Siliguri'] transition-colors" style={{ color: 'var(--dyn-primary)' }}>
+        <span className="text-primary text-sm font-semibold font-['Hind_Siliguri'] transition-colors">
           {current.btnText}
         </span>
-        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" style={{ color: 'var(--dyn-primary)' }} />
+        <ArrowRight className="text-primary w-4 h-4 transition-transform group-hover:translate-x-1" />
       </button>
 
     </div>

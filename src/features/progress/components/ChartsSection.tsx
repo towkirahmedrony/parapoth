@@ -12,37 +12,25 @@ interface ChartsSectionProps {
 export const ChartsSection: React.FC<ChartsSectionProps> = ({ performanceChart, skillMapping }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div 
-        className="lg:col-span-2 backdrop-blur-sm rounded-2xl p-6 shadow-sm"
-        style={{ 
-          backgroundColor: 'var(--dyn-card)', 
-          border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-        }}
-      >
+      <div className="lg:col-span-2 backdrop-blur-sm rounded-2xl p-6 shadow-sm bg-card-bg border border-border-color">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--dyn-text)' }}>
-              <BarChart2 size={18} style={{ color: 'var(--dyn-primary)' }} />
+            <h3 className="text-lg font-bold flex items-center gap-2 text-text-primary">
+              <BarChart2 size={18} className="text-accent" />
               পারফরম্যান্স গ্রাফ
             </h3>
-            <p className="text-xs" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>গত ৭টি পরীক্ষার ফলাফলের ভিত্তিতে</p>
+            <p className="text-xs text-text-secondary">গত ৭টি পরীক্ষার ফলাফলের ভিত্তিতে</p>
           </div>
         </div>
         <PerformanceChart data={performanceChart} />
       </div>
 
-      <div 
-        className="backdrop-blur-sm rounded-2xl p-6 flex flex-col shadow-sm"
-        style={{ 
-          backgroundColor: 'var(--dyn-card)', 
-          border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-        }}
-      >
-        <h3 className="text-lg font-bold mb-1 flex items-center gap-2" style={{ color: 'var(--dyn-text)' }}>
-          <Brain size={18} style={{ color: 'var(--dyn-primary)' }} />
+      <div className="backdrop-blur-sm rounded-2xl p-6 flex flex-col shadow-sm bg-card-bg border border-border-color">
+        <h3 className="text-lg font-bold mb-1 flex items-center gap-2 text-text-primary">
+          <Brain size={18} className="text-accent" />
           স্কিল ম্যাপিং
         </h3>
-        <p className="text-xs mb-4" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>বিষয়ভিত্তিক দক্ষতার চিত্র</p>
+        <p className="text-xs mb-4 text-text-secondary">বিষয়ভিত্তিক দক্ষতার চিত্র</p>
         <div className="flex-1 flex items-center justify-center">
           <SubjectRadar data={skillMapping} />
         </div>

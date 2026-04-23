@@ -76,43 +76,26 @@ const AIChatPage = () => {
   }, []);
 
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden font-sans bg-dyn-bg text-dyn-text">
+    <div className="relative flex flex-col h-screen overflow-hidden font-sans bg-app text-text-primary">
       
       {isModalOpen && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-        >
-          <div 
-            className="w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 bg-dyn-card"
-            style={{ border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-          >
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/50 animate-in fade-in duration-300">
+          <div className="w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 bg-surface-elevated border border-border-color">
             <div className="p-8">
-              <div 
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)' }}
-              >
-                <Sparkles className="w-8 h-8" style={{ color: 'var(--dyn-primary)' }} />
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto bg-primary/10 text-primary">
+                <Sparkles className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold text-center mb-2">প্যারা সাথী AI</h2>
-              <p 
-                className="text-center mb-8 text-sm"
-                style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-              >
+              <h2 className="text-2xl font-bold text-center mb-2 text-text-primary">প্যারা সাথী AI</h2>
+              <p className="text-center mb-8 text-sm text-text-secondary">
                 চ্যাট শুরু করার আগে আপনার পড়ার বিষয়টি সিলেক্ট করুন
               </p>
               
               <div className="relative group">
                 <select 
                   onChange={(e) => selectSubject(e.target.value)}
-                  className="w-full appearance-none py-4 px-5 pr-10 rounded-2xl focus:outline-none transition-all cursor-pointer disabled:opacity-50 bg-transparent"
+                  className="w-full appearance-none py-4 px-5 pr-10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-focus-ring transition-all cursor-pointer disabled:opacity-50 bg-input-bg border border-input-border text-text-primary"
                   defaultValue=""
                   disabled={isSubjectsLoading}
-                  style={{ 
-                    border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)',
-                    backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                    color: 'var(--dyn-text)'
-                  }}
                 >
                   <option value="" disabled>
                     {isSubjectsLoading ? 'বিষয় লোড হচ্ছে...' : 'একটি বিষয় বেছে নিন...'}
@@ -121,35 +104,21 @@ const AIChatPage = () => {
                     <option key={sub.id} value={sub.id}>{sub.name_bn}</option>
                   ))}
                 </select>
-                <ChevronDown 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors" 
-                  size={20} 
-                  style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }}
-                />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-text-secondary" size={20} />
               </div>
 
               <div className="mt-8 flex gap-3">
                 <button 
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 px-4 font-medium transition-colors hover:opacity-80"
-                  style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
+                  className="flex-1 py-3 px-4 font-medium transition-colors hover:opacity-80 text-text-secondary"
                 >
                   পরে করব
                 </button>
               </div>
             </div>
-            <div 
-              className="p-4 flex items-center gap-2 justify-center"
-              style={{ 
-                backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                borderTop: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-              }}
-            >
-               <Info size={14} style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }} />
-               <span 
-                 className="text-xs"
-                 style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
-               >
+            <div className="p-4 flex items-center gap-2 justify-center bg-surface border-t border-border-color">
+               <Info size={14} className="text-text-secondary" />
+               <span className="text-xs text-text-secondary">
                  আপনার সিলেক্ট করা বিষয়ের উপর ভিত্তি করে উত্তর দেওয়া হবে।
                </span>
             </div>
@@ -157,21 +126,11 @@ const AIChatPage = () => {
         </div>
       )}
 
-      <header 
-        className="flex items-center justify-between px-6 py-4 backdrop-blur-md sticky top-0 z-10"
-        style={{ 
-          backgroundColor: 'color-mix(in srgb, var(--dyn-bg) 85%, transparent)',
-          borderBottom: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-        }}
-      >
+      <header className="flex items-center justify-between px-6 py-4 backdrop-blur-md sticky top-0 z-10 bg-nav-bg/80 border-b border-border-color text-nav-text">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:opacity-80"
-            style={{ 
-              backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)'
-            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:opacity-80 bg-secondary border border-border-color text-text-primary"
           >
             <BookOpen size={16} />
             <span className="text-sm font-medium">{selectedSubject?.name_bn || 'বিষয় নির্বাচন'}</span>
@@ -182,15 +141,11 @@ const AIChatPage = () => {
            <button 
              onClick={handleClearChat} 
              title="চ্যাট ক্লিয়ার করুন"
-             className="p-2 transition-colors hover:opacity-80"
-             style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
+             className="p-2 transition-colors hover:opacity-80 text-text-secondary"
            >
               <RefreshCcw size={18} />
            </button>
-           <div 
-             className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs bg-dyn-primary"
-             style={{ color: 'var(--dyn-bg)' }}
-           >
+           <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs bg-primary text-primary-foreground">
              {userInitial}
            </div>
         </div>
@@ -201,25 +156,13 @@ const AIChatPage = () => {
           
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div 
-                className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl mb-6 rotate-3"
-                style={{ 
-                  background: 'linear-gradient(135deg, var(--dyn-primary), var(--dyn-accent))',
-                  boxShadow: '0 20px 25px -5px color-mix(in srgb, var(--dyn-primary) 30%, transparent)'
-                }}
-              >
-                <Sparkles className="w-10 h-10" style={{ color: 'var(--dyn-bg)' }} />
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl mb-6 rotate-3 bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                <Sparkles className="w-10 h-10" />
               </div>
-              <h1 
-                className="text-3xl font-bold mb-3 bg-clip-text text-transparent"
-                style={{ backgroundImage: 'linear-gradient(to right, var(--dyn-primary), var(--dyn-accent))' }}
-              >
+              <h1 className="text-3xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
                  হ্যালো, আমি প্যারা সাথী AI
               </h1>
-              <p 
-                className="text-center max-w-sm px-4 leading-relaxed"
-                style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-              >
+              <p className="text-center max-w-sm px-4 leading-relaxed text-text-secondary">
                 আপনার {selectedSubject?.name_bn || 'পছন্দের'} বিষয়ের যেকোনো জটিল প্রশ্নের সহজ সমাধান পেতে আমাকে জিজ্ঞেস করুন।
               </p>
             </div>
@@ -228,11 +171,11 @@ const AIChatPage = () => {
           {messages.map((msg, i) => (
             <div key={i} className={`flex gap-4 md:gap-6 group animate-in fade-in duration-500 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
               <div 
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-dyn-primary' : ''}`}
-                style={msg.role === 'user' 
-                  ? { color: 'var(--dyn-bg)' } 
-                  : { backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)', color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }
-                }
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                  msg.role === 'user' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-surface border border-border-color text-text-secondary'
+                }`}
               >
                 {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
               </div>
@@ -240,13 +183,9 @@ const AIChatPage = () => {
                 <div 
                   className={`text-[15px] leading-relaxed whitespace-pre-wrap ${
                     msg.role === 'user' 
-                    ? 'px-5 py-3 rounded-2xl rounded-tr-none shadow-lg bg-dyn-primary' 
-                    : 'pt-1'
+                    ? 'px-5 py-3 rounded-2xl rounded-tr-none shadow-lg bg-primary text-primary-foreground' 
+                    : 'pt-1 text-text-primary'
                   }`}
-                  style={msg.role === 'user' 
-                    ? { color: 'var(--dyn-bg)', boxShadow: '0 10px 15px -3px color-mix(in srgb, var(--dyn-primary) 30%, transparent)' } 
-                    : { color: 'var(--dyn-text)' }
-                  }
                 >
                   {msg.content}
                 </div>
@@ -256,15 +195,12 @@ const AIChatPage = () => {
 
           {chatMutation.isPending && (
             <div className="flex gap-4 md:gap-6 animate-pulse">
-              <div 
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-              >
-                <Bot size={18} style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-surface border border-border-color text-text-secondary">
+                <Bot size={18} />
               </div>
               <div className="space-y-2 flex-1 pt-2 max-w-[60%]">
-                <div className="h-2 rounded w-3/4" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 15%, transparent)' }}></div>
-                <div className="h-2 rounded w-1/2" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 15%, transparent)' }}></div>
+                <div className="h-2 rounded w-3/4 bg-surface-elevated"></div>
+                <div className="h-2 rounded w-1/2 bg-surface-elevated"></div>
               </div>
             </div>
           )}
@@ -272,22 +208,12 @@ const AIChatPage = () => {
         </div>
       </main>
 
-      <div 
-        className="fixed bottom-0 inset-x-0 p-4 md:pb-8"
-        style={{ background: 'linear-gradient(to top, var(--dyn-bg) 70%, transparent)' }}
-      >
+      <div className="fixed bottom-0 inset-x-0 p-4 md:pb-8 bg-gradient-to-t from-app to-transparent">
         <div className="max-w-3xl mx-auto relative group">
-          <div 
-            className="absolute inset-0 blur-xl transition-all rounded-full opacity-50 group-focus-within:opacity-100" 
-            style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)' }}
-          />
+          <div className="absolute inset-0 blur-xl transition-all rounded-full opacity-50 group-focus-within:opacity-100 bg-primary/10" />
           <form 
             onSubmit={handleSendMessage}
-            className="relative flex items-center rounded-[2rem] px-5 py-2 transition-all focus-within:scale-[1.01] bg-dyn-card"
-            style={{ 
-              border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)',
-              boxShadow: '0 20px 25px -5px color-mix(in srgb, var(--dyn-text) 5%, transparent)'
-            }}
+            className="relative flex items-center rounded-[2rem] px-5 py-2 transition-all focus-within:scale-[1.01] bg-surface-elevated border border-border-color shadow-lg focus-within:ring-2 focus-within:ring-focus-ring"
           >
             <input
               type="text"
@@ -295,8 +221,7 @@ const AIChatPage = () => {
               onChange={(e) => setInput(e.target.value)}
               placeholder={`${selectedSubject?.name_bn || 'বিষয়'} নিয়ে প্রশ্ন করুন...`}
               disabled={chatMutation.isPending}
-              className="flex-1 py-3 bg-transparent border-none focus:outline-none disabled:opacity-50"
-              style={{ color: 'var(--dyn-text)' }}
+              className="flex-1 py-3 bg-transparent border-none focus:outline-none disabled:opacity-50 text-text-primary placeholder:text-text-secondary"
               autoComplete="off"
             />
             <div className="flex items-center gap-2 pl-2">
@@ -305,23 +230,15 @@ const AIChatPage = () => {
                 disabled={!input.trim() || chatMutation.isPending}
                 className={`p-3 rounded-full transition-all flex items-center justify-center ${
                   input.trim() && !chatMutation.isPending 
-                  ? 'bg-dyn-primary hover:scale-105 active:scale-95' 
-                  : ''
+                  ? 'bg-primary text-primary-foreground hover:scale-105 active:scale-95 shadow-md' 
+                  : 'bg-secondary text-text-secondary'
                 }`}
-                style={
-                  input.trim() && !chatMutation.isPending
-                  ? { color: 'var(--dyn-bg)', boxShadow: '0 10px 15px -3px color-mix(in srgb, var(--dyn-primary) 30%, transparent)' }
-                  : { backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)', color: 'color-mix(in srgb, var(--dyn-text) 30%, transparent)' }
-                }
               >
                 {chatMutation.isPending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
               </button>
             </div>
           </form>
-          <p 
-            className="text-[10px] text-center mt-3"
-            style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }}
-          >
+          <p className="text-[10px] text-center mt-3 text-text-secondary">
              ParaPoth AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করে নিন।
           </p>
         </div>

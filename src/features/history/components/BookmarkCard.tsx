@@ -22,29 +22,15 @@ export const BookmarkCard: React.FC<Props> = memo(({ item, onDelete }) => {
   };
 
   return (
-    <div 
-      className="p-5 rounded-xl shadow-sm flex justify-between gap-4 transition-all"
-      style={{ 
-        backgroundColor: 'var(--dyn-card)', 
-        border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-      }}
-    >
+    <div className="bg-card-bg border border-card-border p-5 rounded-xl shadow-sm flex justify-between gap-4 transition-all hover:shadow-md">
       <div className="flex-1 overflow-hidden">
         <div 
-          className="mb-2 prose prose-sm dark:prose-invert max-w-none" 
-          style={{ color: 'var(--dyn-text)' }}
+          className="text-text-primary mb-2 prose prose-sm dark:prose-invert max-w-none" 
           dangerouslySetInnerHTML={{ __html: renderBody(qData?.body) }}
         />
         {item.note && (
-          <div 
-            className="text-sm flex items-center p-2 rounded w-fit mt-2"
-            style={{ 
-              backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-              color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-            }}
-          >
-            <Bookmark className="w-3 h-3 mr-2 shrink-0" style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }} /> 
+          <div className="bg-surface border border-border-color text-text-secondary text-sm flex items-center p-2 rounded w-fit mt-2">
+            <Bookmark className="w-3 h-3 mr-2 shrink-0 text-text-secondary" /> 
             <span className="truncate max-w-[200px] sm:max-w-xs">{item.note}</span>
           </div>
         )}
@@ -52,11 +38,7 @@ export const BookmarkCard: React.FC<Props> = memo(({ item, onDelete }) => {
       <button 
         onClick={() => onDelete(item.id)}
         aria-label="Delete bookmark"
-        className="h-10 w-10 shrink-0 rounded-full transition-colors flex items-center justify-center hover:bg-opacity-80 active:scale-95"
-        style={{ 
-          color: 'var(--dyn-accent)',
-          backgroundColor: 'color-mix(in srgb, var(--dyn-accent) 10%, transparent)'
-        }}
+        className="text-accent bg-surface border border-border-color hover:bg-surface-elevated h-10 w-10 shrink-0 rounded-full transition-colors flex items-center justify-center active:scale-95"
       >
         <Trash2 className="w-4 h-4" />
       </button>

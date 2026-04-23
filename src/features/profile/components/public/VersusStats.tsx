@@ -30,26 +30,17 @@ const StatRow: React.FC<StatRowProps> = ({ icon: Icon, label, myValue, theirValu
   const tie = myValue === theirValue;
 
   return (
-    <div 
-      className="grid grid-cols-3 items-center py-3 border-b last:border-0"
-      style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-    >
-      <div 
-        className="text-center font-bold text-sm font-['Inter']"
-        style={{ color: iWin ? 'var(--dyn-primary)' : 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
-      >
+    <div className="grid grid-cols-3 items-center py-3 border-b border-border-color last:border-0">
+      <div className={`text-center font-bold text-sm font-['Inter'] ${iWin ? 'text-primary' : 'text-text-secondary'}`}>
         {myValue}{unit}
       </div>
       
       <div className="flex flex-col items-center justify-center">
-        <Icon className="w-4 h-4 mb-1" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }} />
-        <span className="text-[10px] font-['Hind_Siliguri']" style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}>{label}</span>
+        <Icon className="w-4 h-4 mb-1 text-text-secondary" />
+        <span className="text-[10px] font-['Hind_Siliguri'] text-text-secondary">{label}</span>
       </div>
 
-      <div 
-        className="text-center font-bold text-sm font-['Inter']"
-        style={{ color: (!iWin && !tie) ? 'var(--dyn-accent)' : 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}
-      >
+      <div className={`text-center font-bold text-sm font-['Inter'] ${(!iWin && !tie) ? 'text-accent' : 'text-text-secondary'}`}>
         {theirValue}{unit}
       </div>
     </div>
@@ -63,34 +54,16 @@ const VersusStats: React.FC<VersusStatsProps> = ({ stats, opponentName }) => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mx-4 -mt-6 relative z-10 rounded-2xl p-5 border shadow-xl"
-      style={{ 
-        backgroundColor: 'var(--dyn-card)', 
-        borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-      }}
+      className="mx-4 -mt-6 relative z-10 rounded-2xl p-5 border shadow-xl bg-card-bg border-card-border"
     >
       <div className="flex justify-between items-center mb-4 px-4">
-        <span 
-          className="text-xs font-bold font-['Inter']"
-          style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-        >
+        <span className="text-xs font-bold font-['Inter'] text-text-secondary">
           YOU
         </span>
-        <span 
-          className="text-xs font-bold px-3 py-1 rounded-full border"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)', 
-            color: 'var(--dyn-primary)',
-            borderColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)'
-          }}
-        >
+        <span className="text-xs font-bold px-3 py-1 rounded-full border bg-badge-bg text-badge-text border-border-color">
           VS
         </span>
-        {/* 🟢 THEM এর পরিবর্তে আসল নাম */}
-        <span 
-          className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right"
-          style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-        >
+        <span className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right text-text-secondary">
           {opponentName || 'THEM'}
         </span>
       </div>

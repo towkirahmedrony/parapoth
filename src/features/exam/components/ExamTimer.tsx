@@ -1,12 +1,12 @@
 import React, { memo } from 'react';
 import { Clock } from 'lucide-react';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 interface ExamTimerProps {
   seconds: number;
+  layout?: 'compact' | 'card';
 }
 
-// Moved outside to prevent recreation on every tick
 const formatTime = (totalSeconds: number): string => {
   const safeSeconds = Math.max(0, totalSeconds);
   const m = Math.floor(safeSeconds / 60);
@@ -14,27 +14,47 @@ const formatTime = (totalSeconds: number): string => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
-const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds }) => {
-  const isUrgent = seconds < 300; // Less than 5 minutes
+const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds, layout = 'compact' }) => {
+  const isUrgent = seconds < 300 && seconds > 0;
+  const timeString = formatTime(seconds);
+
+  if (layout === 'card') {
+    return (
+      <div 
+        className={clsx(
+          "flex flex-col items-center justify-center p-6 rounded-2xl border transition-colors duration-500",
+          isUrgent 
+            ? "bg-accent border-transparent text-primary-foreground animate-pulse shadow-sm" 
+            : "bg-card-bg border-card-border text-text-primary"
+        )}
+      >
+        <div className={clsx(
+          "flex items-center gap-2 mb-2 opacity-80",
+          isUrgent ? "text-primary-foreground" : "text-text-secondary"
+        )}>
+          <Clock size={18} />
+          <span className="text-sm font-medium">
+            বাকি সময়
+          </span>
+        </div>
+        <div className="text-4xl font-mono font-bold tracking-tight">
+          {timeString}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       className={clsx(
-        "flex items-center gap-2 px-4 py-2 rounded-md font-mono font-bold transition-colors duration-300 border",
-        isUrgent && "animate-pulse-subtle" // Optional standard tailwind class integration if needed
+        "flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold transition-colors duration-300 border",
+        isUrgent 
+          ? "bg-accent border-transparent text-primary-foreground animate-pulse" 
+          : "bg-surface border-border-color text-text-primary"
       )}
-      style={{
-        backgroundColor: isUrgent
-          ? 'color-mix(in srgb, var(--dyn-accent) 15%, transparent)'
-          : 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-        color: isUrgent ? 'var(--dyn-accent)' : 'var(--dyn-text)',
-        borderColor: isUrgent
-          ? 'color-mix(in srgb, var(--dyn-accent) 30%, transparent)'
-          : 'color-mix(in srgb, var(--dyn-text) 15%, transparent)'
-      }}
     >
-      <Clock className={clsx("w-5 h-5", isUrgent && "animate-pulse")} />
-      <span className="text-lg tracking-wider">{formatTime(seconds)}</span>
+      <Clock size={16} className={clsx(isUrgent && "animate-pulse")} />
+      <span className="text-sm tracking-wider">{timeString}</span>
     </div>
   );
 });

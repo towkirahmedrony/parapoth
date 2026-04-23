@@ -6,17 +6,28 @@ interface SkillRadarProps {
   data: { subject: string; score: number; fullMark: number }[];
 }
 
-// Extracted styles to prevent unnecessary Recharts object diffing overhead
-const TOOLTIP_CONTENT_STYLE: React.CSSProperties = { 
-  backgroundColor: 'var(--dyn-card)', 
-  borderRadius: '8px', 
-  border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)',
-  color: 'var(--dyn-text)'
-};
+// TooltipProps-এর বদলে কাস্টম ইন্টারফেস ব্যবহার করুন
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
 
-const TOOLTIP_ITEM_STYLE: React.CSSProperties = { 
-  color: 'var(--dyn-primary)', 
-  fontWeight: 'bold' 
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card-bg border border-card-border p-3 rounded-lg shadow-sm">
+        <p className="text-text-secondary text-xs mb-1 font-['Hind_Siliguri']">{label}</p>
+        {/* entry এবং index এর টাইপ নির্দিষ্ট করে দেওয়া হয়েছে */}
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-primary text-xs font-bold font-['Hind_Siliguri']">
+            {entry.name}: {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
 };
 
 const SkillRadar: React.FC<SkillRadarProps> = ({ data }) => {
@@ -24,48 +35,35 @@ const SkillRadar: React.FC<SkillRadarProps> = ({ data }) => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
-      className="m-4 p-5 rounded-2xl shadow-lg border"
-      style={{ 
-        backgroundColor: 'var(--dyn-card)', 
-        borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-      }}
+      className="m-4 p-5 rounded-2xl shadow-lg border bg-card-bg border-card-border"
     >
       <div className="flex justify-between items-center mb-4">
-        <h3 
-          className="text-lg font-bold font-['Hind_Siliguri']"
-          style={{ color: 'var(--dyn-text)' }}
-        >
+        <h3 className="text-lg font-bold font-['Hind_Siliguri'] text-text-primary">
           দক্ষতা গ্রাফ 🕸️
         </h3>
-        <span 
-          className="text-xs font-medium font-['Hind_Siliguri']"
-          style={{ color: 'var(--dyn-primary)' }}
-        >
+        <span className="text-xs font-medium font-['Hind_Siliguri'] text-primary">
           সেরা বিষয়সমূহ
         </span>
       </div>
 
-      <div className="h-[250px] w-full flex items-center justify-center text-xs">
+      <div className="h-[250px] w-full flex items-center justify-center text-xs text-text-secondary">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-            <PolarGrid stroke="color-mix(in srgb, var(--dyn-text) 30%, transparent)" />
+            <PolarGrid stroke="var(--border-color, #e5e7eb)" />
             <PolarAngleAxis 
               dataKey="subject" 
-              tick={{ fill: 'var(--dyn-text)', opacity: 0.8, fontSize: 11, fontWeight: '500', fontFamily: 'Hind Siliguri' }} 
+              tick={{ fill: 'currentColor', fontSize: 11, fontWeight: '500', fontFamily: 'Hind Siliguri' }} 
             />
             <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
             <Radar
               name="স্কোর"
               dataKey="score"
-              stroke="var(--dyn-primary)"
+              stroke="var(--primary, #3b82f6)"
               strokeWidth={2}
-              fill="var(--dyn-primary)"
+              fill="var(--primary, #3b82f6)"
               fillOpacity={0.3}
             />
-            <Tooltip 
-                contentStyle={TOOLTIP_CONTENT_STYLE}
-                itemStyle={TOOLTIP_ITEM_STYLE}
-            />
+            <Tooltip content={<CustomTooltip />} />
           </RadarChart>
         </ResponsiveContainer>
       </div>

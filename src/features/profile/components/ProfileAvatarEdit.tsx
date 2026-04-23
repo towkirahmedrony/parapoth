@@ -94,7 +94,7 @@ const ProfileAvatarEdit: React.FC<ProfileAvatarEditProps> = ({ userId, currentAv
         accept="image/jpeg, image/png, image/webp" 
         className="hidden" 
       />
-      <p className="text-xs mt-3 font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+      <p className="text-xs mt-3 font-medium text-text-secondary">
         {isUploading ? 'আপলোড হচ্ছে...' : 'ছবি পরিবর্তন করতে ট্যাপ করুন'}
       </p>
     </div>

@@ -94,7 +94,7 @@ const Checkout: React.FC = () => {
   if (isLoading || !plan) {
     return (
       <div className="p-10 text-center">
-        <Loader2 className="animate-spin mx-auto" style={{ color: 'var(--dyn-primary)' }} />
+        <Loader2 className="animate-spin mx-auto text-primary" />
       </div>
     );
   }
@@ -103,12 +103,11 @@ const Checkout: React.FC = () => {
   const finalAmount = isDiscounted ? plan.discounted_price! : plan.price;
 
   return (
-    <div className="min-h-screen p-4" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
+    <div className="min-h-screen p-4 bg-app text-text-primary">
       <div className="max-w-2xl mx-auto mb-6 flex items-center gap-4">
         <button 
           onClick={() => navigate(-1)} 
-          className="p-2 rounded-full shadow-sm"
-          style={{ backgroundColor: 'var(--dyn-card)' }}
+          className="p-2 rounded-full shadow-sm bg-card-bg border border-card-border"
         >
           <ArrowLeft size={20} />
         </button>
@@ -116,11 +115,8 @@ const Checkout: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <div 
-          className="rounded-2xl p-6 shadow-sm mb-6"
-          style={{ backgroundColor: 'var(--dyn-card)' }}
-        >
-          <h2 className="text-sm uppercase font-semibold mb-4" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+        <div className="rounded-2xl p-6 shadow-sm mb-6 bg-card-bg border border-card-border">
+          <h2 className="text-sm uppercase font-semibold mb-4 text-text-secondary">
             Order Summary
           </h2>
           <div className="flex justify-between items-center mb-2">
@@ -133,20 +129,15 @@ const Checkout: React.FC = () => {
               <span>- ৳{plan.price - plan.discounted_price!}</span>
             </div>
           )}
-          <div 
-            className="border-t border-dashed my-4" 
-            style={{ borderColor: 'color-mix(in srgb, var(--dyn-text) 20%, transparent)' }}
-          ></div>
+          <div className="border-t border-dashed my-4 border-border-color"></div>
           <div className="flex justify-between items-center">
             <span className="text-xl font-bold">Total Payable</span>
-            <span className="text-2xl font-extrabold" style={{ color: 'var(--dyn-primary)' }}>৳{finalAmount}</span>
+            <span className="text-2xl font-extrabold text-primary">৳{finalAmount}</span>
           </div>
         </div>
 
         {selectedMethod && (
-          <div 
-            className="border rounded-xl p-4 flex gap-3 mb-6 bg-yellow-500/10 border-yellow-500/30"
-          >
+          <div className="border rounded-xl p-4 flex gap-3 mb-6 bg-yellow-500/10 border-yellow-500/30">
             <AlertTriangle className="shrink-0 mt-0.5 text-yellow-600" />
             <p className="text-sm text-yellow-800">
               Please <strong>Send Money</strong> to the {selectedMethod.name} number below <i>before</i> filling out the verification form.
@@ -165,10 +156,7 @@ const Checkout: React.FC = () => {
           ))}
         </div>
 
-        <div 
-          className="rounded-2xl p-6 shadow-sm"
-          style={{ backgroundColor: 'var(--dyn-card)' }}
-        >
+        <div className="rounded-2xl p-6 shadow-sm bg-card-bg border border-card-border">
           <h3 className="font-bold text-lg mb-4">Verify Payment</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -204,7 +192,7 @@ const Checkout: React.FC = () => {
                 </span>
               ) : "Verify Payment"}
             </Button>
-            <p className="text-xs text-center mt-2" style={{ color: 'color-mix(in srgb, var(--dyn-text) 50%, transparent)' }}>
+            <p className="text-xs text-center mt-2 text-text-secondary">
               You will receive an automated notification once approved.
             </p>
           </form>

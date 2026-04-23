@@ -4,40 +4,40 @@ import SocialLogin from '../components/SocialLogin';
 
 export default function Login() {
   return (
-    <div className="min-h-screen w-full flex flex-col justify-center items-center px-4 bg-[var(--dyn-bg)]">
+    <div className="min-h-screen w-full flex flex-col justify-center items-center px-4 py-8 bg-app">
       <div className="w-full max-w-[400px] flex flex-col items-center">
         
-        {/* Logo */}
-        <div className="mb-8 flex flex-col items-center gap-2">
+        {/* Logo, Title and Subtitle */}
+        <div className="mb-8 flex flex-col items-center">
           <img 
-            src="https://res.cloudinary.com/dqpv45947/image/upload/v1774883011/parapoth_media/gdjup0cu4ilba6uoqgcr.webp" 
+            src="https://res.cloudinary.com/dqpv45947/image/upload/v1776608021/parapoth_media/hzigvwfcfbfb1schkd3r.webp" 
             alt="App Logo" 
-            className="h-16 w-auto object-contain drop-shadow-sm"
+            className="h-12 w-auto object-contain drop-shadow-sm mb-2"
           />
+          <h1 className="text-2xl font-bold tracking-tight mb-0.5 text-text-primary">
+            প্যারাপথ
+          </h1>
+          <p className="text-[13px] font-medium tracking-[0.08em] uppercase text-text-secondary">
+            সফলতার পথে, তোমার সাথে
+          </p>
         </div>
 
-        {/* Minimal Form */}
+        {/* Form Elements */}
         <LoginForm />
 
         {/* Social Login Buttons */}
         <SocialLogin />
 
-        {/* Links */}
-        <div className="w-full mt-4 flex flex-col items-center gap-5">
-          <Link 
-            to="/auth/forgot-password" 
-            className="font-medium hover:underline text-[var(--dyn-text)]"
-          >
-            পাসওয়ার্ড ভুলে গেছেন?
-          </Link>
-
-          <div className="w-full h-px my-2 bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
-
+        {/* Bottom Registration Link */}
+        <div className="w-full mt-6 flex justify-center items-center text-[15px]">
+          <span className="text-text-secondary">
+            অ্যাকাউন্ট নেই?
+          </span>
           <Link 
             to="/auth/register" 
-            className="w-fit px-5 py-2.5 font-bold rounded-full border transition-colors border-[color-mix(in_srgb,var(--dyn-text)_20%,transparent)] text-[var(--dyn-text)] bg-transparent hover:bg-[color-mix(in_srgb,var(--dyn-text)_5%,transparent)]"
+            className="font-bold ml-1.5 text-text-primary hover:text-text-secondary hover:underline transition-colors"
           >
-            নতুন অ্যাকাউন্ট তৈরি করুন
+            সাইন আপ করুন
           </Link>
         </div>
         

@@ -44,7 +44,6 @@ const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
   }, []);
 
   const handleStartExam = useCallback((config: ExamConfig) => {
-    // 🌟 আপডেট: selectedSubject এর slug দিয়ে রাউট ডাইনামিক করা হলো
     const examRoute = selectedSubject?.slug ? `/exam/live/${selectedSubject.slug}` : '/exam/live';
     
     navigate(examRoute, { 
@@ -80,11 +79,10 @@ const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
     <div className="space-y-3 pb-20 animate-fade-in">
       {loading ? (
         Array.from({ length: 5 }).map((_, i) => (
-          <div key={`skeleton-${i}`} className="flex items-center justify-between p-4 rounded-xl border"
-               style={{ backgroundColor: 'var(--dyn-card)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
+          <div key={`skeleton-${i}`} className="flex items-center justify-between p-4 rounded-xl border border-card-border bg-card-bg">
              <div className="flex items-center gap-4 w-full">
-               <Skeleton className="h-10 w-10 rounded-lg bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
-               <Skeleton className="h-4 w-1/2 bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
+               <Skeleton className="h-10 w-10 rounded-lg bg-surface-elevated" />
+               <Skeleton className="h-4 w-1/2 bg-surface-elevated" />
              </div>
           </div>
         ))
@@ -95,28 +93,17 @@ const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
             <div
               key={subject.id}
               onClick={() => handleSubjectClick(subject)}
-              className="group active:scale-[0.99] rounded-xl p-5 flex items-center justify-between border transition-all cursor-pointer shadow-sm hover:opacity-80"
-              style={{ 
-                backgroundColor: 'var(--dyn-card)', 
-                borderColor: 'color-mix(in srgb, var(--dyn-text) 15%, transparent)' 
-              }}
+              className="group active:scale-[0.99] rounded-xl p-5 flex items-center justify-between border border-card-border bg-card-bg transition-all cursor-pointer shadow-sm hover:bg-surface-elevated"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors"
-                     style={{ 
-                       backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                       borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                       color: 'var(--dyn-primary)'
-                     }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-border-color bg-surface transition-colors text-text-primary">
                   <IconComponent size={20} strokeWidth={2} />
                 </div>
-                <h3 className="text-[15px] font-medium transition-colors"
-                    style={{ color: 'var(--dyn-text)' }}>
+                <h3 className="text-[15px] font-medium transition-colors text-text-primary">
                   {subject.name_bn}
                 </h3>
               </div>
-              <ChevronRight className="transition-transform group-hover:translate-x-1" size={18} 
-                            style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }} />
+              <ChevronRight className="transition-transform group-hover:translate-x-1 text-text-secondary" size={18} />
             </div>
           );
         })

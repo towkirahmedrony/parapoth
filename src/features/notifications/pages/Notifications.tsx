@@ -83,7 +83,7 @@ const Notifications: React.FC = () => {
   }, [user, markAsReadMutation, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col font-['Hind_Siliguri']" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
+    <div className="min-h-screen flex flex-col font-['Hind_Siliguri'] bg-app text-text-primary">
       
       <NotificationHeader 
         activeTab={activeTab} 
@@ -94,11 +94,7 @@ const Notifications: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {isLoading ? (
            <div className="flex justify-center py-10" aria-label="Loading Notifications">
-             <span 
-               className="animate-spin h-6 w-6 border-2 border-t-transparent rounded-full"
-               style={{ borderColor: 'var(--dyn-primary)', borderTopColor: 'transparent' }}
-               role="status"
-             ></span>
+             <span className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" role="status"></span>
            </div>
         ) : filteredData.length > 0 ? (
           filteredData.map((item) => (

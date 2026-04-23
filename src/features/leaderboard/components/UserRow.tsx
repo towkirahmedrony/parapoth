@@ -26,19 +26,6 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
   };
 
   const displayName = user.full_name || 'অজানা শিক্ষার্থী';
-  
-  const mutedTextColor = 'color-mix(in srgb, var(--dyn-text) 70%, transparent)';
-  const borderColor = 'color-mix(in srgb, var(--dyn-text) 10%, transparent)';
-  
-  const userRowBg = isFooter 
-    ? 'transparent' 
-    : user.is_current_user 
-      ? 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)' 
-      : 'var(--dyn-card)';
-
-  const userRowShadow = user.is_current_user && !isFooter 
-    ? `0 0 0 1px color-mix(in srgb, var(--dyn-primary) 30%, transparent)` 
-    : 'none';
 
   const rankColors: Record<number, string> = {
     1: '#EAB308', // Gold
@@ -54,50 +41,38 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: isFooter ? 0 : index * 0.03 }}
-      className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors border hover:[background-color:color-mix(in_srgb,var(--dyn-text)_10%,transparent)]"
-      style={{ 
-        backgroundColor: userRowBg,
-        borderColor: borderColor,
-        boxShadow: userRowShadow
-      }}
+      className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors border border-border-color hover:bg-secondary ${
+        isFooter 
+          ? 'bg-transparent' 
+          : user.is_current_user 
+            ? 'bg-primary/10 ring-1 ring-primary/30' 
+            : 'bg-card-bg'
+      }`}
     >
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="relative">
             <div 
-              className="w-9 h-9 rounded-full p-[1.5px] flex items-center justify-center"
-              style={{ 
-                backgroundColor: isTop3 ? getRankColor(user.rank) : 'color-mix(in srgb, var(--dyn-text) 15%, transparent)' 
-              }}
+              className={`w-9 h-9 rounded-full p-[1.5px] flex items-center justify-center ${!isTop3 ? 'bg-secondary' : ''}`}
+              style={isTop3 ? { backgroundColor: getRankColor(user.rank) } : undefined}
             >
                 <img 
                     src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`} 
                     alt={`${displayName} এর ছবি`}
-                    className="w-full h-full rounded-full object-cover" 
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
+                    className="w-full h-full rounded-full object-cover bg-secondary" 
                 />
             </div>
             {isTop3 && (
-                <div 
-                  className="absolute -top-1 -right-1 text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border"
-                  style={{ 
-                    backgroundColor: 'var(--dyn-card)', 
-                    color: 'var(--dyn-text)',
-                    borderColor: borderColor
-                  }}
-                >
+                <div className="absolute -top-1 -right-1 text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-border-color bg-card-bg text-text-primary">
                     {user.rank}
                 </div>
             )}
         </div>
 
         <div className="flex flex-col min-w-0">
-            <span 
-              className="text-xs font-semibold truncate" 
-              style={{ color: user.is_current_user ? 'var(--dyn-primary)' : 'var(--dyn-text)' }}
-            >
+            <span className={`text-xs font-semibold truncate ${user.is_current_user ? 'text-primary' : 'text-text-primary'}`}>
                 {displayName}
             </span>
-            <span className="text-[9px] truncate max-w-[100px]" style={{ color: mutedTextColor }}>
+            <span className="text-[9px] truncate max-w-[100px] text-text-secondary">
                 {user.institution || 'শিক্ষার্থী'}
             </span>
         </div>
@@ -105,7 +80,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
 
       <div className="flex flex-col items-end min-w-[50px]">
         {!isTop3 && (
-            <span className="text-lg font-bold font-['Inter'] leading-none mb-0.5" style={{ color: mutedTextColor }}>
+            <span className="text-lg font-bold font-['Inter'] leading-none mb-0.5 text-text-secondary">
                 {user.rank}
             </span>
         )}
@@ -115,7 +90,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
               style={{ color: getRankColor(user.rank) }} 
             />
         )}
-        <span className="text-[9px] font-medium" style={{ color: mutedTextColor }}>{user.total_score || 0} XP</span>
+        <span className="text-[9px] font-medium text-text-secondary">{user.total_score || 0} XP</span>
       </div>
     </motion.div>
   );

@@ -84,7 +84,6 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
   // 3. Client-side Filtering using useMemo (Derived State)
   const filteredPapers = useMemo(() => {
     return allPapers.filter((p) => {
-      // BoardExamPaper টাইপ থেকেই meta_data এখন সঠিকভাবে ইনফার (infer) হবে
       const metaData = p.meta_data;
       const matchBoard = selectedBoard ? metaData?.board === selectedBoard : true;
       const matchYear = selectedYear ? metaData?.year === selectedYear : true;
@@ -135,16 +134,12 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
             Array(4).fill(0).map((_, i) => (
               <div 
                 key={`skeleton-${i}`} 
-                className="p-4 rounded-xl border space-y-3 animate-pulse"
-                style={{ 
-                  backgroundColor: 'var(--dyn-card)',
-                  borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-                }}
+                className="p-4 rounded-xl border border-card-border bg-card-bg space-y-3 animate-pulse"
               >
-                <Skeleton className="h-5 w-3/4 bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
+                <Skeleton className="h-5 w-3/4 bg-surface-elevated" />
                 <div className="flex gap-3">
-                  <Skeleton className="h-4 w-16 bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
-                  <Skeleton className="h-4 w-16 bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
+                  <Skeleton className="h-4 w-16 bg-surface-elevated" />
+                  <Skeleton className="h-4 w-16 bg-surface-elevated" />
                 </div>
               </div>
             ))
@@ -155,43 +150,26 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
                 <div 
                   key={paper.id}
                   onClick={() => startExam(paper.id)}
-                  className="group active:scale-[0.99] p-5 rounded-xl border transition-all cursor-pointer shadow-sm hover:bg-[color-mix(in_srgb,var(--dyn-text)_5%,transparent)] hover:border-[color-mix(in_srgb,var(--dyn-primary)_40%,transparent)]"
-                  style={{
-                    backgroundColor: 'var(--dyn-card)',
-                    borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-                  }}
+                  className="group active:scale-[0.99] p-5 rounded-xl border border-card-border bg-card-bg transition-all cursor-pointer shadow-sm hover:bg-surface hover:border-primary"
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <h3 
-                      className="font-medium transition-colors line-clamp-2 group-hover:text-[var(--dyn-primary)]"
-                      style={{ color: 'var(--dyn-text)' }}
-                    >
+                    <h3 className="font-medium transition-colors line-clamp-2 text-text-primary group-hover:text-primary">
                       {paper.title} {metaData?.year && `(${metaData.year})`}
                     </h3>
                     {metaData?.board && (
-                      <div 
-                        className="px-2 py-1 rounded text-xs border whitespace-nowrap"
-                        style={{
-                          backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                          color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)',
-                          borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-                        }}
-                      >
+                      <div className="px-2 py-1 rounded text-xs border border-border-color bg-badge-bg text-badge-text whitespace-nowrap">
                         {metaData.board}
                       </div>
                     )}
                   </div>
                   
-                  <div 
-                    className="flex items-center gap-4 text-xs mt-3"
-                    style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-                  >
+                  <div className="flex items-center gap-4 text-xs mt-3 text-text-secondary">
                     <div className="flex items-center gap-1.5">
-                      <FileText size={14} style={{ color: 'color-mix(in srgb, var(--dyn-primary) 80%, transparent)' }} />
+                      <FileText size={14} className="text-primary" />
                       <span>{paper.total_marks} নম্বর</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Clock size={14} style={{ color: '#f97316' }} />
+                      <Clock size={14} />
                       <span>{paper.duration_min} মিনিট</span>
                     </div>
                   </div>
@@ -216,15 +194,11 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
         Array(5).fill(0).map((_, i) => (
           <div 
             key={`subject-skeleton-${i}`} 
-            className="flex items-center justify-between p-4 rounded-xl border animate-pulse"
-            style={{ 
-              backgroundColor: 'var(--dyn-card)',
-              borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-            }}
+            className="flex items-center justify-between p-4 rounded-xl border border-card-border bg-card-bg animate-pulse"
           >
              <div className="flex items-center gap-4 w-full">
-               <Skeleton className="h-10 w-10 rounded-lg bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
-               <Skeleton className="h-4 w-1/2 bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]" />
+               <Skeleton className="h-10 w-10 rounded-lg bg-surface-elevated" />
+               <Skeleton className="h-4 w-1/2 bg-surface-elevated" />
              </div>
           </div>
         ))
@@ -235,34 +209,19 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
             <div
               key={subject.id}
               onClick={() => handleSubjectClick(subject)}
-              className="group p-5 flex items-center justify-between rounded-xl border transition-all cursor-pointer shadow-sm active:scale-[0.99] hover:bg-[color-mix(in_srgb,var(--dyn-text)_5%,transparent)] hover:border-[color-mix(in_srgb,var(--dyn-text)_30%,transparent)]"
-              style={{
-                backgroundColor: 'var(--dyn-card)',
-                borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-              }}
+              className="group p-5 flex items-center justify-between rounded-xl border border-card-border bg-card-bg transition-all cursor-pointer shadow-sm active:scale-[0.99] hover:bg-surface hover:border-primary"
             >
               <div className="flex items-center gap-4">
-                <div 
-                  className="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors group-hover:border-[var(--dyn-primary)] group-hover:bg-[color-mix(in_srgb,var(--dyn-primary)_10%,transparent)]"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                    color: 'var(--dyn-primary)'
-                  }}
-                >
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-border-color bg-surface text-primary transition-colors group-hover:border-primary">
                   <IconComponent size={20} strokeWidth={2} />
                 </div>
-                <h3 
-                  className="text-[15px] font-medium transition-colors group-hover:text-[var(--dyn-primary)]"
-                  style={{ color: 'var(--dyn-text)' }}
-                >
+                <h3 className="text-[15px] font-medium transition-colors text-text-primary group-hover:text-primary">
                   {subject.name_bn}
                 </h3>
               </div>
               <ChevronRight 
-                className="transition-transform group-hover:translate-x-1 group-hover:text-[var(--dyn-primary)]" 
+                className="transition-transform group-hover:translate-x-1 text-text-secondary group-hover:text-primary" 
                 size={18} 
-                style={{ color: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)' }} 
               />
             </div>
           );

@@ -43,14 +43,14 @@ const PublicProfile: React.FC = () => {
 
   if (error || !profileData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-500" style={{ backgroundColor: 'var(--dyn-bg)' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-500 bg-app">
         <div className="w-64 h-64 mb-4">
           <Lottie animationData={userNotFoundAnimation} loop={true} />
         </div>
-        <p className="font-['Hind_Siliguri'] text-lg font-medium mb-6" style={{ color: 'var(--dyn-text)' }}>
+        <p className="font-['Hind_Siliguri'] text-lg font-medium mb-6 text-text-primary">
           {error || 'দুঃখিত, এই ইউজারকে খুঁজে পাওয়া যায়নি।'}
         </p>
-        <button onClick={handleGoBack} className="flex items-center gap-2 px-6 py-2.5 rounded-full font-['Hind_Siliguri'] shadow-md active:scale-95" style={{ backgroundColor: 'var(--dyn-primary)', color: 'var(--dyn-card)' }}>
+        <button onClick={handleGoBack} className="flex items-center gap-2 px-6 py-2.5 rounded-full font-['Hind_Siliguri'] shadow-md active:scale-95 bg-primary text-primary-foreground">
           <ChevronLeft className="w-5 h-5" /> ফিরে যান
         </button>
       </div>
@@ -65,8 +65,8 @@ const PublicProfile: React.FC = () => {
   const opponentFirstName = profile.full_name?.split(' ')[0] || 'Opponent';
 
   return (
-    <div className="min-h-screen pb-10 animate-in fade-in duration-500" style={{ backgroundColor: 'var(--dyn-bg)' }}>
-      <button onClick={handleGoBack} className="absolute top-4 left-4 z-20 p-2 rounded-full backdrop-blur-sm shadow-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-card) 70%, transparent)', color: 'var(--dyn-text)', border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
+    <div className="min-h-screen pb-10 animate-in fade-in duration-500 bg-app">
+      <button onClick={handleGoBack} className="absolute top-4 left-4 z-20 p-2 rounded-full backdrop-blur-sm shadow-sm bg-surface-elevated text-text-primary border border-border-color">
         <ChevronLeft className="w-6 h-6" />
       </button>
 

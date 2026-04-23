@@ -24,17 +24,11 @@ interface CustomTooltipProps {
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
-      <div 
-        className="p-3 rounded-lg shadow-xl"
-        style={{ 
-          backgroundColor: 'var(--dyn-card)',
-          border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-        }}
-      >
-        <p className="text-xs mb-1" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+      <div className="p-3 rounded-lg shadow-xl bg-card-bg border border-border-color">
+        <p className="text-xs mb-1 text-text-secondary">
           {label}
         </p>
-        <p className="font-bold text-sm" style={{ color: 'var(--dyn-primary)' }}>
+        <p className="font-bold text-sm text-text-primary">
           স্কোর: {payload[0].value}%
         </p>
       </div>
@@ -46,17 +40,14 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 export const PerformanceChart: React.FC<PerformanceChartProps> = React.memo(({ data }) => {
   if (!data || data.length === 0) {
     return (
-      <div 
-        className="h-[300px] w-full flex items-center justify-center text-sm" 
-        style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
-      >
+      <div className="h-[300px] w-full flex items-center justify-center text-sm text-text-secondary">
         পর্যাপ্ত ডেটা নেই।
       </div>
     );
   }
 
   return (
-    <div className="h-[300px] w-full" style={{ color: 'var(--dyn-primary)' }}>
+    <div className="h-[300px] w-full text-text-primary">
       {/* FIXED: Added minWidth={1} and minHeight={1} to prevent the Recharts 
         "width(-1) and height(-1)" development warning during initial render.
       */}
@@ -71,17 +62,20 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = React.memo(({ d
           <CartesianGrid 
             strokeDasharray="3 3" 
             vertical={false} 
-            stroke="color-mix(in srgb, var(--dyn-text) 15%, transparent)"
+            stroke="currentColor"
+            strokeOpacity={0.15}
           />
           <XAxis 
             dataKey="name" 
-            stroke="color-mix(in srgb, var(--dyn-text) 50%, transparent)" 
+            stroke="currentColor"
+            strokeOpacity={0.5} 
             fontSize={12} 
             tickLine={false}
             axisLine={false}
           />
           <YAxis 
-            stroke="color-mix(in srgb, var(--dyn-text) 50%, transparent)" 
+            stroke="currentColor"
+            strokeOpacity={0.5} 
             fontSize={12} 
             tickLine={false}
             axisLine={false}
@@ -89,7 +83,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = React.memo(({ d
           />
           <Tooltip 
             content={<CustomTooltip />} 
-            cursor={{ stroke: 'color-mix(in srgb, var(--dyn-text) 40%, transparent)', strokeWidth: 1 }} 
+            cursor={{ stroke: 'currentColor', strokeOpacity: 0.4, strokeWidth: 1 }} 
           />
           <Area 
             type="monotone" 

@@ -13,31 +13,71 @@ export interface GridItem {
 }
 
 interface HomeGridsResponse {
-  data: GridItem[];
+  data?: unknown;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const toNullableString = (value: unknown): string | null => {
+  return typeof value === 'string' ? value : null;
+};
+
+const sanitizeGridItem = (input: unknown): GridItem | null => {
+  if (!isRecord(input)) return null;
+
+  const id = toNullableString(input.id);
+  const title = toNullableString(input.title);
+  const iconName = toNullableString(input.icon_name);
+
+  if (!id || !title || !iconName) {
+    return null;
+  }
+
+  return {
+    id,
+    title,
+    icon_name: iconName,
+    link: toNullableString(input.link),
+    bg_color: toNullableString(input.bg_color),
+    color: toNullableString(input.color),
+    serial_order: typeof input.serial_order === 'number' ? input.serial_order : null,
+  };
+};
+
+const sanitizeGridItems = (input: unknown): GridItem[] => {
+  if (!Array.isArray(input)) return [];
+
+  return input
+    .map(sanitizeGridItem)
+    .filter((item): item is GridItem => item !== null)
+    .sort((a, b) => (a.serial_order ?? Number.MAX_SAFE_INTEGER) - (b.serial_order ?? Number.MAX_SAFE_INTEGER));
+};
+
 export const useHomeGrids = () => {
-  const { data: features = [], isLoading, isFetching, error } = useQuery({
-    queryKey: [QUERY_KEYS.HOME_GRIDS],
-    queryFn: async () => {
+  const query = useQuery({
+    queryKey: QUERY_KEYS.HOME_GRIDS,
+    queryFn: async (): Promise<GridItem[]> => {
       const { data } = await apiClient.get<HomeGridsResponse>('/system/home-grids');
-      if (!data?.data) {
-        throw new Error('Failed to load home grids');
-      }
-      return data.data;
+      return sanitizeGridItems(data?.data);
     },
-    staleTime: 1000 * 60 * 2, // ২ মিনিট ক্যাশ ধরে রাখবে
+    staleTime: 1000 * 60 * 2,
     gcTime: 1000 * 60 * 60,
-    refetchOnWindowFocus: true, // ইউজার অ্যাপে ঢুকলেই আপডেট চেক করবে
-    refetchInterval: 1000 * 15, // ম্যাজিক! প্রতি ১৫ সেকেন্ড পরপর ব্যাকগ্রাউন্ডে সাইলেন্টলি নতুন ডেটা চেক করবে
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
-  const loading = isLoading && features.length === 0;
+  const features = query.data ?? [];
+  const loading = query.isLoading && features.length === 0;
 
-  return { 
-    features, 
-    loading, 
-    isRefetching: isFetching,
-    error 
+  return {
+    features,
+    loading,
+    isRefetching: query.isFetching && !query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
   };
 };

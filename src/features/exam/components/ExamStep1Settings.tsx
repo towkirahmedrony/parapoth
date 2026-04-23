@@ -115,10 +115,9 @@ export const ExamStep1Settings: React.FC<Props> = memo(({ onNext, editingExamId 
 
   if (isLoading) {
     return (
-      <Card className="p-12 flex flex-col justify-center items-center h-[500px]" 
-            style={{ backgroundColor: 'var(--dyn-card)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
-        <Loader2 className="h-10 w-10 animate-spin mb-4" style={{ color: 'var(--dyn-primary)' }} />
-        <span className="font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
+      <Card className="p-12 flex flex-col justify-center items-center h-[500px] bg-card-bg border border-card-border">
+        <Loader2 className="h-10 w-10 animate-spin mb-4 text-primary" />
+        <span className="font-medium text-text-secondary">
           Loading exam configuration...
         </span>
       </Card>
@@ -127,8 +126,7 @@ export const ExamStep1Settings: React.FC<Props> = memo(({ onNext, editingExamId 
 
   if (isError && !examData && subjects.length === 0) {
     return (
-      <Card className="p-12 flex flex-col justify-center items-center h-[500px]" 
-            style={{ backgroundColor: 'var(--dyn-card)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
+      <Card className="p-12 flex flex-col justify-center items-center h-[500px] bg-card-bg border border-card-border">
         <AlertCircle className="h-10 w-10 mb-4 text-red-500" />
         <span className="font-medium text-red-500 text-center">
           Failed to load necessary data.<br/>Please check your connection and reload.
@@ -138,15 +136,14 @@ export const ExamStep1Settings: React.FC<Props> = memo(({ onNext, editingExamId 
   }
 
   return (
-    <Card className="animate-in fade-in slide-in-from-bottom-4 p-6" 
-          style={{ backgroundColor: 'var(--dyn-card)', borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
+    <Card className="animate-in fade-in slide-in-from-bottom-4 p-6 bg-card-bg border border-card-border">
       
       {/* Replaced CardHeader with standard semantic div */}
       <div className="flex flex-col space-y-1.5 mb-6">
-        <h3 className="text-2xl font-semibold leading-none tracking-tight" style={{ color: 'var(--dyn-text)' }}>
+        <h3 className="text-2xl font-semibold leading-none tracking-tight text-text-primary">
           {editingExamId ? 'Edit Exam Configuration' : 'New Exam Configuration'}
         </h3>
-        <p className="text-sm" style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
+        <p className="text-sm text-text-secondary">
           {editingExamId 
             ? `Editing details for exam ID: ${editingExamId}` 
             : 'Define rules, timing, marks, and platform constraints.'}
@@ -158,7 +155,7 @@ export const ExamStep1Settings: React.FC<Props> = memo(({ onNext, editingExamId 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Subject Selection */}
           <div className="space-y-2">
-            <label htmlFor="subject_id" className="text-sm font-medium" style={{ color: 'var(--dyn-text)' }}>
+            <label htmlFor="subject_id" className="text-sm font-medium text-text-primary">
               Subject *
             </label>
             <select 
@@ -166,23 +163,18 @@ export const ExamStep1Settings: React.FC<Props> = memo(({ onNext, editingExamId 
               name="subject_id" 
               value={formData.subject_id} 
               onChange={handleChange} 
-              className="w-full h-10 px-3 rounded-md text-sm outline-none transition-colors"
-              style={{ 
-                backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)', 
-                color: 'var(--dyn-text)', 
-                border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)' 
-              }}
+              className="w-full h-10 px-3 rounded-md text-sm outline-none transition-colors bg-input-bg text-text-primary border border-input-border focus:ring-2 focus:ring-focus-ring focus:border-transparent"
             >
-              <option value="">Select Subject</option>
+              <option value="" className="bg-surface text-text-primary">Select Subject</option>
               {subjects.map(sub => (
-                <option key={sub.id} value={sub.id}>{sub.name_bn}</option>
+                <option key={sub.id} value={sub.id} className="bg-surface text-text-primary">{sub.name_bn}</option>
               ))}
             </select>
           </div>
 
           {/* Exam Title Input */}
           <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium" style={{ color: 'var(--dyn-text)' }}>
+            <label htmlFor="title" className="text-sm font-medium text-text-primary">
               Exam Title *
             </label>
             <Input 
@@ -191,11 +183,7 @@ export const ExamStep1Settings: React.FC<Props> = memo(({ onNext, editingExamId 
               value={formData.title} 
               onChange={handleChange} 
               placeholder="e.g., HSC Physics Grand Mock" 
-              style={{ 
-                backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)', 
-                color: 'var(--dyn-text)',
-                border: '1px solid color-mix(in srgb, var(--dyn-text) 15%, transparent)' 
-              }} 
+              className="bg-input-bg text-text-primary border border-input-border focus:ring-2 focus:ring-focus-ring focus:border-transparent"
             />
           </div>
         </div>
@@ -205,12 +193,7 @@ export const ExamStep1Settings: React.FC<Props> = memo(({ onNext, editingExamId 
           <Button 
             onClick={handleNext} 
             disabled={!isValid}
-            className="transition-all"
-            style={{ 
-              backgroundColor: isValid ? 'var(--dyn-primary)' : 'color-mix(in srgb, var(--dyn-text) 20%, transparent)', 
-              color: isValid ? 'var(--dyn-card)' : 'color-mix(in srgb, var(--dyn-text) 50%, transparent)',
-              cursor: isValid ? 'pointer' : 'not-allowed'
-            }}
+            className="transition-all bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next: Question Selection <ChevronRight className="h-4 w-4 ml-2" />
           </Button>

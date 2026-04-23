@@ -129,10 +129,10 @@ const EditProfile: React.FC = () => {
     updateProfileMutation.mutate(updatePayload);
   };
 
-  const getAddressValue = (address: any): string => {
+  const getAddressValue = (address: unknown): string => {
     if (typeof address === 'string') return address;
     if (typeof address === 'object' && address !== null && 'full_address' in address) {
-      return String(address.full_address || '');
+      return String((address as Record<string, unknown>).full_address || '');
     }
     return '';
   };
@@ -143,23 +143,24 @@ const EditProfile: React.FC = () => {
 
   if (isPageLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--dyn-card)' }}>
-        <Loader2 className="animate-spin text-[var(--dyn-primary)]" size={40} />
+      <div className="min-h-screen flex items-center justify-center bg-app">
+        <Loader2 className="animate-spin text-primary" size={40} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative w-full sm:max-w-md sm:mx-auto" style={{ backgroundColor: 'var(--dyn-card)' }}>
+    <div className="min-h-screen flex flex-col relative w-full sm:max-w-md sm:mx-auto bg-app">
       {/* Header */}
-      <div className="sticky top-0 z-20 flex items-center px-4 py-4 backdrop-blur-md"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-card) 90%, transparent)', borderBottom: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
-        <button onClick={() => navigate(-1)} disabled={isLoading}
-          className="p-2 -ml-2 rounded-full hover:[background-color:color-mix(in_srgb,var(--dyn-text)_5%,transparent)] disabled:opacity-50 transition-colors"
-          style={{ color: 'var(--dyn-text)' }}>
+      <div className="sticky top-0 z-20 flex items-center px-4 py-4 backdrop-blur-md bg-surface/90 border-b border-border-color">
+        <button 
+          onClick={() => navigate(-1)} 
+          disabled={isLoading}
+          className="p-2 -ml-2 rounded-full hover:bg-surface-elevated text-text-primary disabled:opacity-50 transition-colors"
+        >
           <ArrowLeft size={24} />
         </button>
-        <h2 className="text-lg font-bold ml-2" style={{ color: 'var(--dyn-text)' }}>প্রোফাইল সম্পাদনা</h2>
+        <h2 className="text-lg font-bold ml-2 text-text-primary">প্রোফাইল সম্পাদনা</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 pb-28 space-y-6">
@@ -178,7 +179,7 @@ const EditProfile: React.FC = () => {
         />
 
         <section>
-          <h3 className="text-xs font-bold mb-3 tracking-wider" style={{ color: 'var(--dyn-primary)' }}>ব্যক্তিগত তথ্য</h3>
+          <h3 className="text-xs font-bold mb-3 tracking-wider text-primary">ব্যক্তিগত তথ্য</h3>
           <div className="space-y-3">
             <FormInputGroup label="ইউজারনেম" name="username" value={formData.username || ''} onChange={handleChange} placeholder="যেমন: towkir_ahmed" disabled={isLoading} />
             <FormInputGroup label="সম্পূর্ণ নাম" name="full_name" value={formData.full_name || ''} onChange={handleChange} disabled={isLoading} />
@@ -194,7 +195,7 @@ const EditProfile: React.FC = () => {
         </section>
 
         <section>
-          <h3 className="text-xs font-bold mb-3 tracking-wider" style={{ color: 'var(--dyn-primary)' }}>একাডেমিক তথ্য</h3>
+          <h3 className="text-xs font-bold mb-3 tracking-wider text-primary">একাডেমিক তথ্য</h3>
           <div className="space-y-3">
             <FormInputGroup label="প্রতিষ্ঠান" name="institution" value={formData.institution || ''} onChange={handleChange} disabled={isLoading} />
             <div className="grid grid-cols-2 gap-3">
@@ -214,11 +215,12 @@ const EditProfile: React.FC = () => {
       </form>
 
       {/* Footer Save Button */}
-      <div className="fixed bottom-0 left-0 right-0 sm:max-w-md sm:mx-auto p-4 pb-6 z-20 backdrop-blur-md"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-card) 90%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
-        <button onClick={handleSubmit} disabled={isLoading}
-          className="w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 hover:[background-color:color-mix(in_srgb,var(--dyn-primary)_80%,#000)] disabled:opacity-70 disabled:cursor-not-allowed shadow-lg"
-          style={{ backgroundColor: 'var(--dyn-primary)', color: 'var(--dyn-card)' }}>
+      <div className="fixed bottom-0 left-0 right-0 sm:max-w-md sm:mx-auto p-4 pb-6 z-20 backdrop-blur-md bg-surface/90 border-t border-border-color">
+        <button 
+          onClick={handleSubmit} 
+          disabled={isLoading}
+          className="w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg bg-primary text-primary-foreground"
+        >
           {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
           {isLoading ? 'সংরক্ষণ করা হচ্ছে...' : 'পরিবর্তনগুলো সেভ করুন'}
         </button>

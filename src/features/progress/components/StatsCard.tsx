@@ -23,20 +23,13 @@ const StatsCard: React.FC<StatsCardProps> = ({ stats = DEFAULT_STATS }) => {
       {stats.map((stat) => (
         <div 
           key={stat.label} 
-          className="p-3 rounded-xl shadow-sm flex flex-col items-center justify-center text-center"
-          style={{ 
-            backgroundColor: 'var(--dyn-card)',
-            border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-          }}
+          className="p-3 rounded-xl shadow-sm flex flex-col items-center justify-center text-center bg-card-bg border border-card-border"
         >
-          <div 
-            className="p-2 rounded-full mb-2"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)' }}
-          >
-            <stat.icon size={18} style={{ color: 'var(--dyn-primary)' }} />
+          <div className="p-2 rounded-full mb-2 bg-surface-elevated">
+            <stat.icon size={18} className="text-text-primary" />
           </div>
-          <h4 className="text-lg font-bold" style={{ color: 'var(--dyn-text)' }}>{stat.value}</h4>
-          <p className="text-xs" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>{stat.label}</p>
+          <h4 className="text-lg font-bold text-text-primary">{stat.value}</h4>
+          <p className="text-xs text-text-secondary">{stat.label}</p>
         </div>
       ))}
     </div>

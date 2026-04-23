@@ -1731,6 +1731,42 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_items: {
+        Row: {
+          created_at: string | null
+          description: string
+          features: Json | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          item_type: string
+          price_coins: number
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          features?: Json | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_type: string
+          price_coins: number
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          features?: Json | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_type?: string
+          price_coins?: number
+          title?: string
+        }
+        Relationships: []
+      }
       media_library: {
         Row: {
           cloud_provider_id: string | null
@@ -2516,6 +2552,7 @@ export type Database = {
           chapter_id: string | null
           comprehension_id: string | null
           confidence_score: number | null
+          content_hash: string | null
           correct_attempts: number | null
           created_at: string | null
           created_by: string | null
@@ -2552,6 +2589,7 @@ export type Database = {
           chapter_id?: string | null
           comprehension_id?: string | null
           confidence_score?: number | null
+          content_hash?: string | null
           correct_attempts?: number | null
           created_at?: string | null
           created_by?: string | null
@@ -2588,6 +2626,7 @@ export type Database = {
           chapter_id?: string | null
           comprehension_id?: string | null
           confidence_score?: number | null
+          content_hash?: string | null
           correct_attempts?: number | null
           created_at?: string | null
           created_by?: string | null
@@ -3571,6 +3610,7 @@ export type Database = {
           chapter_id: string | null
           comprehension_id: string | null
           confidence_score: number | null
+          content_hash: string | null
           correct_attempts: number | null
           created_at: string | null
           created_by: string | null

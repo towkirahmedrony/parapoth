@@ -13,16 +13,44 @@ const ForgotPassword: React.FC = () => {
     e.preventDefault();
     setMessage(null);
 
-    if (!email) {
-      setMessage({ type: 'error', text: 'অনুগ্রহ করে ইমেইল ঠিকানা দিন।' });
+    const inputStr = email.trim();
+
+    if (!inputStr) {
+      setMessage({ type: 'error', text: 'অনুগ্রহ করে ইমেইল বা ইউজারনেম দিন।' });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Supabase Password Reset Logic
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      let targetEmail = inputStr;
+      
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputStr);
+
+      if (isEmail) {
+        const { data, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('email', inputStr)
+          .maybeSingle();
+
+        if (profileError || !data) {
+          throw new Error('এই ইমেইল দিয়ে কোনো একাউন্ট পাওয়া যায়নি।');
+        }
+      } else {
+        const { data, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .ilike('username', inputStr)
+          .maybeSingle();
+
+        if (profileError || !data?.email) {
+          throw new Error('এই ইউজারনেম দিয়ে কোনো একাউন্ট পাওয়া যায়নি।');
+        }
+        targetEmail = data.email;
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
         redirectTo: `${window.location.origin}/change-password`,
       });
 
@@ -38,7 +66,7 @@ const ForgotPassword: React.FC = () => {
       console.error('Reset error:', err);
       setMessage({ 
         type: 'error', 
-        text: err.message || 'রিসেট লিংক পাঠাতে সমস্যা হয়েছে। ইমেইলটি সঠিক কিনা চেক করুন।' 
+        text: err.message || 'রিসেট লিংক পাঠাতে সমস্যা হয়েছে। ইনপুট চেক করুন।' 
       });
     } finally {
       setIsLoading(false);
@@ -46,26 +74,22 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0f111a] text-white p-4 justify-center items-center">
+    <div className="min-h-screen flex flex-col bg-app text-text-primary p-4 justify-center items-center">
       <div className="w-full max-w-sm">
         
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-3">পাসওয়ার্ড ভুলে গেছেন?</h1>
-          <p className="text-[#8e95a9] text-sm leading-relaxed px-4">
+          <h1 className="text-2xl font-bold mb-3 text-text-primary">পাসওয়ার্ড ভুলে গেছেন?</h1>
+          <p className="text-text-secondary text-sm leading-relaxed px-4">
             পাসওয়ার্ড রিসেট করতে আপনার ইমেইল অথবা ইউজারনেম দিন।
           </p>
         </div>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-xl flex items-start gap-3 text-sm border ${
-            message.type === 'success' 
-              ? 'bg-emerald-900/20 text-emerald-400 border-emerald-800/50' 
-              : 'bg-red-900/20 text-red-400 border-red-800/50'
-          }`}>
+          <div className="mb-6 p-4 rounded-xl flex items-start gap-3 text-sm border bg-surface-elevated border-border-color text-text-primary">
             {message.type === 'success' ? (
-              <CheckCircle size={20} className="shrink-0 mt-0.5" />
+              <CheckCircle size={20} className="shrink-0 mt-0.5 text-text-primary" />
             ) : (
-              <AlertCircle size={20} className="shrink-0 mt-0.5" />
+              <AlertCircle size={20} className="shrink-0 mt-0.5 text-text-primary" />
             )}
             <p className="leading-relaxed">{message.text}</p>
           </div>
@@ -78,7 +102,7 @@ const ForgotPassword: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ইমেইল বা ইউজারনেম"
-              className="w-full bg-[#1e2330] border border-[#2a3042] rounded-xl px-4 py-3.5 text-white placeholder-[#5e667b] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-colors"
+              className="w-full bg-input-bg border border-input-border rounded-xl px-4 py-3.5 text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring transition-colors"
               disabled={isLoading}
               required
             />
@@ -87,21 +111,20 @@ const ForgotPassword: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading || !email}
-            className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-[#1e40af] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
             ) : (
               'রিসেট লিংক পাঠান'
             )}
           </button>
         </form>
 
-        {/* Dynamic Back Button */}
         <div className="mt-8 text-center">
           <button 
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-[#e2e8f0] hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
             <ArrowLeft size={18} />
             <span>ফিরে যান</span>

@@ -101,47 +101,29 @@ export const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center transition-colors duration-300 bg-dyn-bg text-dyn-text">
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center transition-colors duration-300 bg-app text-text-primary">
       <div className="mb-8 text-center">
-         <div 
-            className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6"
-            style={{ 
-              backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 15%, transparent)', 
-              color: 'var(--dyn-primary)' 
-            }}
-          >
+         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6 bg-surface-elevated text-primary">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
         </div>
         <h1 className="text-3xl font-extrabold mb-2">{t.title}</h1>
-        <p style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>{t.subtitle}</p>
+        <p className="text-text-secondary">{t.subtitle}</p>
       </div>
 
-      <div 
-        className="max-w-md w-full rounded-xl shadow-sm overflow-hidden bg-dyn-card"
-        style={{ 
-          border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-        }}
-      >
-        <div 
-          className="flex justify-end p-4"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
-        >
-          <div 
-            className="flex rounded-lg p-1"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
-          >
+      <div className="max-w-md w-full rounded-xl shadow-sm overflow-hidden bg-card-bg border border-card-border">
+        <div className="flex justify-end p-4 bg-surface border-b border-border-color">
+          <div className="flex rounded-lg p-1 bg-surface-elevated gap-1">
             {(['bn', 'en'] as const).map((lang) => (
               <button
                 key={lang}
                 onClick={() => setLanguage(lang)}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${language === lang ? 'shadow-sm' : ''}`}
-                style={
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
                   language === lang 
-                    ? { color: 'var(--dyn-primary)', backgroundColor: 'var(--dyn-card)' } 
-                    : { color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }
-                }
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-text-secondary hover:bg-surface'
+                }`}
               >
                 {lang === 'bn' ? 'বাংলা' : 'English'}
               </button>
@@ -152,7 +134,7 @@ export const Contact = () => {
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">{t.nameLabel}</label>
+              <label htmlFor="name" className="block text-sm font-medium mb-1 text-text-primary">{t.nameLabel}</label>
               <input
                 type="text"
                 id="name"
@@ -160,18 +142,13 @@ export const Contact = () => {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg focus:ring-2 outline-none transition-all bg-transparent"
-                style={{ 
-                  backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                  ['--tw-ring-color' as any]: 'var(--dyn-primary)' 
-                }}
+                className="w-full px-4 py-2.5 rounded-lg outline-none transition-all bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring"
                 placeholder={t.namePlaceholder}
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">{t.emailLabel}</label>
+              <label htmlFor="email" className="block text-sm font-medium mb-1 text-text-primary">{t.emailLabel}</label>
               <input
                 type="email"
                 id="email"
@@ -179,18 +156,13 @@ export const Contact = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg focus:ring-2 outline-none transition-all bg-transparent"
-                style={{ 
-                  backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                  ['--tw-ring-color' as any]: 'var(--dyn-primary)' 
-                }}
+                className="w-full px-4 py-2.5 rounded-lg outline-none transition-all bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring"
                 placeholder={t.emailPlaceholder}
               />
             </div>
 
             <div>
-              <label htmlFor="message" className="block text-sm font-medium mb-1">{t.messageLabel}</label>
+              <label htmlFor="message" className="block text-sm font-medium mb-1 text-text-primary">{t.messageLabel}</label>
               <textarea
                 id="message"
                 name="message"
@@ -198,12 +170,7 @@ export const Contact = () => {
                 rows={4}
                 value={formData.message}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg focus:ring-2 outline-none transition-all resize-none bg-transparent"
-                style={{ 
-                  backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                  ['--tw-ring-color' as any]: 'var(--dyn-primary)' 
-                }}
+                className="w-full px-4 py-2.5 rounded-lg outline-none transition-all resize-none bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring"
                 placeholder={t.messagePlaceholder}
               />
             </div>
@@ -211,8 +178,7 @@ export const Contact = () => {
             <button
               type="submit"
               disabled={submitMutation.isPending}
-              className="w-full py-3 rounded-lg font-bold disabled:opacity-50 flex justify-center items-center gap-2 transition-all active:scale-[0.98] bg-dyn-primary"
-              style={{ color: 'var(--dyn-bg)' }}
+              className="w-full py-3 rounded-lg font-bold disabled:opacity-50 flex justify-center items-center gap-2 transition-all active:scale-[0.98] bg-primary text-primary-foreground hover:opacity-90"
             >
               {submitMutation.isPending && (
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -221,19 +187,12 @@ export const Contact = () => {
             </button>
 
             {showSuccess && (
-              <div 
-                className="p-3 rounded-lg text-sm text-center font-medium"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--dyn-accent) 10%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--dyn-accent) 20%, transparent)',
-                  color: 'var(--dyn-accent)'
-                }}
-              >
+              <div className="p-3 rounded-lg text-sm text-center font-medium bg-badge-bg text-badge-text border border-border-color">
                 {t.successMsg}
               </div>
             )}
             {submitMutation.isError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg text-sm text-center font-medium">
+              <div className="p-3 rounded-lg text-sm text-center font-medium bg-surface-elevated text-accent border border-border-color">
                 {t.errorMsg}
               </div>
             )}
@@ -242,31 +201,23 @@ export const Contact = () => {
       </div>
 
       <div className="mt-10 text-center">
-        <p className="text-sm opacity-70 mb-4">{t.directContact}</p>
-        <div className="flex gap-4">
+        <p className="text-sm mb-4 text-text-secondary">{t.directContact}</p>
+        <div className="flex justify-center gap-4">
           <a 
             href={`mailto:${SUPPORT_CONFIG.EMAIL}`} 
-            className="p-2 rounded-full transition-all border hover:scale-105" 
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-            }}
+            className="p-2 rounded-full transition-all border border-border-color bg-surface hover:bg-surface-elevated hover:scale-105 text-text-primary" 
             aria-label="Email Support"
           >
-            <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" /></svg>
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" /></svg>
           </a>
           <a 
             href={SUPPORT_CONFIG.FACEBOOK_URL} 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="p-2 rounded-full transition-all border hover:scale-105" 
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)'
-            }}
+            className="p-2 rounded-full transition-all border border-border-color bg-surface hover:bg-surface-elevated hover:scale-105 text-text-primary" 
             aria-label="Facebook Support"
           >
-             <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
+             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" /></svg>
           </a>
         </div>
       </div>

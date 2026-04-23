@@ -10,15 +10,12 @@ interface SubjectReportSectionProps {
 export const SubjectReportSection: React.FC<SubjectReportSectionProps> = ({ subjectReport }) => {
   return (
     <div className="mt-4">
-      <h2 
-        className="text-xl font-bold mb-4 flex items-center gap-2"
-        style={{ color: 'var(--dyn-text)' }}
-      >
-        <BookOpen style={{ color: 'var(--dyn-primary)' }} /> সাবজেক্ট ভিত্তিক রিপোর্ট
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-text-primary">
+        <BookOpen className="text-text-primary" /> সাবজেক্ট ভিত্তিক রিপোর্ট
       </h2>
       
       {!subjectReport || subjectReport.length === 0 ? (
-        <p className="text-sm italic" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
+        <p className="text-sm italic text-text-secondary">
           কোনো সাবজেক্টের ডেটা পাওয়া যায়নি।
         </p>
       ) : (

@@ -84,20 +84,20 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
 
   if (maintenance.active) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center fixed inset-0 z-[9999] bg-dyn-bg text-dyn-text">
-        <Wrench className="w-16 h-16 text-yellow-500 mb-6" />
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center fixed inset-0 z-[9999] bg-app text-text-primary">
+        <Wrench className="w-16 h-16 text-text-secondary mb-6" />
         <h1 className="text-3xl font-bold mb-4">সিস্টেম আপডেট চলছে</h1>
-        <p className="text-lg opacity-80">{maintenance.message || "প্যারাপথ-এর সার্ভারে কিছু গুরুত্বপূর্ণ কাজ চলছে।"}</p>
+        <p className="text-lg text-text-secondary">{maintenance.message || "প্যারাপথ-এর সার্ভারে কিছু গুরুত্বপূর্ণ কাজ চলছে।"}</p>
       </div>
     );
   }
 
   if (forceUpdate) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center fixed inset-0 z-[9999] bg-dyn-bg text-dyn-text">
-        <AlertTriangle className="w-16 h-16 text-red-500 mb-6" />
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center fixed inset-0 z-[9999] bg-app text-text-primary">
+        <AlertTriangle className="w-16 h-16 text-text-secondary mb-6" />
         <h1 className="text-3xl font-bold mb-4">নতুন আপডেট এভেইলেবল!</h1>
-        <button onClick={handleUpdate} className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium bg-dyn-primary" style={{ color: 'var(--dyn-bg)' }}>
+        <button onClick={handleUpdate} className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium bg-primary text-primary-foreground transition-opacity hover:opacity-90">
           <RefreshCw className="w-5 h-5" /> আপডেট করুন
         </button>
       </div>
@@ -107,12 +107,14 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
   return (
     <>
       {showNotice && (
-        <div className="px-4 py-2.5 flex items-center justify-between z-50 relative shadow-md bg-dyn-primary" style={{ color: 'var(--dyn-bg)' }}>
+        <div className="px-4 py-2.5 flex items-center justify-between z-50 relative shadow-md bg-primary text-primary-foreground">
           <div className="flex-1 text-sm">
             <strong>{globalNotice.title}:</strong> {globalNotice.message}
-            {globalNotice.action_link && <a href={globalNotice.action_link} className="underline ml-2">বিস্তারিত</a>}
+            {globalNotice.action_link && <a href={globalNotice.action_link} className="underline ml-2 hover:opacity-80">বিস্তারিত</a>}
           </div>
-          <button onClick={() => currentNoticeId && setDismissedNoticeId(currentNoticeId)} className="p-1"><X className="w-4 h-4" /></button>
+          <button onClick={() => currentNoticeId && setDismissedNoticeId(currentNoticeId)} className="p-1 hover:bg-black/10 rounded transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
       {children}

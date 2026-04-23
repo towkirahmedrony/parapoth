@@ -2,12 +2,16 @@ import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import LiveQuestionCard from '../components/LiveQuestionCard';
+import ExamTimer from '../components/ExamTimer';
+import ExamHeader from '../components/ExamHeader';
 
 import ReportModal, { ReportPayload as ModalReportPayload } from '@/shared/components/feedback/ReportModal';
 import ConfirmModal from '@/shared/components/feedback/ConfirmModal';
 import { apiClient } from '@/shared/lib/apiClient';
 import toast from 'react-hot-toast'; 
 import { ExamConfig, ExamQuestion } from '../types/exam';
+import { AlertCircle, CheckCircle } from 'lucide-react';
+import { Skeleton } from '@/shared/components/ui/Skeleton';
 
 const MARKS_PER_QUESTION = 1;
 const NEGATIVE_MARK_PENALTY = 0.25;
@@ -41,7 +45,7 @@ const Arena: React.FC = () => {
   const targetEndTimeRef = useRef<number | null>(null);
   const timeLeftRef = useRef(config.duration * 60);
 
-  const { data: questions = [], isLoading } = useQuery({
+  const { data: questions = [], isLoading, isError } = useQuery({
     queryKey: ['arenaQuestions', config.questionCount, subjectSlug],
     queryFn: () => fetchArenaQuestions(config.questionCount, subjectSlug),
     staleTime: Infinity, 
@@ -79,26 +83,19 @@ const Arena: React.FC = () => {
       const res = await apiClient.post(`/exams/user/history`, resultPayload);
       return res.data;
     },
-    onSuccess: (_, variables) => {
-      navigate('/exam/analysis', { state: variables, replace: true });
+    onSuccess: (data, variables) => {
+      // 👇 এখানে API রেসপন্স থেকে id নেওয়ার চেষ্টা করা হচ্ছে 👇
+      const returnedId = data?.data?.id || data?.id;
+      
+      if (returnedId) {
+        navigate(`/exam/analysis/${returnedId}`, { state: variables, replace: true });
+      } else {
+        navigate('/exam/analysis', { state: variables, replace: true });
+      }
     },
-    onError: (error) => {
-      console.error("Error submitting exam:", error);
+    onError: () => {
       toast.error("পরীক্ষা সাবমিট করতে সমস্যা হয়েছে!");
       hasSubmittedRef.current = false; 
-    }
-  });
-
-  const reportMutation = useMutation({
-    mutationFn: async (reportData: ModalReportPayload) => {
-      await apiClient.post(`/reports`, reportData); 
-    },
-    onSuccess: () => {
-      toast.success("রিপোর্ট সফলভাবে জমা দেওয়া হয়েছে!");
-    },
-    onError: (error) => {
-      console.error("Report submission failed:", error);
-      toast.error("রিপোর্ট সাবমিট করতে সমস্যা হয়েছে!");
     }
   });
 
@@ -168,65 +165,131 @@ const Arena: React.FC = () => {
     setIsReportModalOpen(true);
   }, []);
 
-  const handleCloseReportModal = useCallback(() => {
-    setIsReportModalOpen(false);
-    setReportingQuestionId(null);
-  }, []);
-
-  const handleReportSubmit = useCallback(async (reportData: ModalReportPayload) => {
-    await reportMutation.mutateAsync(reportData);
-  }, [reportMutation]);
-
-  const handleManualSubmitClick = useCallback(() => {
-    setIsConfirmModalOpen(true);
-  }, []);
-
-  const handleConfirmSubmit = useCallback(() => {
-    setIsConfirmModalOpen(false);
-    processSubmission();
-  }, [processSubmission]);
-
-  const handleCancelSubmit = useCallback(() => {
-    setIsConfirmModalOpen(false);
-  }, []);
+  const reportMutation = useMutation({
+    mutationFn: async (reportData: ModalReportPayload) => {
+      await apiClient.post(`/reports`, reportData); 
+    },
+    onSuccess: () => {
+      toast.success("রিপোর্ট সফলভাবে জমা দেওয়া হয়েছে!");
+    },
+    onError: () => {
+      toast.error("রিপোর্ট সাবমিট করতে সমস্যা হয়েছে!");
+    }
+  });
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
-        <div className="animate-pulse font-bold text-lg">লোড হচ্ছে...</div>
+      <div className="min-h-screen bg-app px-4 py-8 max-w-5xl mx-auto space-y-6">
+        <Skeleton className="h-16 w-full rounded-2xl bg-surface" />
+        <Skeleton className="h-96 w-full rounded-2xl bg-surface" />
+        <Skeleton className="h-96 w-full rounded-2xl bg-surface" />
       </div>
     );
   }
 
+  if (isError || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-app">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-surface border border-border-color">
+          <AlertCircle size={40} className="text-text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold mb-3 text-text-primary">প্রশ্ন পাওয়া যায়নি</h2>
+        <p className="mb-8 opacity-70 text-text-secondary">দুঃখিত, এই বিষয়ের জন্য পর্যাপ্ত প্রশ্ন এই মুহূর্তে নেই।</p>
+        <button 
+          onClick={() => navigate(-1)}
+          className="px-6 py-3 rounded-xl font-medium transition-all active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          ফিরে যান
+        </button>
+      </div>
+    );
+  }
+
+  const answeredCount = Object.keys(userAnswers).length;
+  const progressPercentage = (answeredCount / questions.length) * 100;
+
   return (
-    <div className="min-h-screen pb-32" style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}>
-      <div className="sticky top-0 z-30 px-4 py-3 shadow-sm flex justify-between" style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-bg) 95%, transparent)', borderBottom: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
-        <div className="font-bold" style={{ color: 'var(--dyn-primary)' }}>{Object.keys(userAnswers).length} / {questions.length}</div>
-        <div className="font-mono font-bold" style={{ color: 'var(--dyn-primary)' }}>
-          {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+    <div className="min-h-screen pb-32 lg:pb-10 bg-app text-text-primary">
+      
+      {/* Universally used ExamHeader */}
+      <ExamHeader 
+        title="মডেল টেস্ট লাইভ" 
+        onBack={() => navigate(-1)}
+        rightContent={
+          <div className="flex items-center gap-4">
+            <div className="font-bold text-lg hidden sm:block text-primary">
+              {answeredCount} <span className="opacity-60 text-sm font-normal text-text-secondary">/ {questions.length}</span>
+            </div>
+            <ExamTimer seconds={timeLeft} layout="compact" />
+          </div>
+        }
+      />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8 xl:gap-12">
+          
+          {/* Main Question Column */}
+          <div className="lg:col-span-8 space-y-6 lg:space-y-8">
+            {questions.map((q, idx) => (
+              <LiveQuestionCard
+                key={q.id} 
+                question={q} 
+                index={idx}
+                selectedOptionId={userAnswers[q.id]}
+                onSelectOption={handleOptionSelect}
+                onReport={handleReportClick}
+              />
+            ))}
+          </div>
+
+          {/* Desktop Right Sidebar */}
+          <div className="hidden lg:block lg:col-span-4">
+            <div className="sticky top-24 space-y-6">
+              
+              <ExamTimer seconds={timeLeft} layout="card" />
+
+              <div className="p-6 rounded-2xl border shadow-sm bg-card-bg border-card-border">
+                <h3 className="font-bold text-lg mb-4 font-['Hind_Siliguri'] text-text-primary">অগ্রগতি</h3>
+                <div className="flex justify-between text-sm mb-2 opacity-80 text-text-primary">
+                  <span>উত্তর দেওয়া হয়েছে</span>
+                  <span className="font-bold">{answeredCount} / {questions.length}</span>
+                </div>
+                <div className="w-full h-3 rounded-full overflow-hidden bg-surface border border-border-color">
+                  <div 
+                    className="h-full transition-all duration-500 rounded-full bg-primary" 
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="button"
+                onClick={() => setIsConfirmModalOpen(true)} 
+                disabled={submitExamMutation.isPending || hasSubmittedRef.current}
+                className="w-full flex items-center justify-center gap-3 font-bold py-4 rounded-xl disabled:opacity-50 transition-all shadow-md hover:shadow-lg active:scale-95 text-lg hover:opacity-90 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" 
+              >
+                <CheckCircle size={22} />
+                {submitExamMutation.isPending || hasSubmittedRef.current ? 'জমা দেওয়া হচ্ছে...' : 'উত্তরপত্র জমা দিন'}
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
-      
-      <div className="max-w-3xl mx-auto p-4 space-y-6">
-        {questions.map((q, idx) => (
-          <LiveQuestionCard
-            key={q.id} 
-            question={q} 
-            index={idx}
-            selectedOptionId={userAnswers[q.id]}
-            onSelectOption={handleOptionSelect}
-            onReport={handleReportClick}
-          />
-        ))}
-      </div>
 
-      <div className="fixed bottom-0 left-0 w-full p-4 z-30" style={{ backgroundColor: 'var(--dyn-card)', borderTop: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}>
+      {/* Mobile Fixed Bottom Action */}
+      <div className="lg:hidden fixed bottom-0 left-0 w-full p-4 z-40 backdrop-blur-xl border-t bg-surface-elevated border-border-color">
+        <div className="flex items-center gap-4 mb-3 sm:hidden">
+          <div className="w-full h-1.5 rounded-full overflow-hidden bg-surface border border-border-color">
+             <div className="h-full transition-all duration-500 bg-primary" style={{ width: `${progressPercentage}%` }} />
+          </div>
+          <span className="text-xs font-bold whitespace-nowrap text-text-primary">{answeredCount} / {questions.length}</span>
+        </div>
         <button 
           type="button"
-          onClick={handleManualSubmitClick} 
+          onClick={() => setIsConfirmModalOpen(true)} 
           disabled={submitExamMutation.isPending || hasSubmittedRef.current}
-          className="w-full font-bold py-4 rounded-xl disabled:opacity-50 transition-opacity" 
-          style={{ backgroundColor: 'var(--dyn-primary)', color: 'var(--dyn-bg)' }}
+          className="w-full font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all active:scale-95 shadow-sm text-base hover:opacity-90 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" 
         >
           {submitExamMutation.isPending || hasSubmittedRef.current ? 'জমা দেওয়া হচ্ছে...' : 'উত্তরপত্র জমা দিন'}
         </button>
@@ -235,10 +298,13 @@ const Arena: React.FC = () => {
       {isReportModalOpen && reportingQuestionId && (
         <ReportModal 
           isOpen={isReportModalOpen}
-          onClose={handleCloseReportModal}
+          onClose={() => setIsReportModalOpen(false)}
           type="question_issue"
           questionData={{ questionId: reportingQuestionId }}
-          onSubmit={handleReportSubmit}
+          onSubmit={async (data) => {
+            await reportMutation.mutateAsync(data);
+            setIsReportModalOpen(false);
+          }}
         />
       )}
 
@@ -246,9 +312,12 @@ const Arena: React.FC = () => {
         <ConfirmModal 
           isOpen={isConfirmModalOpen}
           title="পরীক্ষা জমাদান"
-          message={`আপনি ${Object.keys(userAnswers).length} টি প্রশ্নের উত্তর দিয়েছেন। জমা দিতে চান?`}
-          onConfirm={handleConfirmSubmit}
-          onCancel={handleCancelSubmit}
+          message={`আপনি ${answeredCount} টি প্রশ্নের উত্তর দিয়েছেন। জমা দিতে চান?`}
+          onConfirm={() => {
+            setIsConfirmModalOpen(false);
+            processSubmission();
+          }}
+          onCancel={() => setIsConfirmModalOpen(false)}
           isLoading={submitExamMutation.isPending}
         />
       )}

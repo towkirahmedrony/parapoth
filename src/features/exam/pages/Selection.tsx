@@ -9,19 +9,15 @@ type TabType = 'model' | 'board';
 const MIN_SWIPE_DISTANCE = 50;
 
 const Selection: React.FC = () => {
-  // URL parameters ব্যবহারের জন্য
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('type') as TabType) || 'model';
 
-  // State এর বদলে URL parameter আপডেট করার ফাংশন
   const setActiveTab = useCallback((tab: TabType) => {
-    // replace: true ব্যবহার করা হয়েছে যাতে প্রতিবার ট্যাব পরিবর্তনে ব্রাউজারের হিস্ট্রি ভারী না হয়
     setSearchParams({ type: tab }, { replace: true });
   }, [setSearchParams]);
 
   const [isDetailView, setIsDetailView] = useState<boolean>(false); 
   
-  // Using useRef instead of useState to prevent continuous re-renders during swipe
   const touchStartX = useRef<number | null>(null);
 
   const onTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
@@ -44,56 +40,52 @@ const Selection: React.FC = () => {
       setActiveTab('model');
     }
 
-    // Reset the touch tracking reference
     touchStartX.current = null;
   }, [isDetailView, activeTab, setActiveTab]);
 
   return (
     <div 
-      className="min-h-screen pb-20 overflow-x-hidden"
-      style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}
+      className="min-h-screen pb-20 overflow-x-hidden flex flex-col items-center bg-app text-text-primary"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
       {!isDetailView && (
-        <div 
-          className="sticky top-0 z-10 backdrop-blur-sm transition-all duration-300"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-bg) 95%, transparent)', 
-            borderBottom: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
-          }}
-        >
-          <div className="flex w-full">
+        <div className="sticky top-0 z-10 w-full backdrop-blur-md transition-all duration-300 shadow-sm bg-surface/90 border-b border-border-color">
+          <div className="flex w-full max-w-4xl mx-auto px-2 sm:px-4">
             <button
               onClick={() => setActiveTab('model')}
-              className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-all duration-300 relative"
-              style={{ color: activeTab === 'model' ? 'var(--dyn-primary)' : 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
+              className={`flex-1 flex items-center justify-center gap-2.5 py-4 text-[15px] sm:text-base font-semibold transition-colors duration-300 relative rounded-t-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                activeTab === 'model' ? 'text-primary' : 'text-text-secondary'
+              }`}
             >
-              <FileText size={18} />
+              <FileText size={18} strokeWidth={activeTab === 'model' ? 2.5 : 2} />
               মডেল টেস্ট
               <div 
-                className={`absolute bottom-0 left-0 w-full h-0.5 transition-opacity duration-300 ${activeTab === 'model' ? 'opacity-100' : 'opacity-0'}`}
-                style={{ backgroundColor: 'var(--dyn-primary)', boxShadow: '0 0 10px color-mix(in srgb, var(--dyn-primary) 50%, transparent)' }}
+                className={`absolute bottom-0 left-0 w-full h-0.5 transition-opacity duration-300 bg-primary ${
+                  activeTab === 'model' ? 'opacity-100' : 'opacity-0'
+                }`}
               />
             </button>
 
             <button
               onClick={() => setActiveTab('board')}
-              className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-all duration-300 relative"
-              style={{ color: activeTab === 'board' ? 'var(--dyn-primary)' : 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}
+              className={`flex-1 flex items-center justify-center gap-2.5 py-4 text-[15px] sm:text-base font-semibold transition-colors duration-300 relative rounded-t-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                activeTab === 'board' ? 'text-primary' : 'text-text-secondary'
+              }`}
             >
-              <Building2 size={18} />
+              <Building2 size={18} strokeWidth={activeTab === 'board' ? 2.5 : 2} />
               বোর্ড পরীক্ষা
               <div 
-                className={`absolute bottom-0 left-0 w-full h-0.5 transition-opacity duration-300 ${activeTab === 'board' ? 'opacity-100' : 'opacity-0'}`}
-                style={{ backgroundColor: 'var(--dyn-primary)', boxShadow: '0 0 10px color-mix(in srgb, var(--dyn-primary) 50%, transparent)' }}
+                className={`absolute bottom-0 left-0 w-full h-0.5 transition-opacity duration-300 bg-primary ${
+                  activeTab === 'board' ? 'opacity-100' : 'opacity-0'
+                }`}
               />
             </button>
           </div>
         </div>
       )}
 
-      <div className={!isDetailView ? "p-4" : "p-0"}>
+      <div className={`w-full max-w-4xl mx-auto ${!isDetailView ? "p-4 sm:p-6" : "p-0"}`}>
         {activeTab === 'model' ? (
           <div className={!isDetailView ? "animate-in slide-in-from-left-4 fade-in duration-300" : ""}>
             <ModelTestTab onViewChange={setIsDetailView} />

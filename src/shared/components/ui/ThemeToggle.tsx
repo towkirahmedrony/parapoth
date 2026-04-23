@@ -6,13 +6,13 @@ const ThemeToggle: React.FC = () => {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+    <div className="flex items-center gap-1 p-1 bg-surface border border-border-color rounded-lg">
       <button
         onClick={() => setTheme('light')}
         className={`flex items-center justify-center p-1.5 rounded-md transition-all ${
           theme === 'light' 
-            ? 'bg-white dark:bg-slate-600 shadow-sm text-blue-600 dark:text-blue-400' 
-            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            ? 'bg-surface-elevated shadow-sm text-text-primary' 
+            : 'text-text-secondary hover:text-text-primary bg-transparent'
         }`}
         title="Light Mode"
         aria-label="Set light theme"
@@ -24,8 +24,8 @@ const ThemeToggle: React.FC = () => {
         onClick={() => setTheme('dark')}
         className={`flex items-center justify-center p-1.5 rounded-md transition-all ${
           theme === 'dark' 
-            ? 'bg-white dark:bg-slate-600 shadow-sm text-blue-600 dark:text-blue-400' 
-            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            ? 'bg-surface-elevated shadow-sm text-text-primary' 
+            : 'text-text-secondary hover:text-text-primary bg-transparent'
         }`}
         title="Dark Mode"
         aria-label="Set dark theme"
@@ -37,8 +37,8 @@ const ThemeToggle: React.FC = () => {
         onClick={() => setTheme('system')}
         className={`flex items-center justify-center p-1.5 rounded-md transition-all ${
           theme === 'system' 
-            ? 'bg-white dark:bg-slate-600 shadow-sm text-blue-600 dark:text-blue-400' 
-            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            ? 'bg-surface-elevated shadow-sm text-text-primary' 
+            : 'text-text-secondary hover:text-text-primary bg-transparent'
         }`}
         title="System (Auto Follow Admin/Device Theme)"
         aria-label="Follow system theme"

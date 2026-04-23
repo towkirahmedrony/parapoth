@@ -21,14 +21,7 @@ export const BackButton: React.FC<BackButtonProps> = ({ onClick, className = '' 
   return (
     <button
       onClick={handleBack}
-      className={`flex items-center justify-center w-10 h-10 rounded-full transition-all hover:scale-105 ${className}`}
-      style={{ 
-        backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-        color: 'var(--dyn-text, #0f172a)',
-        borderWidth: '1px',
-        borderStyle: 'solid'
-      }}
+      className={`flex items-center justify-center w-10 h-10 rounded-full transition-all hover:scale-105 bg-surface border border-border-color text-text-primary ${className}`}
       aria-label="Go back"
       title="Back"
     >

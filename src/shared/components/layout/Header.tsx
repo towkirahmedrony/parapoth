@@ -14,21 +14,17 @@ const Header: React.FC = () => {
     location.pathname === '/dashboard' ||
     location.pathname === '/dashboard/home';
 
-  // React Query for profile data (streak & xp)
   const { data: profileData } = useQuery({
     queryKey: ['profile', 'stats', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
 
       try {
-        // ১. ইউজারের অথেনটিকেশন টোকেন বের করা
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
         
-        // ২. ব্যাকএন্ডের URL সেট করা (আপনার VITE_API_URL না থাকলে সরাসরি Render লিংক কাজ করবে)
         const baseUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
         
-        // ৩. ব্যাকএন্ডে API কল করা (এটি কল হলেই আপনার ব্যাকএন্ডের স্ট্রিক জিরো করার লজিক রান হবে)
         const response = await fetch(`${baseUrl}/growth/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -37,13 +33,12 @@ const Header: React.FC = () => {
 
         if (response.ok) {
           const json = await response.json();
-          return json.data; // ব্যাকএন্ড থেকে আসা আপডেটেড ও সঠিক ডেটা
+          return json.data;
         }
       } catch (error) {
         console.error('API Error, falling back to Supabase:', error);
       }
 
-      // ৪. যদি কোনো কারণে ব্যাকএন্ড রেসপন্স না দেয়, তবে সরাসরি ডাটাবেস থেকে আনবে (Fallback)
       const { data, error } = await supabase
         .from('profiles')
         .select('current_streak, total_xp')
@@ -54,10 +49,9 @@ const Header: React.FC = () => {
       return data;
     },
     enabled: !!user?.id && isDashboardHome,
-    staleTime: 0, // ক্যাশ ক্লিয়ার করে সবসময় ফ্রেশ ডেটা আনবে
+    staleTime: 0,
   });
 
-  // React Query for unread notifications count
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['notifications', 'unreadCount', user?.id],
     queryFn: async () => {
@@ -72,7 +66,7 @@ const Header: React.FC = () => {
       return count ?? 0;
     },
     enabled: !!user?.id && isDashboardHome,
-    staleTime: 60 * 1000, // Cache for 1 minute
+    staleTime: 60 * 1000,
   });
 
   if (!isDashboardHome) {
@@ -84,12 +78,7 @@ const Header: React.FC = () => {
 
   return (
     <header 
-      className="sticky top-0 z-20 h-16 px-4 flex items-center justify-between border-b transition-colors duration-500"
-      style={{ 
-        backgroundColor: 'var(--dyn-bg, #ffffff)',
-        borderColor: 'color-mix(in srgb, var(--dyn-text, #e2e8f0) 10%, transparent)',
-        color: 'var(--dyn-text, #0f172a)'
-      }}
+      className="sticky top-0 z-20 h-16 px-4 flex items-center justify-between border-b border-border-color bg-surface text-text-primary transition-colors duration-500"
     >
       <Link to="/dashboard" className="flex items-center">
         <img 
@@ -104,34 +93,30 @@ const Header: React.FC = () => {
         {/* XP Section */}
         <div 
           onClick={() => navigate('/dashboard/leaderboard')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:scale-105"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:scale-105 bg-surface-elevated border border-border-color"
         >
           <Star size={18} className="text-blue-500 fill-blue-500" />
-          <span className="text-sm font-bold font-sans" style={{ color: 'var(--dyn-text)' }}>{xp}</span>
+          <span className="text-sm font-bold font-sans text-text-primary">{xp}</span>
         </div>
 
         {/* Streak Section */}
         <div 
           onClick={() => navigate('/dashboard/streak')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:scale-105"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:scale-105 bg-surface-elevated border border-border-color"
         >
           <Flame size={18} className="text-orange-500 fill-orange-500" />
-          <span className="text-sm font-bold font-sans" style={{ color: 'var(--dyn-text)' }}>{currentStreak}</span>
+          <span className="text-sm font-bold font-sans text-text-primary">{currentStreak}</span>
         </div>
 
         <button
           onClick={() => navigate('/notifications')}
-          className="relative p-2 rounded-full transition-all hover:scale-110"
-          style={{ color: 'var(--dyn-text)', backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
+          className="relative p-2 rounded-full transition-all hover:scale-110 bg-surface-elevated text-text-primary"
         >
           <Bell size={22} />
           {unreadCount > 0 && (
             <span 
-              className="absolute top-0 right-0 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full border-2" 
+              className="absolute top-0 right-0 flex items-center justify-center text-[10px] font-bold rounded-full border-2 border-surface bg-badge-bg text-badge-text" 
               style={{ 
-                borderColor: 'var(--dyn-bg)',
                 minWidth: '18px',
                 height: '18px',
                 padding: '0 4px'

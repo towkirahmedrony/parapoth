@@ -140,27 +140,23 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      <div 
-        className="w-full sm:w-96 rounded-t-3xl sm:rounded-3xl p-6 transform transition-all animate-slide-up"
-        style={{ backgroundColor: 'var(--dyn-card)', border: '1px solid color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-      >
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm bg-black/50">
+      <div className="w-full sm:w-96 rounded-t-3xl sm:rounded-3xl p-6 transform transition-all animate-slide-up bg-surface-elevated border border-border-color">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--dyn-text)' }}>
-            <Swords style={{ color: 'var(--dyn-primary)' }} /> চ্যালেঞ্জ সেটআপ
+          <h2 className="text-xl font-bold flex items-center gap-2 text-text-primary">
+            <Swords className="text-accent" /> চ্যালেঞ্জ সেটআপ
           </h2>
           <button 
             onClick={onClose} 
-            className="p-2 rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--dyn-text)_10%,transparent)]"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 5%, transparent)' }}
+            className="p-2 rounded-full transition-colors bg-surface hover:bg-surface-elevated"
             aria-label="Close modal"
           >
-            <X size={20} style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }} />
+            <X size={20} className="text-text-secondary" />
           </button>
         </div>
 
-        <p className="text-sm mb-6" style={{ color: 'color-mix(in srgb, var(--dyn-text) 60%, transparent)' }}>
-          আপনি <strong style={{ color: 'var(--dyn-primary)' }}>{opponentName}</strong>-কে চ্যালেঞ্জ করছেন।
+        <p className="text-sm mb-6 text-text-secondary">
+          আপনি <strong className="text-accent">{opponentName}</strong>-কে চ্যালেঞ্জ করছেন।
         </p>
 
         <SubjectSelector 
@@ -178,14 +174,8 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
           onSelect={setSelectedChapter} 
         />
 
-        <div 
-          className="p-4 rounded-xl border mb-6"
-          style={{ 
-            backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 10%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' 
-          }}
-        >
-          <p className="text-sm text-center font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-primary) 80%, var(--dyn-text))' }}>
+        <div className="p-4 rounded-xl border mb-6 bg-badge-bg border-border-color">
+          <p className="text-sm text-center font-medium text-badge-text">
             🏆 বিজয়ী প্রতিটি সঠিক উত্তরের জন্য গ্রুপ XP অর্জন করবেন।
           </p>
         </div>
@@ -196,8 +186,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
           <button 
             onClick={handleChallengeSubmit}
             disabled={challengeMutation.isPending}
-            className="w-full py-3.5 font-bold rounded-xl transition-all active:scale-95 flex justify-center items-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: 'var(--dyn-primary)', color: 'var(--dyn-bg)' }}
+            className="w-full py-3.5 font-bold rounded-xl transition-all active:scale-95 flex justify-center items-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-primary-foreground"
           >
             চ্যালেঞ্জ ছুঁড়ে দিন 🚀
           </button>

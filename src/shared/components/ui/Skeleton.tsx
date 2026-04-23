@@ -6,10 +6,7 @@ interface SkeletonProps {
 
 export const Skeleton: React.FC<SkeletonProps> = memo(({ className = '' }) => {
   return (
-    <div 
-      className={`animate-pulse rounded-md ${className}`} 
-      style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
-    />
+    <div className={`animate-pulse rounded-md bg-secondary ${className}`} />
   );
 });
 

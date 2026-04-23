@@ -124,10 +124,7 @@ const History: React.FC = () => {
   };
 
   return (
-    <div 
-      className="max-w-4xl mx-auto p-4 md:p-6 min-h-screen font-['Hind_Siliguri']"
-      style={{ backgroundColor: 'var(--dyn-bg)', color: 'var(--dyn-text)' }}
-    >
+    <div className="bg-app text-text-primary max-w-4xl mx-auto p-4 md:p-6 min-h-screen font-['Hind_Siliguri']">
       <HistoryTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {isLoading ? (
@@ -135,8 +132,7 @@ const History: React.FC = () => {
           {[1, 2, 3].map((i) => (
             <div 
               key={i} 
-              className="h-24 rounded-xl"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' }}
+              className="bg-surface border border-border-color h-24 rounded-xl"
             />
           ))}
         </div>

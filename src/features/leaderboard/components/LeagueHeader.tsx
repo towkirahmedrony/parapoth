@@ -47,18 +47,10 @@ export const LeagueHeader: React.FC<Props> = ({
   isLocked, direction, progressPercentage, pointsNeeded, isCurrentLeague,
   onPrev, onNext, onDragEnd
 }) => {
-  const borderColor = 'color-mix(in srgb, var(--dyn-text) 10%, transparent)';
-  const mutedTextColor = 'color-mix(in srgb, var(--dyn-text) 60%, transparent)';
   const gradientColors = getLeagueGradientColors(selectedLeagueIndex);
 
   return (
-    <div 
-      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b shadow-xl transition-all duration-300"
-      style={{ 
-        backgroundColor: 'color-mix(in srgb, var(--dyn-card) 95%, transparent)',
-        borderColor: borderColor
-      }}
-    >
+    <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b shadow-xl transition-all duration-300 bg-surface-elevated border-border-color">
       {/* Carousel Row */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 h-[110px]">
           
@@ -68,15 +60,12 @@ export const LeagueHeader: React.FC<Props> = ({
             disabled={!prevLeague}
             className={`
               relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 outline-none
-              ${prevLeague ? 'cursor-pointer active:scale-90 hover:[background-color:color-mix(in_srgb,var(--dyn-text)_10%,transparent)] opacity-100' : 'invisible pointer-events-none opacity-0'}
+              ${prevLeague ? 'cursor-pointer active:scale-90 hover:bg-secondary opacity-100' : 'invisible pointer-events-none opacity-0'}
             `}
           >
             {prevLeague && (
                 <>
-                  <div 
-                    className="absolute inset-0 blur-xl rounded-full"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' }}
-                  ></div>
+                  <div className="absolute inset-0 blur-xl rounded-full bg-primary/20"></div>
                   <div className="relative z-10 flex flex-col items-center">
                       {prevLeague.badge_url && (
                         <img 
@@ -85,7 +74,7 @@ export const LeagueHeader: React.FC<Props> = ({
                             alt="prev" 
                         />
                       )}
-                      <ChevronLeft className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3]" style={{ color: 'var(--dyn-text)' }} />
+                      <ChevronLeft className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3] text-text-primary" />
                   </div>
                 </>
             )}
@@ -107,17 +96,17 @@ export const LeagueHeader: React.FC<Props> = ({
               >
                 <div className="relative w-16 h-16 flex items-center justify-center drop-shadow-[0_8px_10px_rgba(0,0,0,0.6)]">
                     <Pentagon 
-                      className="w-full h-full drop-shadow-lg" 
+                      className={`w-full h-full drop-shadow-lg ${isLocked ? 'text-border-color' : 'text-transparent'}`}
                       style={{ 
-                          color: isLocked ? 'color-mix(in srgb, var(--dyn-text) 20%, transparent)' : 'transparent',
-                          fill: isLocked ? 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' : `url(#gradient-${selectedLeague.id})`,
+                          fill: isLocked ? 'currentColor' : `url(#gradient-${selectedLeague.id})`,
                           stroke: isLocked ? 'currentColor' : 'white',
-                          strokeWidth: 2
+                          strokeWidth: 2,
+                          fillOpacity: isLocked ? 0.5 : 1
                       }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
                       {isLocked ? (
-                          <Lock className="w-6 h-6" style={{ color: mutedTextColor }} />
+                          <Lock className="w-6 h-6 text-text-secondary" />
                       ) : (
                           selectedLeague.badge_url && (
                             <img src={selectedLeague.badge_url} className="w-8 h-8 drop-shadow-md object-contain" alt="icon" />
@@ -133,10 +122,7 @@ export const LeagueHeader: React.FC<Props> = ({
                     </svg>
                 </div>
                 
-                <h2 
-                  className="text-lg font-bold tracking-wide mt-1 text-shadow-sm"
-                  style={{ color: 'var(--dyn-text)' }}
-                >
+                <h2 className="text-lg font-bold tracking-wide mt-1 text-shadow-sm text-text-primary">
                   {selectedLeague.name_bn}
                 </h2>
               </motion.div>
@@ -149,15 +135,12 @@ export const LeagueHeader: React.FC<Props> = ({
             disabled={!nextLeague}
             className={`
               relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 outline-none
-              ${nextLeague ? 'cursor-pointer active:scale-90 hover:[background-color:color-mix(in_srgb,var(--dyn-text)_10%,transparent)] opacity-100' : 'invisible pointer-events-none opacity-0'}
+              ${nextLeague ? 'cursor-pointer active:scale-90 hover:bg-secondary opacity-100' : 'invisible pointer-events-none opacity-0'}
             `}
           >
             {nextLeague && (
                 <>
-                  <div 
-                    className="absolute inset-0 blur-xl rounded-full"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--dyn-primary) 20%, transparent)' }}
-                  ></div>
+                  <div className="absolute inset-0 blur-xl rounded-full bg-primary/20"></div>
                   <div className="relative z-10 flex flex-col items-center">
                       {nextLeague.badge_url && (
                         <img 
@@ -166,7 +149,7 @@ export const LeagueHeader: React.FC<Props> = ({
                             alt="next" 
                         />
                       )}
-                      <ChevronRight className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3]" style={{ color: 'var(--dyn-text)' }} />
+                      <ChevronRight className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3] text-text-primary" />
                   </div>
                 </>
             )}
@@ -175,28 +158,17 @@ export const LeagueHeader: React.FC<Props> = ({
 
       {nextLeague && (
           <div className="px-8 pb-3 -mt-1">
-              <div 
-                className="h-2 w-full rounded-full overflow-hidden border relative"
-                style={{ 
-                  backgroundColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
-                  borderColor: borderColor
-                }}
-              >
+              <div className="h-2 w-full rounded-full overflow-hidden border relative bg-secondary border-border-color">
                   <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${progressPercentage}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
-                      className="h-full rounded-full"
-                      style={{
-                        background: !isLocked 
-                          ? 'linear-gradient(to right, var(--dyn-primary), var(--dyn-accent))' 
-                          : 'color-mix(in srgb, var(--dyn-text) 30%, transparent)'
-                      }}
+                      className={`h-full rounded-full ${!isLocked ? 'bg-gradient-to-r from-primary to-accent' : 'bg-border-color'}`}
                   />
               </div>
               {!isLocked && isCurrentLeague && (
-                  <p className="text-center text-[10px] mt-1" style={{ color: mutedTextColor }}>
-                      পরের ধাপে যেতে <span className="font-bold" style={{ color: 'var(--dyn-primary)' }}>{pointsNeeded} XP</span> প্রয়োজন
+                  <p className="text-center text-[10px] mt-1 text-text-secondary">
+                      পরের ধাপে যেতে <span className="font-bold text-primary">{pointsNeeded} XP</span> প্রয়োজন
                   </p>
               )}
           </div>
