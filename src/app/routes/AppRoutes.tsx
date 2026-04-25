@@ -32,8 +32,17 @@ const QuestionBank = lazy(() => import('@/features/question-bank/pages/QuestionB
 const AIChatPage = lazy(() => import('@/features/ai/pages/AIChatPage'));
 
 // Named exports-এর জন্য Lazy loading
-const ChallengePlay = lazy(() => import('@/features/exam/pages/ChallengePlay').then(m => ({ default: m.ChallengePlay })));
-const Contact = lazy(() => import('@/features/contact/pages/Contact').then(m => ({ default: m.Contact })));
+const ChallengePlay = lazy(() =>
+  import('@/features/exam/pages/ChallengePlay').then((m) => ({
+    default: m.ChallengePlay,
+  }))
+);
+
+const Contact = lazy(() =>
+  import('@/features/contact/pages/Contact').then((m) => ({
+    default: m.Contact,
+  }))
+);
 
 const Notifications = lazy(() => import('@/features/notifications/pages/Notifications'));
 const PublicProfile = lazy(() => import('@/features/profile/pages/PublicProfile'));
@@ -55,29 +64,48 @@ const Checkout = lazy(() => import('@/features/subscription/pages/Checkout'));
 // Group & Squad Pages (Lazy Loaded)
 const Lobby = lazy(() => import('@/features/leaderboard/pages/Lobby'));
 
+const FullPageLoader = () => (
+  <div className="min-h-screen bg-slate-50 dark:bg-slate-900" />
+);
+
 // Placeholder component
 const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex flex-col items-center justify-center h-[60vh]">
+  <div className="flex h-[60vh] flex-col items-center justify-center">
     <EmptyState message={`${title} - কাজ চলছে, শীঘ্রই আসবে...`} />
   </div>
 );
 
 // NotFound Component
 const NotFound = () => (
-  <div className="flex flex-col items-center justify-center h-[60vh]">
+  <div className="flex h-[60vh] flex-col items-center justify-center">
     <EmptyState message="৪o৪ - পৃষ্ঠাটি পাওয়া যায়নি" />
   </div>
 );
 
 const AppRoutes: React.FC = () => {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-900"></div>}>
+    <Suspense fallback={<FullPageLoader />}>
       <Routes>
-        {/* --- Public routes --- */}
+        {/* --- Public auth routes --- */}
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
 
+        {/*
+          Password reset route must stay public.
+          Supabase recovery links may open this route before the normal auth guard is ready.
+          ChangePassword itself validates/exchanges the recovery token/session.
+        */}
+        <Route path="/auth/change-password" element={<ChangePassword />} />
+
+        {/*
+          Backward compatibility:
+          Old internal links using /change-password will still work.
+          The component will redirect unauthenticated normal users to login by itself.
+        */}
+        <Route path="/change-password" element={<ChangePassword />} />
+
+        {/* --- Public legal/support routes --- */}
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-conditions" element={<TermsConditions />} />
         <Route path="/about" element={<AboutUs />} />
@@ -86,34 +114,124 @@ const AppRoutes: React.FC = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/data-deletion" element={<DataDeletion />} />
 
-        {/* --- Fullscreen routes (No Sidebar/Header/BottomNav) --- */}
-        <Route path="/exam/selection" element={<PermissionGuard><Selection /></PermissionGuard>} />
+        {/* --- Fullscreen protected routes --- */}
+        <Route
+          path="/exam/selection"
+          element={
+            <PermissionGuard>
+              <Selection />
+            </PermissionGuard>
+          }
+        />
 
-        {/* জেনেরাল এবং ডাইনামিক সাবজেক্ট স্লাগ রাউট */}
-        <Route path="/exam/live" element={<PermissionGuard><Arena /></PermissionGuard>} />
-        <Route path="/exam/live/:subjectSlug" element={<PermissionGuard><Arena /></PermissionGuard>} />
+        <Route
+          path="/exam/live"
+          element={
+            <PermissionGuard>
+              <Arena />
+            </PermissionGuard>
+          }
+        />
 
-        {/* 👇 এখানে Analysis এর জন্য ২ টি রাউট দেওয়া হয়েছে যাতে id ছাড়াও কাজ করে 👇 */}
-        <Route path="/exam/analysis" element={<PermissionGuard><Analysis /></PermissionGuard>} />
-        <Route path="/exam/analysis/:id" element={<PermissionGuard><Analysis /></PermissionGuard>} />
-        
-        <Route path="/exam/challenge-play" element={<PermissionGuard><ChallengePlay /></PermissionGuard>} />
+        <Route
+          path="/exam/live/:subjectSlug"
+          element={
+            <PermissionGuard>
+              <Arena />
+            </PermissionGuard>
+          }
+        />
 
-        {/* প্যারা সাথী AI ফুলস্ক্রিন রাউট */}
-        <Route path="/parasathi" element={<PermissionGuard><AIChatPage /></PermissionGuard>} />
+        <Route
+          path="/exam/analysis"
+          element={
+            <PermissionGuard>
+              <Analysis />
+            </PermissionGuard>
+          }
+        />
 
-        <Route path="/premium/checkout/:planId" element={<PermissionGuard><Checkout /></PermissionGuard>} />
-        <Route path="/notifications" element={<PermissionGuard><Notifications /></PermissionGuard>} />
-        <Route path="/settings" element={<PermissionGuard><Settings /></PermissionGuard>} />
-        <Route path="/edit-profile" element={<PermissionGuard><EditProfile /></PermissionGuard>} />
-        
-        {/* পাসওয়ার্ড পরিবর্তন রাউট */}
-        <Route path="/change-password" element={<PermissionGuard><ChangePassword /></PermissionGuard>} />
-        
-        <Route path="/profile/view/:id" element={<PermissionGuard><PublicProfile /></PermissionGuard>} />
+        <Route
+          path="/exam/analysis/:id"
+          element={
+            <PermissionGuard>
+              <Analysis />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/exam/challenge-play"
+          element={
+            <PermissionGuard>
+              <ChallengePlay />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/parasathi"
+          element={
+            <PermissionGuard>
+              <AIChatPage />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/premium/checkout/:planId"
+          element={
+            <PermissionGuard>
+              <Checkout />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <PermissionGuard>
+              <Notifications />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <PermissionGuard>
+              <Settings />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/edit-profile"
+          element={
+            <PermissionGuard>
+              <EditProfile />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/profile/view/:id"
+          element={
+            <PermissionGuard>
+              <PublicProfile />
+            </PermissionGuard>
+          }
+        />
 
         {/* --- Main Layout Routes (With Sidebar & Header & BottomNav) --- */}
-        <Route path="/" element={<PermissionGuard><MainLayout /></PermissionGuard>}>
+        <Route
+          path="/"
+          element={
+            <PermissionGuard>
+              <MainLayout />
+            </PermissionGuard>
+          }
+        >
           <Route index element={<Navigate to="/dashboard/home" replace />} />
 
           <Route path="dashboard" element={<Navigate to="/dashboard/home" replace />} />
@@ -132,7 +250,6 @@ const AppRoutes: React.FC = () => {
 
           {/* User Profile & Economy */}
           <Route path="profile" element={<UserProfile />} />
-
           <Route path="referral" element={<Referral />} />
 
           {/* Premium Showcase */}
@@ -151,9 +268,12 @@ const AppRoutes: React.FC = () => {
           {/* Support & Moderation */}
           <Route path="support" element={<Placeholder title="হেল্প ও সাপোর্ট" />} />
 
-          {/* 404 Fallback */}
+          {/* 404 Fallback inside protected layout */}
           <Route path="*" element={<NotFound />} />
         </Route>
+
+        {/* Public 404 fallback */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

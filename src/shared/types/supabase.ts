@@ -233,7 +233,7 @@ export type Database = {
           created_at: string | null
           id: string
           prompt_tokens: number | null
-          role: string | null
+          role: string
           session_id: string | null
         }
         Insert: {
@@ -242,7 +242,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           prompt_tokens?: number | null
-          role?: string | null
+          role: string
           session_id?: string | null
         }
         Update: {
@@ -251,7 +251,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           prompt_tokens?: number | null
-          role?: string | null
+          role?: string
           session_id?: string | null
         }
         Relationships: [
@@ -270,6 +270,7 @@ export type Database = {
           id: string
           last_active_at: string | null
           session_title: string | null
+          subject_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -277,6 +278,7 @@ export type Database = {
           id?: string
           last_active_at?: string | null
           session_title?: string | null
+          subject_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -284,9 +286,17 @@ export type Database = {
           id?: string
           last_active_at?: string | null
           session_title?: string | null
+          subject_id?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_chat_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_chat_sessions_user_id_fkey"
             columns: ["user_id"]
@@ -1579,7 +1589,9 @@ export type Database = {
         Row: {
           action_link: string | null
           action_type: string | null
+          button_text: string | null
           created_at: string | null
+          description: string | null
           end_date: string | null
           id: string
           image_url: string
@@ -1592,7 +1604,9 @@ export type Database = {
         Insert: {
           action_link?: string | null
           action_type?: string | null
+          button_text?: string | null
           created_at?: string | null
+          description?: string | null
           end_date?: string | null
           id?: string
           image_url: string
@@ -1605,7 +1619,9 @@ export type Database = {
         Update: {
           action_link?: string | null
           action_type?: string | null
+          button_text?: string | null
           created_at?: string | null
+          description?: string | null
           end_date?: string | null
           id?: string
           image_url?: string

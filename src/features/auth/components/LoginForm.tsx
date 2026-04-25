@@ -1,115 +1,219 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/shared/lib/supabase';
-import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
-import { API_ENDPOINTS } from '@/shared/constants/storageKeys';
+import { useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
+import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+
+import { API_ENDPOINTS } from "@/shared/constants/storageKeys";
+import { supabase } from "@/shared/lib/supabase";
+
+type LoginFormData = {
+  identifier: string;
+  password: string;
+};
+
+type LocationState = {
+  from?: {
+    pathname?: string;
+    search?: string;
+  };
+};
+
+const INITIAL_FORM_DATA: LoginFormData = {
+  identifier: "",
+  password: "",
+};
+
+function getLoginErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+
+  if (
+    message.includes("invalid login credentials") ||
+    message.includes("invalid credentials") ||
+    message.includes("unauthorized") ||
+    message.includes("401")
+  ) {
+    return "ভুল ইমেইল/ইউজারনেম বা পাসওয়ার্ড।";
+  }
+
+  if (message.includes("email not confirmed")) {
+    return "আপনার ইমেইল এখনো ভেরিফাই করা হয়নি। ইনবক্স চেক করুন।";
+  }
+
+  return "লগইন করতে সমস্যা হচ্ছে। একটু পর আবার চেষ্টা করুন।";
+}
+
+function getRedirectPath(state: LocationState | null): string {
+  const pathname = state?.from?.pathname;
+
+  if (!pathname || pathname.startsWith("/auth")) {
+    return "/dashboard";
+  }
+
+  return `${pathname}${state?.from?.search ?? ""}`;
+}
 
 export default function LoginForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [showPassword, setShowPassword] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({
-    identifier: '', 
-    password: ''
-  });
-
-  useEffect(() => {
-    const clearOldSession = async () => {
-      try {
-        await supabase.auth.signOut();
-      } catch (error) {
-        console.error('Failed to clear old session:', error);
-      }
-    };
-    clearOldSession();
-  }, []);
+  const [formData, setFormData] = useState<LoginFormData>(INITIAL_FORM_DATA);
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: typeof formData) => {
-      const { data, error: functionError } = await supabase.functions.invoke(API_ENDPOINTS.AUTH.LOGIN, {
-        body: credentials,
-      });
+    mutationFn: async (credentials: LoginFormData) => {
+      const normalizedCredentials = {
+        identifier: credentials.identifier.trim().toLowerCase(),
+        password: credentials.password,
+      };
 
-      if (functionError) throw functionError;
-      if (data?.error) throw new Error(data.error);
+      const { data, error: functionError } = await supabase.functions.invoke(
+        API_ENDPOINTS.AUTH.LOGIN,
+        {
+          body: normalizedCredentials,
+        }
+      );
 
-      if (data?.session) {
-        const { error: sessionError } = await supabase.auth.setSession(data.session);
-        if (sessionError) throw sessionError;
+      if (functionError) {
+        throw functionError;
       }
-      
+
+      if (data?.error) {
+        throw new Error(String(data.error));
+      }
+
+      if (!data?.session) {
+        throw new Error("No session returned from login endpoint.");
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession(data.session);
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
       return data;
     },
     onSuccess: () => {
-      navigate('/dashboard');
+      const redirectPath = getRedirectPath(location.state as LocationState | null);
+      navigate(redirectPath, { replace: true });
     },
-    onError: (err: Error) => {
-      if (err.message.includes('Invalid login credentials')) {
-        setCustomError('ভুল মোবাইল নম্বর/ইমেইল বা পাসওয়ার্ড।');
-      } else {
-        setCustomError('লগইন করতে সমস্যা হচ্ছে। একটু পর আবার চেষ্টা করুন।');
-      }
-    }
+    onError: (error) => {
+      setCustomError(getLoginErrorMessage(error));
+    },
   });
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCustomError(null);
-    loginMutation.mutate(formData);
+  const isPending = loginMutation.isPending;
+  const errorId = customError ? "login-form-error" : undefined;
+
+  const updateField = (field: keyof LoginFormData, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: field === "identifier" ? value.trimStart() : value,
+    }));
+
+    if (customError) {
+      setCustomError(null);
+    }
   };
 
-  const isPending = loginMutation.isPending;
+  const validateForm = (): string | null => {
+    const identifier = formData.identifier.trim();
+    const password = formData.password;
+
+    if (!identifier) {
+      return "ইমেইল বা ইউজারনেম লিখুন।";
+    }
+
+    if (!password) {
+      return "পাসওয়ার্ড লিখুন।";
+    }
+
+    return null;
+  };
+
+  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCustomError(null);
+
+    const validationError = validateForm();
+
+    if (validationError) {
+      setCustomError(validationError);
+      return;
+    }
+
+    loginMutation.mutate(formData);
+  };
 
   return (
     <div className="w-full">
       {customError && (
-        <div className="mb-4 p-3 flex items-start gap-2 rounded-lg text-sm bg-surface-elevated border border-accent text-accent">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+        <div
+          id="login-form-error"
+          role="alert"
+          aria-live="polite"
+          className="mb-4 flex items-start gap-2 rounded-lg border border-accent bg-surface-elevated p-3 text-sm text-accent"
+        >
+          <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
           <p className="font-medium">{customError}</p>
         </div>
       )}
 
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-4" noValidate>
         <div className="space-y-1">
           <input
+            id="login-identifier"
             type="text"
             required
-            className="w-full px-4 py-3.5 rounded-xl bg-input-bg text-text-primary border border-input-border focus:outline-none focus:ring-2 focus:ring-focus-ring transition-colors placeholder:text-text-secondary text-base"
-            placeholder="ইমেইল বা ইউজার নেম"
+            autoComplete="username"
+            inputMode="email"
+            className="w-full rounded-xl border border-input-border bg-input-bg px-4 py-3.5 text-base text-text-primary transition-colors placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-70"
+            placeholder="ইমেইল বা ইউজারনেম"
             value={formData.identifier}
-            onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+            onChange={(event) => updateField("identifier", event.target.value)}
             disabled={isPending}
+            aria-invalid={Boolean(customError)}
+            aria-describedby={errorId}
           />
         </div>
 
         <div>
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              id="login-password"
+              type={showPassword ? "text" : "password"}
               required
-              className="w-full pl-4 pr-12 py-3.5 rounded-xl bg-input-bg text-text-primary border border-input-border focus:outline-none focus:ring-2 focus:ring-focus-ring transition-colors placeholder:text-text-secondary text-base"
+              autoComplete="current-password"
+              className="w-full rounded-xl border border-input-border bg-input-bg py-3.5 pl-4 pr-12 text-base text-text-primary transition-colors placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-70"
               placeholder="পাসওয়ার্ড"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(event) => updateField("password", event.target.value)}
               disabled={isPending}
+              aria-invalid={Boolean(customError)}
+              aria-describedby={errorId}
             />
+
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-text-secondary hover:text-text-primary focus:outline-none transition-colors"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-text-secondary transition-colors hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed"
               aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখুন"}
+              aria-pressed={showPassword}
               disabled={isPending}
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Eye className="h-5 w-5" aria-hidden="true" />
+              )}
             </button>
           </div>
-          
-          <div className="flex justify-end pt-2 pb-1">
-            <Link 
-              to="/auth/forgot-password" 
-              className="text-sm font-medium text-primary hover:underline transition-colors"
+
+          <div className="flex justify-end pb-1 pt-2">
+            <Link
+              to="/auth/forgot-password"
+              className="text-sm font-medium text-primary transition-colors hover:underline"
             >
               পাসওয়ার্ড ভুলে গেছেন?
             </Link>
@@ -119,9 +223,16 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full mt-2 py-3.5 px-4 font-bold text-lg rounded-full bg-primary text-primary-foreground transition-all duration-200 flex justify-center items-center gap-2 hover:opacity-90 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-3.5 text-lg font-bold text-primary-foreground transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending ? <Loader2 className="animate-spin h-6 w-6" /> : 'লগ ইন'}
+          {isPending ? (
+            <>
+              <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+              <span>লগ ইন হচ্ছে...</span>
+            </>
+          ) : (
+            "লগ ইন"
+          )}
         </button>
       </form>
     </div>

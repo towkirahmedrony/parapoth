@@ -59,7 +59,8 @@ export const useHomeGrids = () => {
   const query = useQuery({
     queryKey: QUERY_KEYS.HOME_GRIDS,
     queryFn: async (): Promise<GridItem[]> => {
-      const { data } = await apiClient.get<HomeGridsResponse>('/system/home-grids');
+      // 👈 এখানে /system থেকে /app-builder করা হয়েছে
+      const { data } = await apiClient.get<HomeGridsResponse>('/app-builder/home-grids');
       return sanitizeGridItems(data?.data);
     },
     staleTime: 1000 * 60 * 2,

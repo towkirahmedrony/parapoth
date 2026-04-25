@@ -202,7 +202,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const { data: globalConfig = null } = useQuery<GlobalThemeConfig | null>({
     queryKey: ['theme-config'],
     queryFn: async () => {
-      const res = await apiClient.get('/system/theme-config');
+      // 👈 এখানে /system থেকে /app-builder করা হয়েছে
+      const res = await apiClient.get('/app-builder/theme-config');
       return (res.data?.data?.value ?? res.data?.data ?? null) as GlobalThemeConfig | null;
     },
     staleTime: 1000 * 15,

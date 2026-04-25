@@ -1,248 +1,1114 @@
-import { useState, useEffect, useRef, FormEvent, useCallback } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { 
-  Bot, Send, BookOpen, Loader2, 
-  Sparkles, User, ChevronDown, 
-  RefreshCcw, Info
+import {
+  FormEvent,
+  KeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  AlertCircle,
+  BookOpen,
+  Bot,
+  ChevronDown,
+  History,
+  Info,
+  Loader2,
+  MessageCircle,
+  RefreshCcw,
+  Send,
+  Sparkles,
+  Trash2,
+  User,
+  X,
 } from 'lucide-react';
 
 import { fetchAiSubjects, sendChatMessage } from '../services/aiService';
-import { Subject, Message } from '../types/ai';
+import type { Subject } from '../types/ai';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { supabase } from '@/shared/lib/supabase';
+
+type ChatRole = 'user' | 'assistant' | 'system';
+type ChatMessageStatus = 'sending' | 'sent' | 'failed';
+
+interface ChatMessage {
+  id: string;
+  role: ChatRole;
+  content: string;
+  status: ChatMessageStatus;
+  createdAt: number;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  subjectId: string | null;
+  createdAt: string | null;
+  lastActiveAt: string | null;
+}
+
+interface SendMessageVariables {
+  localMessageId: string;
+  message: string;
+  subjectId: string;
+  sessionId: string | null;
+}
+
+interface AiSessionRow {
+  id: string | null;
+  session_title: string | null;
+  subject_id: string | null;
+  created_at: string | null;
+  last_active_at: string | null;
+}
+
+interface AiMessageRow {
+  id: string | null;
+  role: string | null;
+  content: string | null;
+  created_at: string | null;
+}
+
+const MAX_MESSAGE_LENGTH = 1200;
+const SESSION_LIMIT = 40;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const toStringOrNull = (value: unknown): string | null => {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+};
+
+const createId = (): string => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const toTimestamp = (value: string | null): number => {
+  if (!value) return Date.now();
+
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Date.now();
+};
+
+const toSafeRole = (role: string | null): ChatRole => {
+  if (role === 'user' || role === 'assistant' || role === 'system') {
+    return role;
+  }
+
+  return 'assistant';
+};
+
+const getSessionTitle = (sessionTitle: string | null): string => {
+  if (sessionTitle && sessionTitle.trim().length > 0) {
+    return sessionTitle.trim();
+  }
+
+  return 'নতুন AI চ্যাট';
+};
+
+const getSafeErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+
+    if (message.includes('network') || message.includes('fetch')) {
+      return 'নেটওয়ার্ক সমস্যা হয়েছে। ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।';
+    }
+
+    if (message.includes('unauthorized') || message.includes('401')) {
+      return 'আপনার সেশন শেষ হয়ে গেছে। আবার লগইন করে চেষ্টা করুন।';
+    }
+
+    if (message.includes('quota') || message.includes('limit') || message.includes('429')) {
+      return 'AI ব্যবহারের সীমা সাময়িকভাবে শেষ হয়েছে। একটু পরে আবার চেষ্টা করুন।';
+    }
+  }
+
+  return 'দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। আবার চেষ্টা করুন।';
+};
+
+const formatTime = (timestamp: number): string => {
+  return new Intl.DateTimeFormat('bn-BD', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(timestamp);
+};
+
+const formatSessionDate = (value: string | null): string => {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Intl.DateTimeFormat('bn-BD', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+};
+
+const mapSessionRow = (row: unknown): ChatSession | null => {
+  if (!isRecord(row)) return null;
+
+  const id = toStringOrNull(row.id);
+  if (!id) return null;
+
+  return {
+    id,
+    title: getSessionTitle(toStringOrNull(row.session_title)),
+    subjectId: toStringOrNull(row.subject_id),
+    createdAt: toStringOrNull(row.created_at),
+    lastActiveAt: toStringOrNull(row.last_active_at),
+  };
+};
+
+const mapMessageRow = (row: unknown): ChatMessage | null => {
+  if (!isRecord(row)) return null;
+
+  const id = toStringOrNull(row.id);
+  const content = toStringOrNull(row.content);
+  const createdAt = toStringOrNull(row.created_at);
+
+  if (!id || !content) return null;
+
+  return {
+    id,
+    role: toSafeRole(toStringOrNull(row.role)),
+    content,
+    status: 'sent',
+    createdAt: toTimestamp(createdAt),
+  };
+};
+
+const fetchChatSessions = async (): Promise<ChatSession[]> => {
+  const { data, error } = await supabase
+    .from('ai_chat_sessions')
+    .select('id, session_title, subject_id, created_at, last_active_at')
+    .order('last_active_at', { ascending: false })
+    .limit(SESSION_LIMIT);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return ((data ?? []) as AiSessionRow[])
+    .map(mapSessionRow)
+    .filter((session): session is ChatSession => Boolean(session));
+};
+
+const fetchChatMessages = async (sessionId: string): Promise<ChatMessage[]> => {
+  const { data, error } = await supabase
+    .from('ai_chat_messages')
+    .select('id, role, content, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return ((data ?? []) as AiMessageRow[])
+    .map(mapMessageRow)
+    .filter((message): message is ChatMessage => Boolean(message));
+};
+
+const deleteChatSession = async (sessionId: string): Promise<void> => {
+  const { error: messagesError } = await supabase
+    .from('ai_chat_messages')
+    .delete()
+    .eq('session_id', sessionId);
+
+  if (messagesError) {
+    throw new Error(messagesError.message);
+  }
+
+  const { error: sessionError } = await supabase
+    .from('ai_chat_sessions')
+    .delete()
+    .eq('id', sessionId);
+
+  if (sessionError) {
+    throw new Error(sessionError.message);
+  }
+};
 
 const AIChatPage = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(true);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState<boolean>(true);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+  const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>('');
   const [sessionId, setSessionId] = useState<string | null>(null);
-  
+
+  const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const userInitial = user?.email?.charAt(0).toUpperCase() || 'U';
+  const userInitial = useMemo(() => {
+    return user?.email?.trim()?.charAt(0)?.toUpperCase() || 'U';
+  }, [user?.email]);
 
-  const { data: subjects = [], isLoading: isSubjectsLoading } = useQuery({
+  const {
+    data: subjects = [],
+    isLoading: isSubjectsLoading,
+    isError: isSubjectsError,
+    refetch: refetchSubjects,
+    isFetching: isSubjectsFetching,
+  } = useQuery({
     queryKey: ['aiSubjects'],
     queryFn: fetchAiSubjects,
     staleTime: 1000 * 60 * 60,
+    retry: 2,
+  });
+
+  const subjectById = useMemo(() => {
+    return new Map(subjects.map(subject => [subject.id, subject]));
+  }, [subjects]);
+
+  const {
+    data: chatSessions = [],
+    isLoading: isSessionsLoading,
+    isError: isSessionsError,
+    refetch: refetchSessions,
+    isFetching: isSessionsFetching,
+  } = useQuery({
+    queryKey: ['aiChatSessions'],
+    queryFn: fetchChatSessions,
+    enabled: Boolean(user),
+    staleTime: 1000 * 30,
+    retry: 2,
+  });
+
+  const {
+    data: loadedMessages = [],
+    isLoading: isMessagesLoading,
+    isError: isMessagesError,
+    refetch: refetchMessages,
+    isFetching: isMessagesFetching,
+  } = useQuery({
+    queryKey: ['aiChatMessages', activeSessionId],
+    queryFn: () => fetchChatMessages(activeSessionId as string),
+    enabled: Boolean(activeSessionId),
+    staleTime: 1000 * 15,
+    retry: 2,
   });
 
   const chatMutation = useMutation({
-    mutationFn: sendChatMessage,
-    onSuccess: (data) => {
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-      if (data.sessionId) setSessionId(data.sessionId);
-    },
-    onError: () => {
+    mutationFn: (variables: SendMessageVariables) =>
+      sendChatMessage({
+        message: variables.message,
+        subjectId: variables.subjectId,
+        sessionId: variables.sessionId,
+      }),
+    onSuccess: async (data, variables) => {
+      setMessages(prev =>
+        prev.map(message =>
+          message.id === variables.localMessageId
+            ? { ...message, status: 'sent' }
+            : message
+        )
+      );
+
       setMessages(prev => [
-        ...prev, 
-        { role: 'assistant', content: "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না।" }
+        ...prev,
+        {
+          id: createId(),
+          role: 'assistant',
+          content: data.reply || 'দুঃখিত, কোনো উত্তর পাওয়া যায়নি। আবার চেষ্টা করুন।',
+          status: 'sent',
+          createdAt: Date.now(),
+        },
       ]);
-    }
+
+      if (data.sessionId) {
+        setSessionId(data.sessionId);
+        setActiveSessionId(data.sessionId);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['aiChatSessions'] });
+
+      if (data.sessionId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['aiChatMessages', data.sessionId],
+        });
+      }
+    },
+    onError: (error, variables) => {
+      setMessages(prev =>
+        prev.map(message =>
+          message.id === variables.localMessageId
+            ? { ...message, status: 'failed' }
+            : message
+        )
+      );
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: createId(),
+          role: 'assistant',
+          content: getSafeErrorMessage(error),
+          status: 'sent',
+          createdAt: Date.now(),
+        },
+      ]);
+    },
   });
 
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, chatMutation.isPending]);
+  const deleteSessionMutation = useMutation({
+    mutationFn: deleteChatSession,
+    onSuccess: async (_, deletedSessionId) => {
+      if (activeSessionId === deletedSessionId) {
+        setActiveSessionId(null);
+        setSessionId(null);
+        setMessages([]);
+      }
 
-  const handleSendMessage = useCallback((e?: FormEvent) => {
-    e?.preventDefault(); 
-    
-    const trimmedInput = input.trim();
-    if (!trimmedInput || !selectedSubject || chatMutation.isPending) return;
+      setSessionToDelete(null);
 
-    setMessages(prev => [...prev, { role: 'user', content: trimmedInput }]);
-    setInput('');
+      await queryClient.invalidateQueries({ queryKey: ['aiChatSessions'] });
+      await queryClient.removeQueries({ queryKey: ['aiChatMessages', deletedSessionId] });
+    },
+  });
 
-    chatMutation.mutate({
-      message: trimmedInput,
-      subjectId: selectedSubject.id,
-      sessionId
-    });
-  }, [input, selectedSubject, chatMutation, sessionId]);
+  const canSendMessage =
+    Boolean(input.trim()) &&
+    Boolean(selectedSubject) &&
+    !chatMutation.isPending &&
+    input.trim().length <= MAX_MESSAGE_LENGTH;
 
-  const selectSubject = useCallback((subjectId: string) => {
-    const sub = subjects.find(s => s.id === subjectId);
-    if (sub) {
-      setSelectedSubject(sub);
-      setIsModalOpen(false);
-    }
-  }, [subjects]);
+  const remainingCharacters = MAX_MESSAGE_LENGTH - input.length;
+  const hasMessages = messages.length > 0;
 
-  const handleClearChat = useCallback(() => {
-    setMessages([]);
-    setSessionId(null);
+  const scrollToLatestMessage = useCallback(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, []);
 
+  useEffect(() => {
+    scrollToLatestMessage();
+  }, [messages, chatMutation.isPending, scrollToLatestMessage]);
+
+  useEffect(() => {
+    if (loadedMessages.length > 0 && activeSessionId) {
+      setMessages(loadedMessages);
+      setSessionId(activeSessionId);
+    }
+  }, [activeSessionId, loadedMessages]);
+
+  useEffect(() => {
+    if (!isSubjectModalOpen && selectedSubject) {
+      window.setTimeout(() => inputRef.current?.focus(), 80);
+    }
+  }, [isSubjectModalOpen, selectedSubject]);
+
+  useEffect(() => {
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+
+      if (sessionToDelete) {
+        setSessionToDelete(null);
+        return;
+      }
+
+      if (isHistoryOpen) {
+        setIsHistoryOpen(false);
+        return;
+      }
+
+      if (isSubjectModalOpen && selectedSubject) {
+        setIsSubjectModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isHistoryOpen, isSubjectModalOpen, selectedSubject, sessionToDelete]);
+
+  const handleSubjectSelect = useCallback(
+    (subjectId: string) => {
+      const subject = subjects.find(item => item.id === subjectId);
+
+      if (!subject) return;
+
+      const isChangingSubject = selectedSubject?.id !== subject.id;
+
+      setSelectedSubject(subject);
+      setIsSubjectModalOpen(false);
+
+      if (isChangingSubject) {
+        setActiveSessionId(null);
+        setSessionId(null);
+        setMessages([]);
+      }
+    },
+    [selectedSubject?.id, subjects]
+  );
+
+  const handleOpenSession = useCallback(
+    (session: ChatSession) => {
+      setActiveSessionId(session.id);
+      setSessionId(session.id);
+      setInput('');
+      setIsHistoryOpen(false);
+
+      if (session.subjectId) {
+        const subject = subjectById.get(session.subjectId);
+        if (subject) {
+          setSelectedSubject(subject);
+        }
+      }
+    },
+    [subjectById]
+  );
+
+  const handleNewChat = useCallback(() => {
+    setActiveSessionId(null);
+    setSessionId(null);
+    setMessages([]);
+    setInput('');
+    setIsHistoryOpen(false);
+    setIsSubjectModalOpen(true);
+  }, []);
+
+  const submitMessage = useCallback(
+    (messageText: string, retryMessageId?: string) => {
+      const trimmedMessage = messageText.trim();
+
+      if (!trimmedMessage || !selectedSubject || chatMutation.isPending) return;
+      if (trimmedMessage.length > MAX_MESSAGE_LENGTH) return;
+
+      const localMessageId = retryMessageId || createId();
+
+      if (retryMessageId) {
+        setMessages(prev =>
+          prev.map(message =>
+            message.id === retryMessageId
+              ? {
+                  ...message,
+                  status: 'sending',
+                  createdAt: Date.now(),
+                }
+              : message
+          )
+        );
+      } else {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: localMessageId,
+            role: 'user',
+            content: trimmedMessage,
+            status: 'sending',
+            createdAt: Date.now(),
+          },
+        ]);
+        setInput('');
+      }
+
+      chatMutation.mutate({
+        localMessageId,
+        message: trimmedMessage,
+        subjectId: selectedSubject.id,
+        sessionId,
+      });
+    },
+    [chatMutation, selectedSubject, sessionId]
+  );
+
+  const handleSendMessage = useCallback(
+    (event?: FormEvent<HTMLFormElement>) => {
+      event?.preventDefault();
+      submitMessage(input);
+    },
+    [input, submitMessage]
+  );
+
+  const handleRetryMessage = useCallback(
+    (message: ChatMessage) => {
+      if (message.role !== 'user' || message.status !== 'failed') return;
+      submitMessage(message.content, message.id);
+    },
+    [submitMessage]
+  );
+
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleDeleteCurrentSession = useCallback(() => {
+    if (!sessionToDelete || deleteSessionMutation.isPending) return;
+    deleteSessionMutation.mutate(sessionToDelete.id);
+  }, [deleteSessionMutation, sessionToDelete]);
+
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden font-sans bg-app text-text-primary">
-      
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/50 animate-in fade-in duration-300">
-          <div className="w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 bg-surface-elevated border border-border-color">
-            <div className="p-8">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto bg-primary/10 text-primary">
-                <Sparkles className="w-8 h-8" />
-              </div>
-              <h2 className="text-2xl font-bold text-center mb-2 text-text-primary">প্যারা সাথী AI</h2>
-              <p className="text-center mb-8 text-sm text-text-secondary">
-                চ্যাট শুরু করার আগে আপনার পড়ার বিষয়টি সিলেক্ট করুন
-              </p>
-              
-              <div className="relative group">
-                <select 
-                  onChange={(e) => selectSubject(e.target.value)}
-                  className="w-full appearance-none py-4 px-5 pr-10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-focus-ring transition-all cursor-pointer disabled:opacity-50 bg-input-bg border border-input-border text-text-primary"
-                  defaultValue=""
-                  disabled={isSubjectsLoading}
-                >
-                  <option value="" disabled>
-                    {isSubjectsLoading ? 'বিষয় লোড হচ্ছে...' : 'একটি বিষয় বেছে নিন...'}
-                  </option>
-                  {subjects.map(sub => (
-                    <option key={sub.id} value={sub.id}>{sub.name_bn}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors text-text-secondary" size={20} />
+    <div className="relative flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden bg-app font-sans text-text-primary">
+      {isSubjectModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-app/80 p-4 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ai-subject-modal-title"
+        >
+          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-border-color bg-surface-elevated shadow-2xl">
+            <div className="p-6 sm:p-8">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Sparkles className="h-8 w-8" aria-hidden="true" />
               </div>
 
-              <div className="mt-8 flex gap-3">
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 px-4 font-medium transition-colors hover:opacity-80 text-text-secondary"
-                >
-                  পরে করব
-                </button>
+              <div className="mb-8 text-center">
+                <h2 id="ai-subject-modal-title" className="text-2xl font-bold text-text-primary">
+                  প্যারা সাথী AI
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
+                  ভালো উত্তর পেতে আগে আপনার পড়ার বিষয়টি নির্বাচন করুন।
+                </p>
               </div>
+
+              {isSubjectsError ? (
+                <div className="rounded-2xl border border-border-color bg-surface p-4">
+                  <div className="flex gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">
+                        বিষয় লোড করা যায়নি
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-text-secondary">
+                        ইন্টারনেট সংযোগ অথবা সার্ভার সমস্যা হতে পারে।
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void refetchSubjects()}
+                        disabled={isSubjectsFetching}
+                        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSubjectsFetching ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        আবার চেষ্টা করুন
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="ai-subject-select" className="mb-2 block text-sm font-semibold text-text-primary">
+                    বিষয় নির্বাচন করুন
+                  </label>
+
+                  <div className="relative">
+                    <select
+                      id="ai-subject-select"
+                      onChange={event => handleSubjectSelect(event.target.value)}
+                      className="w-full cursor-pointer appearance-none rounded-2xl border border-input-border bg-input-bg px-5 py-4 pr-11 text-text-primary transition focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      value={selectedSubject?.id || ''}
+                      disabled={isSubjectsLoading}
+                    >
+                      <option value="" disabled>
+                        {isSubjectsLoading ? 'বিষয় লোড হচ্ছে...' : 'একটি বিষয় বেছে নিন...'}
+                      </option>
+
+                      {subjects.map(subject => (
+                        <option key={subject.id} value={subject.id}>
+                          {subject.name_bn}
+                        </option>
+                      ))}
+                    </select>
+
+                    <ChevronDown
+                      className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-text-secondary"
+                      aria-hidden="true"
+                    />
+                  </div>
+
+                  {subjects.length === 0 && !isSubjectsLoading && (
+                    <p className="mt-3 text-sm text-text-secondary">
+                      এখনো কোনো AI বিষয় পাওয়া যায়নি।
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {selectedSubject && (
+                <button
+                  type="button"
+                  onClick={() => setIsSubjectModalOpen(false)}
+                  className="mt-6 w-full rounded-2xl border border-border-color bg-secondary px-4 py-3 text-sm font-semibold text-text-primary transition active:scale-[0.99]"
+                >
+                  আগের বিষয় রেখেই চালিয়ে যান
+                </button>
+              )}
             </div>
-            <div className="p-4 flex items-center gap-2 justify-center bg-surface border-t border-border-color">
-               <Info size={14} className="text-text-secondary" />
-               <span className="text-xs text-text-secondary">
-                 আপনার সিলেক্ট করা বিষয়ের উপর ভিত্তি করে উত্তর দেওয়া হবে।
-               </span>
+
+            <div className="flex items-start gap-2 border-t border-border-color bg-surface p-4">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-text-secondary" aria-hidden="true" />
+              <p className="text-xs leading-5 text-text-secondary">
+                আপনার নির্বাচিত বিষয়ের উপর ভিত্তি করে উত্তর দেওয়া হবে। গুরুত্বপূর্ণ তথ্য অবশ্যই যাচাই করে নিন।
+              </p>
             </div>
           </div>
         </div>
       )}
 
-      <header className="flex items-center justify-between px-6 py-4 backdrop-blur-md sticky top-0 z-10 bg-nav-bg/80 border-b border-border-color text-nav-text">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:opacity-80 bg-secondary border border-border-color text-text-primary"
-          >
-            <BookOpen size={16} />
-            <span className="text-sm font-medium">{selectedSubject?.name_bn || 'বিষয় নির্বাচন'}</span>
-            <ChevronDown size={14} />
-          </button>
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-labelledby="ai-history-title">
+          <button
+            type="button"
+            aria-label="চ্যাট হিস্ট্রি বন্ধ করুন"
+            className="absolute inset-0 bg-app/75 backdrop-blur-sm"
+            onClick={() => setIsHistoryOpen(false)}
+          />
+
+          <aside className="absolute bottom-0 left-0 top-0 flex w-[86%] max-w-sm flex-col border-r border-border-color bg-surface-elevated shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border-color p-4">
+              <div>
+                <h2 id="ai-history-title" className="text-lg font-bold text-text-primary">
+                  AI চ্যাট হিস্ট্রি
+                </h2>
+                <p className="text-xs text-text-secondary">
+                  আপনার সংরক্ষিত চ্যাট সেশন
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsHistoryOpen(false)}
+                aria-label="চ্যাট হিস্ট্রি বন্ধ করুন"
+                className="rounded-2xl p-2 text-text-secondary transition hover:bg-secondary"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="border-b border-border-color p-4">
+              <button
+                type="button"
+                onClick={handleNewChat}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99]"
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                নতুন চ্যাট
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3">
+              {isSessionsLoading ? (
+                <div className="space-y-3 p-1">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="rounded-2xl border border-border-color bg-surface p-4">
+                      <div className="h-3 w-3/4 animate-pulse rounded-full bg-secondary" />
+                      <div className="mt-3 h-2 w-1/2 animate-pulse rounded-full bg-secondary" />
+                    </div>
+                  ))}
+                </div>
+              ) : isSessionsError ? (
+                <div className="rounded-2xl border border-border-color bg-surface p-4">
+                  <div className="flex gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">
+                        হিস্ট্রি লোড করা যায়নি
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void refetchSessions()}
+                        disabled={isSessionsFetching}
+                        className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary disabled:opacity-60"
+                      >
+                        {isSessionsFetching && (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        )}
+                        আবার চেষ্টা করুন
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : chatSessions.length === 0 ? (
+                <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-border-color bg-surface p-6 text-center">
+                  <History className="mb-3 h-8 w-8 text-text-secondary" aria-hidden="true" />
+                  <p className="text-sm font-semibold text-text-primary">
+                    এখনো কোনো চ্যাট নেই
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-text-secondary">
+                    নতুন প্রশ্ন করলে এখানে সেশন দেখা যাবে।
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {chatSessions.map(session => {
+                    const subjectName = session.subjectId
+                      ? subjectById.get(session.subjectId)?.name_bn
+                      : null;
+
+                    const isActive = activeSessionId === session.id;
+
+                    return (
+                      <div
+                        key={session.id}
+                        className={`group rounded-2xl border p-3 transition ${
+                          isActive
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border-color bg-surface hover:bg-secondary'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSession(session)}
+                          className="w-full text-left"
+                        >
+                          <p className="line-clamp-2 text-sm font-semibold text-text-primary">
+                            {session.title}
+                          </p>
+                          <div className="mt-2 flex items-center justify-between gap-2 text-xs text-text-secondary">
+                            <span className="truncate">
+                              {subjectName || 'বিষয় নেই'}
+                            </span>
+                            <span className="shrink-0">
+                              {formatSessionDate(session.lastActiveAt)}
+                            </span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSessionToDelete(session)}
+                          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent opacity-80 transition hover:opacity-100"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          মুছুন
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
-        <div className="flex items-center gap-2">
-           <button 
-             onClick={handleClearChat} 
-             title="চ্যাট ক্লিয়ার করুন"
-             className="p-2 transition-colors hover:opacity-80 text-text-secondary"
-           >
-              <RefreshCcw size={18} />
-           </button>
-           <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs bg-primary text-primary-foreground">
-             {userInitial}
-           </div>
+      )}
+
+      {sessionToDelete && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-app/80 p-4 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-session-title"
+        >
+          <div className="w-full max-w-sm rounded-3xl border border-border-color bg-surface-elevated p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 id="delete-session-title" className="text-lg font-bold text-text-primary">
+                  চ্যাট মুছে ফেলবেন?
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
+                  “{sessionToDelete.title}” সেশনটি স্থায়ীভাবে মুছে যাবে।
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSessionToDelete(null)}
+                aria-label="ডিলিট কনফার্মেশন বন্ধ করুন"
+                className="rounded-full p-2 text-text-secondary transition hover:bg-secondary"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {deleteSessionMutation.isError && (
+              <div className="mb-4 rounded-2xl border border-border-color bg-surface p-3 text-sm text-accent">
+                চ্যাট মুছতে সমস্যা হয়েছে। আবার চেষ্টা করুন।
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setSessionToDelete(null)}
+                disabled={deleteSessionMutation.isPending}
+                className="flex-1 rounded-2xl border border-border-color bg-secondary px-4 py-3 text-sm font-semibold text-text-primary transition active:scale-[0.99] disabled:opacity-60"
+              >
+                বাতিল
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeleteCurrentSession}
+                disabled={deleteSessionMutation.isPending}
+                className="flex-1 rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
+              >
+                {deleteSessionMutation.isPending ? 'মুছছে...' : 'মুছুন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <header className="sticky top-0 z-20 border-b border-border-color bg-nav-bg/90 px-4 py-3 text-nav-text backdrop-blur-md sm:px-6">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen(true)}
+              aria-label="AI চ্যাট হিস্ট্রি খুলুন"
+              className="rounded-2xl p-2.5 text-text-secondary transition hover:bg-secondary active:scale-95"
+            >
+              <History className="h-5 w-5" aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSubjectModalOpen(true)}
+              aria-label="AI বিষয় নির্বাচন করুন"
+              className="min-w-0 rounded-2xl border border-border-color bg-secondary px-3 py-2 text-text-primary transition active:scale-[0.99]"
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate text-sm font-semibold">
+                  {selectedSubject?.name_bn || 'বিষয় নির্বাচন'}
+                </span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-text-secondary" aria-hidden="true" />
+              </span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleNewChat}
+              aria-label="নতুন AI চ্যাট শুরু করুন"
+              className="rounded-2xl p-2.5 text-text-secondary transition hover:bg-secondary active:scale-95"
+            >
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+            </button>
+
+            <div
+              aria-label="ব্যবহারকারী"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+            >
+              {userInitial}
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 md:px-0">
-        <div className="max-w-3xl mx-auto py-10 space-y-8">
-          
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl mb-6 rotate-3 bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                <Sparkles className="w-10 h-10" />
-              </div>
-              <h1 className="text-3xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                 হ্যালো, আমি প্যারা সাথী AI
-              </h1>
-              <p className="text-center max-w-sm px-4 leading-relaxed text-text-secondary">
-                আপনার {selectedSubject?.name_bn || 'পছন্দের'} বিষয়ের যেকোনো জটিল প্রশ্নের সহজ সমাধান পেতে আমাকে জিজ্ঞেস করুন।
-              </p>
+      <main className="flex-1 overflow-y-auto px-4 pb-44 pt-6 sm:px-6">
+        <div className="mx-auto max-w-4xl space-y-7">
+          {isMessagesLoading && activeSessionId ? (
+            <div className="space-y-5 pt-8">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="flex gap-4">
+                  <div className="h-9 w-9 animate-pulse rounded-xl bg-surface" />
+                  <div className="w-full max-w-md rounded-2xl border border-border-color bg-surface p-4">
+                    <div className="h-2.5 w-3/4 animate-pulse rounded-full bg-secondary" />
+                    <div className="mt-3 h-2.5 w-1/2 animate-pulse rounded-full bg-secondary" />
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : isMessagesError && activeSessionId ? (
+            <div className="flex min-h-[55dvh] items-center justify-center">
+              <div className="max-w-sm rounded-3xl border border-border-color bg-surface p-6 text-center">
+                <AlertCircle className="mx-auto mb-3 h-9 w-9 text-accent" aria-hidden="true" />
+                <h1 className="text-lg font-bold text-text-primary">
+                  মেসেজ লোড করা যায়নি
+                </h1>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">
+                  এই চ্যাটের মেসেজ আনতে সমস্যা হয়েছে।
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void refetchMessages()}
+                  disabled={isMessagesFetching}
+                  className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {isMessagesFetching && (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  )}
+                  আবার চেষ্টা করুন
+                </button>
+              </div>
+            </div>
+          ) : !hasMessages ? (
+            <section className="flex min-h-[55dvh] flex-col items-center justify-center text-center">
+              <div className="mb-6 flex h-20 w-20 rotate-3 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-xl">
+                <Sparkles className="h-10 w-10" aria-hidden="true" />
+              </div>
+
+              <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">
+                হ্যালো, আমি প্যারা সাথী AI
+              </h1>
+
+              <p className="mt-3 max-w-md text-sm leading-7 text-text-secondary">
+                {selectedSubject
+                  ? `${selectedSubject.name_bn} বিষয়ের কোনো টপিক, সূত্র, MCQ, CQ বা বোর্ড প্রশ্ন বুঝতে সমস্যা হলে জিজ্ঞেস করুন।`
+                  : 'চ্যাট শুরু করতে আগে একটি বিষয় নির্বাচন করুন।'}
+              </p>
+
+              {!selectedSubject && (
+                <button
+                  type="button"
+                  onClick={() => setIsSubjectModalOpen(true)}
+                  className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99]"
+                >
+                  বিষয় নির্বাচন করুন
+                </button>
+              )}
+            </section>
+          ) : (
+            messages.map(message => {
+              const isUserMessage = message.role === 'user';
+
+              return (
+                <article
+                  key={message.id}
+                  className={`flex gap-3 sm:gap-5 ${isUserMessage ? 'flex-row-reverse' : ''}`}
+                >
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm ${
+                      isUserMessage
+                        ? 'bg-primary text-primary-foreground'
+                        : 'border border-border-color bg-surface text-text-secondary'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {isUserMessage ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                  </div>
+
+                  <div className={`flex max-w-[86%] flex-col ${isUserMessage ? 'items-end' : 'items-start'}`}>
+                    <div
+                      className={`rounded-2xl px-4 py-3 text-[15px] leading-7 shadow-sm ${
+                        isUserMessage
+                          ? 'rounded-tr-none bg-primary text-primary-foreground'
+                          : 'rounded-tl-none border border-border-color bg-surface text-text-primary'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                    </div>
+
+                    <div className="mt-1.5 flex items-center gap-2 text-[11px] text-text-secondary">
+                      <span>{formatTime(message.createdAt)}</span>
+
+                      {message.status === 'sending' && (
+                        <span className="inline-flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                          পাঠানো হচ্ছে
+                        </span>
+                      )}
+
+                      {message.status === 'failed' && (
+                        <span className="inline-flex items-center gap-2 text-accent">
+                          পাঠানো যায়নি
+                          <button
+                            type="button"
+                            onClick={() => handleRetryMessage(message)}
+                            disabled={chatMutation.isPending}
+                            className="font-semibold underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            আবার পাঠান
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })
           )}
 
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex gap-4 md:gap-6 group animate-in fade-in duration-500 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div 
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                  msg.role === 'user' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-surface border border-border-color text-text-secondary'
-                }`}
-              >
-                {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
+          {chatMutation.isPending && (
+            <div className="flex gap-3 sm:gap-5" aria-label="AI উত্তর তৈরি করছে">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border-color bg-surface text-text-secondary">
+                <Bot className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div 
-                  className={`text-[15px] leading-relaxed whitespace-pre-wrap ${
-                    msg.role === 'user' 
-                    ? 'px-5 py-3 rounded-2xl rounded-tr-none shadow-lg bg-primary text-primary-foreground' 
-                    : 'pt-1 text-text-primary'
-                  }`}
-                >
-                  {msg.content}
+
+              <div className="w-full max-w-sm rounded-2xl border border-border-color bg-surface p-4">
+                <div className="space-y-3">
+                  <div className="h-2.5 w-3/4 animate-pulse rounded-full bg-secondary" />
+                  <div className="h-2.5 w-1/2 animate-pulse rounded-full bg-secondary" />
                 </div>
               </div>
             </div>
-          ))}
-
-          {chatMutation.isPending && (
-            <div className="flex gap-4 md:gap-6 animate-pulse">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-surface border border-border-color text-text-secondary">
-                <Bot size={18} />
-              </div>
-              <div className="space-y-2 flex-1 pt-2 max-w-[60%]">
-                <div className="h-2 rounded w-3/4 bg-surface-elevated"></div>
-                <div className="h-2 rounded w-1/2 bg-surface-elevated"></div>
-              </div>
-            </div>
           )}
-          <div ref={scrollRef} className="h-24" />
+
+          <div ref={scrollRef} className="h-1" />
         </div>
       </main>
 
-      <div className="fixed bottom-0 inset-x-0 p-4 md:pb-8 bg-gradient-to-t from-app to-transparent">
-        <div className="max-w-3xl mx-auto relative group">
-          <div className="absolute inset-0 blur-xl transition-all rounded-full opacity-50 group-focus-within:opacity-100 bg-primary/10" />
-          <form 
+      <footer className="fixed inset-x-0 bottom-0 z-30 bg-app/90 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 backdrop-blur-md sm:px-6 sm:pb-6">
+        <div className="mx-auto max-w-4xl">
+          {!selectedSubject && (
+            <div className="mb-3 rounded-2xl border border-border-color bg-surface px-4 py-3 text-sm text-text-secondary">
+              প্রশ্ন পাঠানোর আগে একটি বিষয় নির্বাচন করুন।
+            </div>
+          )}
+
+          <form
             onSubmit={handleSendMessage}
-            className="relative flex items-center rounded-[2rem] px-5 py-2 transition-all focus-within:scale-[1.01] bg-surface-elevated border border-border-color shadow-lg focus-within:ring-2 focus-within:ring-focus-ring"
+            className="flex items-center gap-2 rounded-[1.75rem] border border-border-color bg-surface-elevated px-4 py-2 shadow-lg transition focus-within:ring-2 focus-within:ring-focus-ring"
           >
             <input
+              ref={inputRef}
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={`${selectedSubject?.name_bn || 'বিষয়'} নিয়ে প্রশ্ন করুন...`}
-              disabled={chatMutation.isPending}
-              className="flex-1 py-3 bg-transparent border-none focus:outline-none disabled:opacity-50 text-text-primary placeholder:text-text-secondary"
+              onChange={event => setInput(event.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+              onKeyDown={handleInputKeyDown}
+              placeholder={
+                selectedSubject
+                  ? `${selectedSubject.name_bn} নিয়ে প্রশ্ন করুন...`
+                  : 'আগে বিষয় নির্বাচন করুন...'
+              }
+              disabled={!selectedSubject || chatMutation.isPending}
+              className="min-w-0 flex-1 border-none bg-transparent py-3 text-text-primary placeholder:text-text-secondary focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               autoComplete="off"
+              aria-label="AI-কে প্রশ্ন লিখুন"
             />
-            <div className="flex items-center gap-2 pl-2">
-              <button 
-                type="submit"
-                disabled={!input.trim() || chatMutation.isPending}
-                className={`p-3 rounded-full transition-all flex items-center justify-center ${
-                  input.trim() && !chatMutation.isPending 
-                  ? 'bg-primary text-primary-foreground hover:scale-105 active:scale-95 shadow-md' 
-                  : 'bg-secondary text-text-secondary'
-                }`}
-              >
-                {chatMutation.isPending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-              </button>
-            </div>
+
+            <button
+              type="submit"
+              disabled={!canSendMessage}
+              aria-label="মেসেজ পাঠান"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-text-secondary"
+            >
+              {chatMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Send className="h-5 w-5" aria-hidden="true" />
+              )}
+            </button>
           </form>
-          <p className="text-[10px] text-center mt-3 text-text-secondary">
-             ParaPoth AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করে নিন।
-          </p>
+
+          <div className="mt-2 flex items-center justify-between gap-3 px-1">
+            <p className="text-[10px] leading-4 text-text-secondary">
+              ParaPoth AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করে নিন।
+            </p>
+
+            <span
+              className={`shrink-0 text-[10px] ${
+                remainingCharacters < 80 ? 'text-accent' : 'text-text-secondary'
+              }`}
+            >
+              {remainingCharacters}
+            </span>
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

@@ -3,19 +3,17 @@ import { Sun, CloudSun, Moon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/shared/lib/apiClient';
 import { QUERY_KEYS } from '@/shared/constants/storageKeys';
+import { Skeleton } from '@/shared/components/ui/Skeleton';
 
 interface GreetingCardProps {
-  userName: string | { full_name?: string } | unknown;
+  userName?: string | null;
+  isNameLoading?: boolean;
+  hasBgImage?: boolean;
 }
 
 interface ScheduledQuote {
   date: string;
   text: string;
-}
-
-interface QuoteConfig {
-  defaultText?: string;
-  scheduled?: ScheduledQuote[];
 }
 
 interface DailyQuoteResponse {
@@ -33,35 +31,41 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 
 const normalizeQuoteConfig = (value: unknown): string => {
   if (typeof value === 'string' && value.trim()) {
-    return value;
+    return value.trim();
   }
 
   if (!isRecord(value)) {
     return DEFAULT_QUOTE;
   }
 
-  const config = value as QuoteConfig;
   const today = new Date().toISOString().split('T')[0];
+  const scheduled = Array.isArray(value.scheduled) ? value.scheduled : [];
 
-  if (Array.isArray(config.scheduled)) {
-    const scheduledQuote = config.scheduled.find(
-      item => item?.date === today && typeof item?.text === 'string' && item.text.trim()
-    );
+  const matched = scheduled.find(
+    item =>
+      item &&
+      typeof item === 'object' &&
+      'date' in item &&
+      'text' in item &&
+      (item as ScheduledQuote).date === today &&
+      typeof (item as ScheduledQuote).text === 'string' &&
+      (item as ScheduledQuote).text.trim()
+  );
 
-    if (scheduledQuote) {
-      return scheduledQuote.text;
-    }
+  if (matched) {
+    return matched.text.trim();
   }
 
-  if (typeof config.defaultText === 'string' && config.defaultText.trim()) {
-    return config.defaultText;
+  if (typeof value.defaultText === 'string' && value.defaultText.trim()) {
+    return value.defaultText.trim();
   }
 
   return DEFAULT_QUOTE;
 };
 
 const fetchDailyQuote = async (): Promise<string> => {
-  const { data } = await apiClient.get<DailyQuoteResponse>('/system/configs/daily_quote');
+  // 👈 এখানে /system থেকে /app-builder আপডেট করা হয়েছে
+  const { data } = await apiClient.get<DailyQuoteResponse>('/app-builder/configs/daily_quote');
 
   if (data?.success === true) {
     return normalizeQuoteConfig(data.data?.value);
@@ -70,60 +74,63 @@ const fetchDailyQuote = async (): Promise<string> => {
   return DEFAULT_QUOTE;
 };
 
-const GreetingCard: React.FC<GreetingCardProps> = memo(({ userName }) => {
-  const { greeting, Icon } = useMemo(() => {
-    const hour = new Date().getHours();
+const GreetingCard: React.FC<GreetingCardProps> = memo(
+  ({ userName = null, isNameLoading = false, hasBgImage = false }) => {
+    const { greeting, Icon } = useMemo(() => {
+      const hour = new Date().getHours();
 
-    if (hour >= 12 && hour < 17) {
-      return { greeting: 'শুভ দুপুর', Icon: CloudSun };
-    }
+      if (hour >= 12 && hour < 17) {
+        return { greeting: 'শুভ দুপুর', Icon: CloudSun };
+      }
 
-    if (hour >= 17) {
-      return { greeting: 'শুভ সন্ধ্যা', Icon: Moon };
-    }
+      if (hour >= 17) {
+        return { greeting: 'শুভ সন্ধ্যা', Icon: Moon };
+      }
 
-    return { greeting: 'শুভ সকাল', Icon: Sun };
-  }, []);
+      return { greeting: 'শুভ সকাল', Icon: Sun };
+    }, []);
 
-  const { data: dailyQuote } = useQuery({
-    queryKey: QUERY_KEYS.DAILY_QUOTE,
-    queryFn: fetchDailyQuote,
-    staleTime: 1000 * 60 * 60 * 2,
-    retry: 1,
-  });
+    const { data: dailyQuote } = useQuery({
+      queryKey: QUERY_KEYS.DAILY_QUOTE,
+      queryFn: fetchDailyQuote,
+      staleTime: 1000 * 60 * 60 * 2,
+      retry: 1,
+    });
 
-  const safeUserName = useMemo(() => {
-    if (!userName) return 'শিক্ষার্থী';
+    const safeUserName =
+      typeof userName === 'string' && userName.trim() ? userName.trim() : 'শিক্ষার্থী';
 
-    if (typeof userName === 'string') {
-      return userName.trim() || 'শিক্ষার্থী';
-    }
+    const greetingTextClass = hasBgImage ? 'text-text-primary' : 'text-text-secondary';
+    const nameTextClass = 'text-text-primary';
+    const quoteTextClass = hasBgImage ? 'text-text-primary/80' : 'text-text-secondary';
 
-    if (typeof userName === 'object' && userName !== null && 'full_name' in userName) {
-      const fullName = (userName as { full_name?: string }).full_name;
-      return typeof fullName === 'string' && fullName.trim() ? fullName : 'শিক্ষার্থী';
-    }
+    return (
+      <div className="px-4 py-4 sm:px-5 sm:py-5">
+        <div className="inline-flex items-center gap-2 rounded-full bg-badge-bg px-3 py-1 text-badge-text">
+          <Icon size={14} />
+          <span className={`font-['Hind_Siliguri'] text-xs font-medium ${greetingTextClass}`}>
+            {greeting}
+          </span>
+        </div>
 
-    return 'শিক্ষার্থী';
-  }, [userName]);
+        <div className="mt-2">
+          {isNameLoading ? (
+            <Skeleton className="h-9 w-[200px] max-w-[78%] rounded-xl bg-surface-elevated" />
+          ) : (
+            <h1 className={`font-['Hind_Siliguri'] text-[2rem] font-bold leading-tight ${nameTextClass}`}>
+              {safeUserName}
+            </h1>
+          )}
+        </div>
 
-  return (
-    <div className="mb-6 mt-2 px-4">
-      <div className="flex items-center gap-2 text-text-secondary mb-1">
-        <Icon size={18} />
-        <span className="text-sm font-medium">{greeting},</span>
+        <p className={`mt-1 font-['Hind_Siliguri'] text-sm leading-5 ${quoteTextClass}`}>
+          {dailyQuote || DEFAULT_QUOTE}
+        </p>
       </div>
-
-      <h1 className="text-3xl font-bold font-['Hind_Siliguri'] text-text-primary">
-        {safeUserName}
-      </h1>
-
-      <p className="text-sm mt-1 font-['Hind_Siliguri'] transition-all duration-500 text-text-secondary">
-        {dailyQuote || DEFAULT_QUOTE}
-      </p>
-    </div>
-  );
-});
+    );
+  }
+);
 
 GreetingCard.displayName = 'GreetingCard';
+
 export default GreetingCard;

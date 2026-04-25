@@ -34,7 +34,7 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
   const { data: configs, isLoading } = useQuery<SystemConfig[]>({
     queryKey: ['system-configs'],
     queryFn: async () => {
-      const response = await apiClient.get('/system/configs');
+      const response = await apiClient.get('/app-builder/configs');
       return response.data?.data || [];
     },
     refetchInterval: 5 * 60 * 1000,
