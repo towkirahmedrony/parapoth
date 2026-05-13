@@ -866,6 +866,7 @@ export type Database = {
           correct_count: number | null
           created_at: string | null
           details_json: Json | null
+          device_id: string | null
           device_type: string | null
           exam_id: string | null
           id: string
@@ -878,6 +879,7 @@ export type Database = {
           submitted_at: string | null
           time_taken: number | null
           total_marks: number
+          user_agent: string | null
           user_id: string | null
           wrong_count: number | null
         }
@@ -885,6 +887,7 @@ export type Database = {
           correct_count?: number | null
           created_at?: string | null
           details_json?: Json | null
+          device_id?: string | null
           device_type?: string | null
           exam_id?: string | null
           id?: string
@@ -897,6 +900,7 @@ export type Database = {
           submitted_at?: string | null
           time_taken?: number | null
           total_marks: number
+          user_agent?: string | null
           user_id?: string | null
           wrong_count?: number | null
         }
@@ -904,6 +908,7 @@ export type Database = {
           correct_count?: number | null
           created_at?: string | null
           details_json?: Json | null
+          device_id?: string | null
           device_type?: string | null
           exam_id?: string | null
           id?: string
@@ -916,6 +921,7 @@ export type Database = {
           submitted_at?: string | null
           time_taken?: number | null
           total_marks?: number
+          user_agent?: string | null
           user_id?: string | null
           wrong_count?: number | null
         }
@@ -1675,6 +1681,75 @@ export type Database = {
         }
         Relationships: []
       }
+      institutions: {
+        Row: {
+          aliases: string[] | null
+          code: string | null
+          created_at: string | null
+          display_order: number | null
+          district: string | null
+          division: string | null
+          education_board: string | null
+          eiin: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          location: string | null
+          name_bn: string
+          name_en: string | null
+          ownership: string | null
+          short_name: string | null
+          slug: string | null
+          type: string
+          upazila: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aliases?: string[] | null
+          code?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          district?: string | null
+          division?: string | null
+          education_board?: string | null
+          eiin?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          name_bn: string
+          name_en?: string | null
+          ownership?: string | null
+          short_name?: string | null
+          slug?: string | null
+          type: string
+          upazila?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aliases?: string[] | null
+          code?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          district?: string | null
+          division?: string | null
+          education_board?: string | null
+          eiin?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          name_bn?: string
+          name_en?: string | null
+          ownership?: string | null
+          short_name?: string | null
+          slug?: string | null
+          type?: string
+          upazila?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       leaderboard_cache: {
         Row: {
           exam_id: string | null
@@ -2290,6 +2365,7 @@ export type Database = {
           guardian_phone: string | null
           id: string
           institution: string | null
+          institution_id: string | null
           is_2fa_enabled: boolean | null
           is_email_verified: boolean
           is_phone_verified: boolean | null
@@ -2337,6 +2413,7 @@ export type Database = {
           guardian_phone?: string | null
           id: string
           institution?: string | null
+          institution_id?: string | null
           is_2fa_enabled?: boolean | null
           is_email_verified?: boolean
           is_phone_verified?: boolean | null
@@ -2384,6 +2461,7 @@ export type Database = {
           guardian_phone?: string | null
           id?: string
           institution?: string | null
+          institution_id?: string | null
           is_2fa_enabled?: boolean | null
           is_email_verified?: boolean
           is_phone_verified?: boolean | null
@@ -2412,6 +2490,13 @@ export type Database = {
             columns: ["current_group_id"]
             isOneToOne: false
             referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
             referencedColumns: ["id"]
           },
           {
@@ -2521,6 +2606,54 @@ export type Database = {
             columns: ["winner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_institution_references: {
+        Row: {
+          created_at: string | null
+          exam_name: string | null
+          exam_year: number | null
+          id: string
+          institution_id: string | null
+          is_verified: boolean | null
+          question_id: string
+          source_label: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_name?: string | null
+          exam_year?: number | null
+          id?: string
+          institution_id?: string | null
+          is_verified?: boolean | null
+          question_id: string
+          source_label?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_name?: string | null
+          exam_year?: number | null
+          id?: string
+          institution_id?: string | null
+          is_verified?: boolean | null
+          question_id?: string
+          source_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_institution_references_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_institution_references_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
             referencedColumns: ["id"]
           },
         ]
