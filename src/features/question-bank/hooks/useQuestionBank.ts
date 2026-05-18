@@ -20,10 +20,19 @@ export function useQuestionBank() {
     staleTime: 1000 * 60 * 10,
   });
 
+  const shouldFetchQuestions = Boolean(
+    filters.subjectId || 
+    filters.search || 
+    filters.bookmarkedOnly || 
+    filters.mistakesOnly || 
+    filters.premiumOnly
+  );
+
   const questionsQuery = useQuery({
     queryKey: ['question-bank', 'questions', filters],
     queryFn: () => getQuestionBankQuestions(filters),
     staleTime: 1000 * 60 * 2,
+    enabled: shouldFetchQuestions,
   });
 
   const toggleBookmarkMutation = useMutation({
@@ -38,19 +47,32 @@ export function useQuestionBank() {
     const subjects = filtersQuery.data?.subjects ?? [];
     const chapters = filtersQuery.data?.chapters ?? [];
     const topics = filtersQuery.data?.topics ?? [];
+    const boards = filtersQuery.data?.boards ?? [];
+    const colleges = filtersQuery.data?.colleges ?? [];
+    const admissions = filtersQuery.data?.admissions ?? [];
 
     const filteredChapters = filters.subjectId
       ? chapters.filter((item) => item.subject_id === filters.subjectId)
       : chapters;
 
-    const filteredTopics = filters.chapterId
-      ? topics.filter((item) => item.chapter_id === filters.chapterId)
-      : topics;
+    const validChapterIds = new Set(filteredChapters.map(c => c.id));
+    const filteredTopics = topics.filter(topic => {
+      if (filters.chapterId) {
+        return topic.chapter_id === filters.chapterId;
+      }
+      if (filters.subjectId) {
+        return topic.chapter_id && validChapterIds.has(topic.chapter_id);
+      }
+      return true;
+    });
 
     return {
       subjects,
       chapters: filteredChapters,
       topics: filteredTopics,
+      boards,
+      colleges,
+      admissions,
       questions: questionsQuery.data?.questions ?? [],
       stats: questionsQuery.data?.stats ?? {
         total: 0,
@@ -84,6 +106,14 @@ export function useQuestionBank() {
           topicId: '',
         };
       }
+      
+      if (key === 'institutionType') {
+        return {
+          ...prev,
+          institutionType: String(value),
+          institutionEiin: '', // Reset the selected EIIN when type changes
+        };
+      }
 
       return {
         ...prev,
@@ -104,9 +134,12 @@ export function useQuestionBank() {
     subjects: derived.subjects,
     chapters: derived.chapters,
     topics: derived.topics,
+    boards: derived.boards,
+    colleges: derived.colleges,
+    admissions: derived.admissions,
     questions: derived.questions,
     stats: derived.stats,
-    isLoading: filtersQuery.isLoading || questionsQuery.isLoading,
+    isLoading: filtersQuery.isLoading || (shouldFetchQuestions && questionsQuery.isLoading),
     isFetching: questionsQuery.isFetching,
     error: filtersQuery.error || questionsQuery.error,
     refetch: questionsQuery.refetch,

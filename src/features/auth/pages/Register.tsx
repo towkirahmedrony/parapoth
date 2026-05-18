@@ -19,7 +19,7 @@ export default function Register() {
         {/* Logo, Title and Subtitle */}
         <div className="mb-8 flex flex-col items-center">
           <img 
-            src="https://res.cloudinary.com/dqpv45947/image/upload/v1776608021/parapoth_media/hzigvwfcfbfb1schkd3r.webp" 
+            src="https://res.cloudinary.com/dqpv45947/image/upload/v1776877967/parapoth_media/qovc0qtol9p0taeuc2bu.png" 
             alt="App Logo" 
             className="h-12 w-auto object-contain drop-shadow-sm mb-2"
           />

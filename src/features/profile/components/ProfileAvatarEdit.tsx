@@ -68,21 +68,21 @@ const ProfileAvatarEdit: React.FC<ProfileAvatarEditProps> = ({ userId, currentAv
   return (
     <div className="flex flex-col items-center mt-2">
       <div 
-        className="relative cursor-pointer group rounded-full" 
+        className="relative cursor-pointer group rounded-full overflow-hidden border-2 border-surface shadow-sm" 
         onClick={handleImageClick}
       >
         <img 
           src={displayUrl} 
-          className={`w-28 h-28 rounded-full object-cover shadow-sm transition-opacity ${isUploading ? 'opacity-50' : 'group-hover:opacity-80'}`} 
+          className={`w-28 h-28 object-cover transition-opacity ${isUploading ? 'opacity-50' : 'opacity-90'}`} 
           alt="Avatar" 
         />
         
-        {/* Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[2px]">
+        {/* Overlay - Always visible with Camera Icon */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-all">
           {isUploading ? (
             <Loader2 className="animate-spin text-white" size={28} />
           ) : (
-            <Camera className="text-white" size={28} />
+            <Camera className="text-white opacity-100" size={28} />
           )}
         </div>
       </div>
@@ -94,7 +94,7 @@ const ProfileAvatarEdit: React.FC<ProfileAvatarEditProps> = ({ userId, currentAv
         accept="image/jpeg, image/png, image/webp" 
         className="hidden" 
       />
-      <p className="text-xs mt-3 font-medium text-text-secondary">
+      <p className="text-xs mt-3 font-medium text-primary">
         {isUploading ? 'আপলোড হচ্ছে...' : 'ছবি পরিবর্তন করতে ট্যাপ করুন'}
       </p>
     </div>

@@ -43,7 +43,14 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
   try {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+      
+      // ফিক্স: ম্যানুয়ালি সার্ভিস ওয়ার্কার রেজিস্টার করা হচ্ছে যাতে টাইমআউট না হয়
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      
+      const token = await getToken(messaging, { 
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: registration // রেজিস্ট্রেশন অবজেক্ট এখানে পাস করা হলো
+      });
       
       if (token) {
         const deviceId = getOrCreateDeviceId();

@@ -33,6 +33,7 @@ export interface QuestionBankQuestion {
   sourceType: SourceType | null;
   explanation: string | null;
   tags: string[];
+  examReferences: any[]; // Added for EIIN filtering
   body: QuestionBody;
   options: QuestionOption[];
   subjectId: string | null;
@@ -82,10 +83,21 @@ export interface QuestionBankTopic {
   total_questions: number | null;
 }
 
+export interface QuestionBankInstitution {
+  id: string;
+  name_bn: string;
+  name_en: string | null;
+  type: string;
+  eiin: string | null; // Added EIIN
+}
+
 export interface QuestionBankFiltersData {
   subjects: QuestionBankSubject[];
   chapters: QuestionBankChapter[];
   topics: QuestionBankTopic[];
+  boards: QuestionBankInstitution[];
+  colleges: QuestionBankInstitution[];
+  admissions: QuestionBankInstitution[];
 }
 
 export interface QuestionBankFilterState {
@@ -93,9 +105,9 @@ export interface QuestionBankFilterState {
   subjectId: string;
   chapterId: string;
   topicId: string;
-  questionType: string;
-  difficultyLevel: string;
-  sourceType: string;
+  institutionType: string;
+  institutionEiin: string; // Changed from institutionName to institutionEiin
+  year: string;
   bookmarkedOnly: boolean;
   mistakesOnly: boolean;
   premiumOnly: boolean;
@@ -121,9 +133,9 @@ export const DEFAULT_QUESTION_BANK_FILTERS: QuestionBankFilterState = {
   subjectId: '',
   chapterId: '',
   topicId: '',
-  questionType: '',
-  difficultyLevel: '',
-  sourceType: '',
+  institutionType: '',
+  institutionEiin: '', // Changed to institutionEiin
+  year: '',
   bookmarkedOnly: false,
   mistakesOnly: false,
   premiumOnly: false,

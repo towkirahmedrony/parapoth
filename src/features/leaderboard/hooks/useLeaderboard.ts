@@ -21,7 +21,8 @@ export const useLeaguesConfig = () => {
   return useQuery<League[]>({
     queryKey: LEADERBOARD_QUERY_KEYS.leaguesConfig(),
     queryFn: async () => {
-      const response = await apiClient.get<ApiResponse<League[]>>('/leaderboard/leagues');
+      // URL আপডেট করা হয়েছে: /leaderboard/leagues থেকে /app-builder/levels
+      const response = await apiClient.get<ApiResponse<League[]>>('/app-builder/levels');
       // Sort by min_xp ensuring consistent order
       return (response.data.data || []).sort((a, b) => a.min_xp - b.min_xp);
     },

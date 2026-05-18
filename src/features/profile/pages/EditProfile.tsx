@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { UserProfileData } from '../types/profile';
-import { EDUCATION_BOARDS, CLASS_LEVELS, ACADEMIC_GROUPS, GENDERS } from '../utils/profileConstants';
+import { EDUCATION_BOARDS, CLASS_LEVELS, ACADEMIC_GROUPS } from '../utils/profileConstants';
 import apiClient from '../../../shared/lib/apiClient';
 import { supabase } from '../../../shared/lib/supabase';
 import { QUERY_KEYS } from '../../../shared/constants/storageKeys';
@@ -29,11 +29,6 @@ const translateGroup = (group: string) => {
   return map[group] || group;
 };
 
-const translateGender = (gender: string) => {
-  const map: Record<string, string> = { 'Male': 'ছাত্র', 'Female': 'ছাত্রী' };
-  return map[gender] || gender;
-};
-
 const translateClass = (level: string) => level.replace('HSC', 'এইচএসসি');
 // ----------------------------------
 
@@ -54,15 +49,13 @@ const EditProfile: React.FC = () => {
       if (error) throw error;
       return data as UserProfileData;
     },
-    staleTime: 0, // Always fetch fresh data when opening edit page
+    staleTime: 0, 
   });
 
-  // Pre-populate data when fetched
   useEffect(() => {
     if (dbUser && !formData.id) {
       setFormData(dbUser);
     } else if (location.state?.user && !formData.id && !dbUser) {
-      // Fallback to location state if DB fetch is slow
       setFormData(location.state.user);
     }
   }, [dbUser, location.state, formData.id]);
@@ -185,8 +178,19 @@ const EditProfile: React.FC = () => {
             <FormInputGroup label="সম্পূর্ণ নাম" name="full_name" value={formData.full_name || ''} onChange={handleChange} disabled={isLoading} />
             <FormInputGroup label="বায়ো" name="bio" value={formData.bio || ''} onChange={handleChange} disabled={isLoading} isTextArea={true} placeholder="আপনার সম্পর্কে কিছু লিখুন..." />
             <div className="grid grid-cols-2 gap-3">
-              <FormSelectGroup label="লিঙ্গ" name="gender" value={formData.gender || ''} onChange={handleChange} 
-                options={GENDERS.map(g => ({ label: translateGender(g), value: g }))} disabled={isLoading} />
+              {/* Updated Gender Select Field */}
+              <FormSelectGroup 
+                label="লিঙ্গ" 
+                name="gender" 
+                value={formData.gender || ''} 
+                onChange={handleChange} 
+                options={[
+                  { label: 'নির্বাচন করুন', value: '' },
+                  { label: 'ছাত্র', value: 'Male' },
+                  { label: 'ছাত্রী', value: 'Female' }
+                ]} 
+                disabled={isLoading} 
+              />
               <FormInputGroup type="date" label="জন্ম তারিখ" name="date_of_birth" value={formData.date_of_birth || ''} onChange={handleChange} disabled={isLoading} />
             </div>
             <FormInputGroup label="অভিভাবকের নম্বর" name="guardian_phone" type="tel" value={formData.guardian_phone || ''} onChange={handleChange} placeholder="01XXXXXXXXX" disabled={isLoading} />

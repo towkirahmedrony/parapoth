@@ -83,7 +83,7 @@ const Notifications: React.FC = () => {
   }, [user, markAsReadMutation, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col font-['Hind_Siliguri'] bg-app text-text-primary">
+    <div className="min-h-screen flex flex-col font-['Hind_Siliguri'] bg-bgApp text-textPrimary">
       
       <NotificationHeader 
         activeTab={activeTab} 
@@ -93,9 +93,24 @@ const Notifications: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {isLoading ? (
-           <div className="flex justify-center py-10" aria-label="Loading Notifications">
-             <span className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" role="status"></span>
-           </div>
+          // Skeleton Loading Effect (Using your custom theme colors)
+          <div className="space-y-3" aria-label="Loading Notifications">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div 
+                key={i} 
+                className="flex items-start p-4 rounded-xl border border-cardBorder animate-pulse bg-cardBg"
+              >
+                {/* Avatar Skeleton */}
+                <div className="h-12 w-12 rounded-full bg-bgSurfaceElevated shrink-0"></div>
+                {/* Text Skeletons */}
+                <div className="ml-4 flex-1 space-y-3 py-1">
+                  <div className="h-4 bg-bgSurfaceElevated rounded w-3/4"></div>
+                  <div className="h-3 bg-bgSurfaceElevated rounded w-full"></div>
+                  <div className="h-3 bg-bgSurfaceElevated rounded w-5/6"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : filteredData.length > 0 ? (
           filteredData.map((item) => (
             <NotificationItem 
