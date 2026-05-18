@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
-import { API_ENDPOINTS } from "@/shared/constants/storageKeys";
 import { supabase } from "@/shared/lib/supabase";
 
 type LoginFormData = {
@@ -62,39 +61,58 @@ export default function LoginForm() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginFormData) => {
-      const normalizedCredentials = {
-        identifier: credentials.identifier.trim().toLowerCase(),
-        password: credentials.password,
-      };
+      let identifier = credentials.identifier.trim().toLowerCase();
+      let loginEmail = identifier;
 
-      const { data, error: functionError } = await supabase.functions.invoke(
-        API_ENDPOINTS.AUTH.LOGIN,
-        {
-          body: normalizedCredentials,
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+
+      // 🚀 [FIX] ইউজারনেম দিয়ে ইমেইল বের করার জন্য RPC ফাংশন কল করা হলো
+      if (!isEmail) {
+        const { data: userEmail, error: rpcError } = await supabase.rpc('get_email_by_username', {
+          p_username: identifier
+        });
+
+        if (rpcError || !userEmail) {
+          throw new Error("invalid login credentials");
         }
-      );
-
-      if (functionError) {
-        throw functionError;
+        
+        loginEmail = userEmail as string;
       }
 
-      if (data?.error) {
-        throw new Error(String(data.error));
+      // আসল ইমেইলটি দিয়ে Supabase Auth এ লগ-ইন
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: credentials.password,
+      });
+
+      if (error) {
+        throw error;
       }
 
       if (!data?.session) {
         throw new Error("No session returned from login endpoint.");
       }
 
-      const { error: sessionError } = await supabase.auth.setSession(data.session);
-
-      if (sessionError) {
-        throw sessionError;
-      }
-
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      if (data?.session?.user?.id) {
+        try {
+          const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          await fetch(`${backendUrl}/api/v1/auth/save-device`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: data.session.user.id,
+              device_name: /Mobile|Android|iP(hone|od|ad)/.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop/Laptop',
+              os_or_browser: navigator.userAgent
+            })
+          });
+        } catch (err) {
+          console.error('IP saving process failed:', err);
+        }
+      }
+
       const redirectPath = getRedirectPath(location.state as LocationState | null);
       navigate(redirectPath, { replace: true });
     },
@@ -167,7 +185,6 @@ export default function LoginForm() {
             type="text"
             required
             autoComplete="username"
-            inputMode="email"
             className="w-full rounded-xl border border-input-border bg-input-bg px-4 py-3.5 text-base text-text-primary transition-colors placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-70"
             placeholder="ইমেইল বা ইউজারনেম"
             value={formData.identifier}

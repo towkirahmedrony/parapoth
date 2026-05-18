@@ -115,8 +115,24 @@ export default function RegisterForm({
         submittedEmail: normalizedData.email,
       };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // 🚀 [NEW] IP Address ও Device Info ব্যাকএন্ডে সেভ করার জন্য API Call
       if (data.user) {
+        try {
+          const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          await fetch(`${backendUrl}/api/v1/auth/save-device`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              device_name: /Mobile|Android|iP(hone|od|ad)/.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop/Laptop',
+              os_or_browser: navigator.userAgent
+            })
+          });
+        } catch (err) {
+          console.error('IP saving process failed:', err);
+        }
+        
         onSuccess(data.submittedEmail);
       }
     },

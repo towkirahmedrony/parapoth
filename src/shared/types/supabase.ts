@@ -2696,6 +2696,7 @@ export type Database = {
           answer: Json | null
           approved_at: string | null
           approved_by: string | null
+          audit_notes: string | null
           avg_time_spent: number | null
           body: Json
           chapter_id: string | null
@@ -2733,6 +2734,7 @@ export type Database = {
           answer?: Json | null
           approved_at?: string | null
           approved_by?: string | null
+          audit_notes?: string | null
           avg_time_spent?: number | null
           body: Json
           chapter_id?: string | null
@@ -2770,6 +2772,7 @@ export type Database = {
           answer?: Json | null
           approved_at?: string | null
           approved_by?: string | null
+          audit_notes?: string | null
           avg_time_spent?: number | null
           body?: Json
           chapter_id?: string | null
@@ -3754,6 +3757,7 @@ export type Database = {
           answer: Json | null
           approved_at: string | null
           approved_by: string | null
+          audit_notes: string | null
           avg_time_spent: number | null
           body: Json
           chapter_id: string | null
