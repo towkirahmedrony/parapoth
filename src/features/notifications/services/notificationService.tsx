@@ -6,64 +6,98 @@ import { StorageUtils } from '@/shared/utils/storage';
 import { STORAGE_KEYS } from '@/shared/constants/storageKeys';
 import { DBNotificationItem } from '../types/notificationTypes';
 
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BCXBVur7e0RozLaLRM9rX79GJeRQcRluggPQ4xqklnbvqDVFFuJrTI-XGKe4yF_qMYCvXyB-MIxlu26Dk9S-ryk";
+const VAPID_KEY =
+  import.meta.env.VITE_FIREBASE_VAPID_KEY ||
+  'BCXBVur7e0RozLaLRM9rX79GJeRQcRluggPQ4xqklnbvqDVFFuJrTI-XGKe4yF_qMYCvXyB-MIxlu26Dk9S-ryk';
 
 export const getOrCreateDeviceId = (): string => {
   let deviceId = StorageUtils.get<string>(STORAGE_KEYS.DEVICE_ID);
-  
+
   if (!deviceId) {
     deviceId = crypto.randomUUID();
     StorageUtils.set(STORAGE_KEYS.DEVICE_ID, deviceId);
   }
+
   return deviceId;
 };
 
-export const saveDeviceTokenToAPI = async (deviceId: string, token: string | null): Promise<void> => {
+const getDeviceName = (): string => {
+  const userAgent = navigator.userAgent;
+
+  if (/Android/i.test(userAgent)) return 'Android Phone';
+  if (/iPhone/i.test(userAgent)) return 'iPhone';
+  if (/iPad/i.test(userAgent)) return 'iPad';
+  if (/Mobile/i.test(userAgent)) return 'Mobile Device';
+
+  return 'Web Client';
+};
+
+export const saveDeviceTokenToAPI = async (
+  deviceId: string,
+  token: string | null
+): Promise<void> => {
   if (!token) return;
 
   try {
     const userAgent = navigator.userAgent;
-    await apiClient.post('/notifications/device-token', {
+
+    const response = await apiClient.post('/notifications/device-token', {
       device_id: deviceId,
-      device_name: 'Web Client',
+      device_name: getDeviceName(),
       os_or_browser: userAgent,
-      fcm_token: token
+      fcm_token: token,
     });
+
+    console.log('[NotificationService] Device token synced:', response.data);
   } catch (error) {
-    console.error("[NotificationService] Error syncing token with API:", error);
+    console.error('[NotificationService] Error syncing token with API:', error);
   }
 };
 
 export const requestNotificationPermission = async (): Promise<string | null> => {
   if (!messaging) {
-    console.warn("[NotificationService] Firebase messaging is not supported or initialized.");
+    console.warn('[NotificationService] Firebase messaging is not supported or initialized.');
+    return null;
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[NotificationService] Service Worker is not supported in this browser.');
+    return null;
+  }
+
+  if (!('Notification' in window)) {
+    console.warn('[NotificationService] Notification API is not supported in this browser.');
     return null;
   }
 
   try {
     const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      
-      // ফিক্স: ম্যানুয়ালি সার্ভিস ওয়ার্কার রেজিস্টার করা হচ্ছে যাতে টাইমআউট না হয়
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      
-      const token = await getToken(messaging, { 
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: registration // রেজিস্ট্রেশন অবজেক্ট এখানে পাস করা হলো
-      });
-      
-      if (token) {
-        const deviceId = getOrCreateDeviceId();
-        await saveDeviceTokenToAPI(deviceId, token);
-        return token;
-      }
-    } else {
-      console.warn("[NotificationService] Notification permission denied by user.");
+
+    if (permission !== 'granted') {
+      console.warn('[NotificationService] Notification permission denied by user.');
+      return null;
     }
+
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+
+    if (!token) {
+      console.warn('[NotificationService] No FCM token returned.');
+      return null;
+    }
+
+    const deviceId = getOrCreateDeviceId();
+    await saveDeviceTokenToAPI(deviceId, token);
+
+    return token;
   } catch (error) {
-    console.error("[NotificationService] Error getting FCM token:", error);
+    console.error('[NotificationService] Error getting FCM token:', error);
+    return null;
   }
-  return null;
 };
 
 export const listenForForegroundMessages = (): Unsubscribe | undefined => {
@@ -72,20 +106,29 @@ export const listenForForegroundMessages = (): Unsubscribe | undefined => {
   return onMessage(messaging, (payload: MessagePayload) => {
     const title = payload.notification?.title || 'New Update';
     const body = payload.notification?.body || '';
-    
+
     toast.custom((t) => (
-      <div 
+      <div
         className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full shadow-lg rounded-2xl pointer-events-auto flex border p-4`}
-        style={{ 
-          backgroundColor: 'var(--dyn-card)', 
-          borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)' 
+        style={{
+          backgroundColor: 'var(--dyn-card)',
+          borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
         }}
       >
         <div className="flex-1 w-0">
           <div className="flex items-start">
             <div className="ml-3 flex-1 font-['Hind_Siliguri']">
-              <p className="text-sm font-bold" style={{ color: 'var(--dyn-text)' }}>{title}</p>
-              <p className="mt-1 text-sm" style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>{body}</p>
+              <p className="text-sm font-bold" style={{ color: 'var(--dyn-text)' }}>
+                {title}
+              </p>
+              <p
+                className="mt-1 text-sm"
+                style={{
+                  color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)',
+                }}
+              >
+                {body}
+              </p>
             </div>
           </div>
         </div>
@@ -102,17 +145,14 @@ export const fetchNotifications = async (): Promise<DBNotificationItem[]> => {
   try {
     const response = await apiClient.get<NotificationApiResponse>('/notifications');
     const responseData = response.data;
-    
-    // FIXED TS2322: Using strict Type Narrowing
+
     if (Array.isArray(responseData)) {
       return responseData;
     }
-    
-    // Since it's not an array, TypeScript now infers it as `{ data: DBNotificationItem[] }`
+
     return responseData?.data ?? [];
-    
   } catch (error) {
-    console.error("[NotificationService] Error fetching notifications:", error);
+    console.error('[NotificationService] Error fetching notifications:', error);
     throw error;
   }
 };
@@ -121,7 +161,7 @@ export const markNotificationAsRead = async (notificationId: string): Promise<vo
   try {
     await apiClient.post(`/notifications/${notificationId}/read`);
   } catch (error) {
-    console.error("[NotificationService] Error marking notification as read:", error);
+    console.error('[NotificationService] Error marking notification as read:', error);
     throw error;
   }
 };

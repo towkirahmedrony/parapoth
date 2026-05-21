@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useLayoutEffect } from 'react';
-import { PanInfo } from 'framer-motion';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import type { PanInfo } from 'framer-motion';
 import { getLeagueInfo } from '../utils/leagueConstants';
 import { UserRow } from '../components/UserRow';
 import { LeagueHeader } from '../components/LeagueHeader';
+import LeaderboardSkeleton from '../components/LeaderboardSkeleton';
 import { useLeaderboard, useLeaguesConfig } from '../hooks/useLeaderboard';
-import { Loader } from '@/shared/components/feedback/Loader';
 import { useAuth } from '../../auth/hooks/useAuth';
 
 interface UserWithXP {
@@ -59,7 +59,7 @@ const Leaderboard: React.FC = () => {
   const { data: leaderboardData = [], isLoading: isLeaderboardLoading } = useLeaderboard(
     selectedLeague?.min_xp ?? 0,
     selectedLeagueIndex === leagues.length - 1 ? null : (nextLeague?.min_xp ?? null),
-    !!selectedLeague && hasResolvedXP
+    Boolean(selectedLeague && hasResolvedXP)
   );
 
   const currentUser = useMemo(
@@ -82,11 +82,7 @@ const Leaderboard: React.FC = () => {
   }, []);
 
   if (authLoading || isLeaguesLoading || !hasResolvedXP || !selectedLeague) {
-    return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-[135px] bg-app">
-        <Loader />
-      </div>
-    );
+    return <LeaderboardSkeleton />;
   }
 
   const isLocked = selectedLeague.min_xp > resolvedXP;
@@ -147,9 +143,7 @@ const Leaderboard: React.FC = () => {
 
       <div className="px-3 mt-3">
         {isLeaderboardLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader />
-          </div>
+          <LeaderboardSkeleton rowsOnly />
         ) : (
           <div className="space-y-2.5">
             {leaderboardData.map((leaderboardUser, index) => (

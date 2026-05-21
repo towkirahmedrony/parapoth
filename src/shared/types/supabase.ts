@@ -3800,6 +3800,7 @@ export type Database = {
       }
       get_current_streak: { Args: { p_user_id: string }; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      get_email_by_username: { Args: { p_username: string }; Returns: string }
       get_longest_streak: {
         Args: { p_user_id: string }
         Returns: {
