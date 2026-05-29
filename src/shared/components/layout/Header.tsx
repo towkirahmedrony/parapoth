@@ -22,13 +22,15 @@ const Header: React.FC = () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
-        
-        const baseUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
-        
+
+        const baseUrl =
+          import.meta.env.VITE_API_URL ||
+          'https://parapoth-backend.onrender.com/api/v1';
+
         const response = await fetch(`${baseUrl}/growth/stats`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (response.ok) {
@@ -56,6 +58,7 @@ const Header: React.FC = () => {
     queryKey: ['notifications', 'unreadCount', user?.id],
     queryFn: async () => {
       if (!user?.id) return 0;
+
       const { count, error } = await supabase
         .from('notification_reads')
         .select('*', { count: 'exact', head: true })
@@ -73,59 +76,83 @@ const Header: React.FC = () => {
     return null;
   }
 
-  const currentStreak = profileData?.current_streak ?? user?.user_metadata?.current_streak ?? 0;
+  const currentStreak =
+    profileData?.current_streak ?? user?.user_metadata?.current_streak ?? 0;
+
   const xp = profileData?.total_xp ?? user?.user_metadata?.total_xp ?? 0;
 
   return (
-    <header 
-      className="sticky top-0 z-20 h-16 px-4 flex items-center justify-between border-b border-border-color bg-surface text-text-primary transition-colors duration-500"
-    >
-      <Link to="/dashboard" className="flex items-center">
-        <img 
-          src="/icons/header.webp" 
-          alt="Parapath Logo" 
-          className="h-10 w-auto object-contain drop-shadow-sm" 
-        />
-      </Link>
-
-      <div className="flex items-center gap-3">
-        
-        {/* XP Section */}
-        <div 
-          onClick={() => navigate('/dashboard/leaderboard')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:scale-105 bg-surface-elevated border border-border-color"
+    <header className="sticky top-0 z-20 h-16 border-b border-border-color bg-surface px-4 text-text-primary transition-colors duration-500">
+      <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-between">
+        <Link
+          to="/dashboard"
+          aria-label="ParaPoth dashboard - SSC HSC MCQ model test and online exam preparation"
+          title="ParaPoth - Online Exam Preparation Platform"
+          className="flex items-center"
         >
-          <Star size={18} className="text-blue-500 fill-blue-500" />
-          <span className="text-sm font-bold font-sans text-text-primary">{xp}</span>
-        </div>
+          <img
+            src="/icons/header.webp"
+            alt="ParaPoth online exam preparation logo"
+            className="h-10 w-auto object-contain drop-shadow-sm"
+          />
+        </Link>
 
-        {/* Streak Section */}
-        <div 
-          onClick={() => navigate('/dashboard/streak')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:scale-105 bg-surface-elevated border border-border-color"
+        <nav
+          aria-label="Student progress and notification shortcuts"
+          className="flex items-center gap-3"
         >
-          <Flame size={18} className="text-orange-500 fill-orange-500" />
-          <span className="text-sm font-bold font-sans text-text-primary">{currentStreak}</span>
-        </div>
-
-        <button
-          onClick={() => navigate('/notifications')}
-          className="relative p-2 rounded-full transition-all hover:scale-110 bg-surface-elevated text-text-primary"
-        >
-          <Bell size={22} />
-          {unreadCount > 0 && (
-            <span 
-              className="absolute top-0 right-0 flex items-center justify-center text-[10px] font-bold rounded-full border-2 border-surface bg-badge-bg text-badge-text" 
-              style={{ 
-                minWidth: '18px',
-                height: '18px',
-                padding: '0 4px'
-              }}
-            >
-              {unreadCount > 99 ? '99+' : unreadCount}
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/leaderboard')}
+            aria-label={`Leaderboard and exam practice XP: ${xp}`}
+            title="Leaderboard and XP"
+            className="flex items-center gap-1.5 rounded-full border border-border-color bg-surface-elevated px-3 py-1.5 transition-all hover:scale-105"
+          >
+            <Star size={18} className="fill-blue-500 text-blue-500" />
+            <span className="font-sans text-sm font-bold text-text-primary">
+              {xp}
             </span>
-          )}
-        </button>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/streak')}
+            aria-label={`Daily study streak: ${currentStreak} days`}
+            title="Daily study streak"
+            className="flex items-center gap-1.5 rounded-full border border-border-color bg-surface-elevated px-3 py-1.5 transition-all hover:scale-105"
+          >
+            <Flame size={18} className="fill-orange-500 text-orange-500" />
+            <span className="font-sans text-sm font-bold text-text-primary">
+              {currentStreak}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/notifications')}
+            aria-label={
+              unreadCount > 0
+                ? `${unreadCount} unread exam preparation notifications`
+                : 'No unread notifications'
+            }
+            title="Notifications"
+            className="relative rounded-full bg-surface-elevated p-2 text-text-primary transition-all hover:scale-110"
+          >
+            <Bell size={22} />
+            {unreadCount > 0 && (
+              <span
+                className="absolute right-0 top-0 flex items-center justify-center rounded-full border-2 border-surface bg-badge-bg text-[10px] font-bold text-badge-text"
+                style={{
+                  minWidth: '18px',
+                  height: '18px',
+                  padding: '0 4px',
+                }}
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+        </nav>
       </div>
     </header>
   );
