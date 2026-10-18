@@ -8,10 +8,21 @@ export interface AnalysisQuestionCardProps {
   question: Question;
   index: number;
   userAnswerId?: string;
+  status?: 'correct' | 'wrong' | 'skipped' | 'question_not_found' | string | null;
+  showCorrectAnswers?: boolean;
   initialBookmarked?: boolean;
   onReport?: (questionId: string) => void;
   onBookmark?: (questionId: string, isNowBookmarked: boolean) => void;
 }
+
+const normalizeId = (value: string | number | null | undefined): string =>
+  value === null || value === undefined ? '' : String(value).trim();
+
+const isCorrectFlag = (option: Question['options'][number]): boolean =>
+  option.isCorrect === true ||
+  option.is_correct === true ||
+  String(option.isCorrect).toLowerCase() === 'true' ||
+  String(option.is_correct).toLowerCase() === 'true';
 
 const FALLBACK_EXPLANATION = "এই প্রশ্নের জন্য কোনো ব্যাখ্যা উপলব্ধ নেই।";
 
@@ -19,6 +30,8 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   question,
   index,
   userAnswerId,
+  status,
+  showCorrectAnswers = true,
   initialBookmarked = false,
   onReport,
   onBookmark
@@ -31,36 +44,61 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
     setIsBookmarked(initialBookmarked);
   }, [initialBookmarked]);
   
-  const correctOption = useMemo(() => question.options?.find(opt => opt.isCorrect), [question.options]);
-  const correctOptionId = correctOption?.id;
+  const correctOption = useMemo(
+    () => question.options?.find((opt) => isCorrectFlag(opt)) ?? null,
+    [question.options]
+  );
+  const correctOptionId = normalizeId(correctOption?.id);
+  const normalizedAnswerId = normalizeId(userAnswerId);
 
-  const isSkipped = !userAnswerId;
-  const isCorrect = !!userAnswerId && userAnswerId === correctOptionId;
+  const isSkipped = !normalizedAnswerId;
+  const isCorrect = !!normalizedAnswerId && !!correctOptionId && normalizedAnswerId === correctOptionId;
+
+  const resolvedStatus = useMemo(() => {
+    if (status) return status;
+    if (isSkipped) return 'skipped';
+    if (!showCorrectAnswers) return 'unknown';
+    return isCorrect ? 'correct' : 'wrong';
+  }, [status, isSkipped, showCorrectAnswers, isCorrect]);
 
   // Using standard Tailwind semantic classes where applicable, preserving red/emerald for explicit pass/fail states
   const statusConfig = useMemo(() => {
-    if (isSkipped) return { 
+    if (resolvedStatus === 'skipped') return { 
       textClass: 'text-text-secondary',
       bgClass: 'bg-surface-elevated',
       borderClass: 'border-border-color',
       icon: <MinusCircle size={16} />, 
       label: 'স্কিপড' 
     };
-    if (isCorrect) return { 
+    if (resolvedStatus === 'correct') return { 
       textClass: 'text-emerald-600',
       bgClass: 'bg-emerald-500/10',
       borderClass: 'border-emerald-500/30',
       icon: <CheckCircle2 size={16} />, 
       label: 'সঠিক' 
     };
-    return { 
+    if (resolvedStatus === 'wrong') return { 
       textClass: 'text-red-600',
       bgClass: 'bg-red-500/10',
       borderClass: 'border-red-500/30',
       icon: <XCircle size={16} />, 
       label: 'ভুল' 
     };
-  }, [isSkipped, isCorrect]);
+    if (resolvedStatus === 'question_not_found') return {
+      textClass: 'text-text-secondary',
+      bgClass: 'bg-surface-elevated',
+      borderClass: 'border-border-color',
+      icon: <AlertCircle size={16} />,
+      label: 'প্রশ্ন পাওয়া যায়নি'
+    };
+    return { 
+      textClass: 'text-text-secondary',
+      bgClass: 'bg-surface-elevated',
+      borderClass: 'border-border-color',
+      icon: <MinusCircle size={16} />, 
+      label: 'জমা হয়েছে' 
+    };
+  }, [resolvedStatus]);
   
   const rawExamRef = question.exam_references ? JSON.stringify(question.exam_references) : question.board_ref;
   const boardTag = formatBoardRef(rawExamRef || '');
@@ -138,8 +176,8 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
 
         <div className="space-y-2.5">
           {question.options?.map((opt) => {
-            const isSelected = userAnswerId === opt.id;
-            const isAns = opt.isCorrect;
+            const isSelected = !!normalizedAnswerId && normalizedAnswerId === normalizeId(opt.id);
+            const isAns = showCorrectAnswers && isCorrectFlag(opt);
             
             let containerClasses = "border-border-color bg-surface-elevated";
             let textClasses = "text-text-primary";
@@ -147,9 +185,12 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
             if (isAns) {
               containerClasses = "border-emerald-500/50 bg-emerald-500/10";
               textClasses = "text-emerald-700";
-            } else if (isSelected && !isAns) {
+            } else if (isSelected && showCorrectAnswers) {
               containerClasses = "border-red-500/50 bg-red-500/10";
               textClasses = "text-red-700 line-through opacity-80";
+            } else if (isSelected) {
+              containerClasses = "border-focus-ring bg-surface-elevated";
+              textClasses = "text-text-primary font-semibold";
             }
 
             return (
@@ -158,15 +199,17 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
                 className={`p-3.5 sm:p-4 rounded-xl border text-sm sm:text-base flex justify-between items-start gap-3 transition-colors ${containerClasses}`}
               >
                 <div className={`font-['Hind_Siliguri'] flex-1 ${textClasses}`}>
-                  <MathDisplay content={opt.text_bn || opt.text} />
+                  <MathDisplay content={opt.text_bn || opt.text || opt.text_en || ''} />
                 </div>
                 {isAns && <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-emerald-500" />}
-                {isSelected && !isAns && <XCircle size={18} className="shrink-0 mt-0.5 text-red-500" />}
+                {isSelected && showCorrectAnswers && !isAns && <XCircle size={18} className="shrink-0 mt-0.5 text-red-500" />}
+                {isSelected && !showCorrectAnswers && <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-text-primary" />}
               </div>
             );
           })}
         </div>
 
+        {showCorrectAnswers && (
         <div className="mt-5 pt-4 border-t border-border-color">
           <button 
             onClick={() => setShowExplanation(prev => !prev)} 
@@ -190,6 +233,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

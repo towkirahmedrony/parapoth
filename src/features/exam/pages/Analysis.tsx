@@ -24,6 +24,9 @@ type ResultDetailItem = {
   question_id: string;
   selected_option?: string | number | null;
   selected_option_id?: string | number | null;
+  selected_option_text?: string | null;
+  correct_option_id?: string | null;
+  correct_option_text?: string | null;
   is_correct?: boolean | null;
   marks_awarded?: number;
   status?: 'correct' | 'wrong' | 'skipped' | 'question_not_found' | string;
@@ -71,6 +74,7 @@ const getSafeDetailsJson = (result: any) => {
 };
 
 const getStatusText = (item: ResultDetailItem) => {
+  if (item.status === 'question_not_found') return 'প্রশ্ন পাওয়া যায়নি';
   if (item.status === 'skipped' || item.is_correct === null) return 'স্কিপ';
   if (item.is_correct === true || item.status === 'correct') return 'সঠিক';
   if (item.is_correct === false || item.status === 'wrong') return 'ভুল';
@@ -78,6 +82,10 @@ const getStatusText = (item: ResultDetailItem) => {
 };
 
 const getStatusIcon = (item: ResultDetailItem) => {
+  if (item.status === 'question_not_found') {
+    return <HelpCircle size={22} className="text-text-secondary" />;
+  }
+
   if (item.status === 'skipped' || item.is_correct === null) {
     return <MinusCircle size={22} className="text-text-secondary" />;
   }
@@ -123,38 +131,66 @@ const Analysis: React.FC = () => {
   const [reportQuestionData, setReportQuestionData] = useState<QuestionMetaData | null>(null);
 
   useEffect(() => {
-    if (!result) {
-      if (id) {
-        apiClient
-          .get('/history/exams')
-          .then((res) => {
-            const historyList = res?.data?.data;
+    if (result) {
+      setIsLoading(false);
+      return;
+    }
 
-            if (Array.isArray(historyList)) {
-              const found = historyList.find(
+    if (!id) {
+      navigate('/dashboard/home', { replace: true });
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadResult = async () => {
+      try {
+        try {
+          const res = await apiClient.get(`/exams/user/result/${id}`);
+          const fetched = res?.data?.data;
+
+          if (!cancelled && fetched) {
+            setResult(fetched);
+            return;
+          }
+        } catch {
+          // Fall back to the history list below (older backend deployments).
+        }
+
+        try {
+          const res = await apiClient.get('/history/exams');
+          const historyList = res?.data?.data;
+          const found = Array.isArray(historyList)
+            ? historyList.find(
                 (item: ExamResultPayload) => item && (item.id === id || item.exam_id === id)
-              );
+              )
+            : null;
 
-              if (found) {
-                setResult(found);
-                return;
-              }
-            }
+          if (cancelled) return;
 
-            toast.error('ফলাফল পাওয়া যায়নি!');
-            navigate('/dashboard/home', { replace: true });
-          })
-          .catch(() => {
+          if (found) {
+            setResult(found);
+            return;
+          }
+
+          toast.error('ফলাফল পাওয়া যায়নি!');
+          navigate('/dashboard/home', { replace: true });
+        } catch {
+          if (!cancelled) {
             toast.error('ফলাফল লোড করতে সমস্যা হয়েছে!');
             navigate('/dashboard/home', { replace: true });
-          })
-          .finally(() => setIsLoading(false));
-      } else {
-        navigate('/dashboard/home', { replace: true });
+          }
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-    } else {
-      setIsLoading(false);
-    }
+    };
+
+    loadResult();
+
+    return () => {
+      cancelled = true;
+    };
   }, [result, id, navigate]);
 
   const reportMutation = useMutation({
@@ -277,6 +313,23 @@ const Analysis: React.FC = () => {
     ? detailsJson.bookmarked_ids
     : [];
 
+  const detailsByQuestionId = new Map<string, ResultDetailItem>(
+    resultDetails.map((detail) => [String(detail.question_id), detail])
+  );
+
+  const showCorrectAnswers = detailsJson.correct_answers_revealed !== false;
+
+  const getSelectedAnswerId = (questionId: string): string | undefined => {
+    const detail = detailsByQuestionId.get(String(questionId));
+    const selected = detail?.selected_option ?? userAnswers[String(questionId)] ?? userAnswers[questionId];
+
+    if (selected === null || selected === undefined || String(selected).trim() === '') {
+      return undefined;
+    }
+
+    return String(selected);
+  };
+
   return (
     <div className="min-h-screen animate-in fade-in flex flex-col items-center bg-app text-text-primary">
       <div className="w-full pt-6 pb-8 px-4 border-b shadow-sm relative overflow-hidden bg-card-bg border-card-border">
@@ -341,7 +394,9 @@ const Analysis: React.FC = () => {
               key={q.id}
               index={idx}
               question={q}
-              userAnswerId={userAnswers[q.id]}
+              userAnswerId={getSelectedAnswerId(q.id)}
+              status={detailsByQuestionId.get(String(q.id))?.status}
+              showCorrectAnswers={showCorrectAnswers}
               initialBookmarked={bookmarkedIds.includes(q.id)}
               onReport={handleReport}
               onBookmark={handleBookmark}
@@ -352,13 +407,26 @@ const Analysis: React.FC = () => {
             <div className="rounded-2xl border border-border-color bg-card-bg p-4">
               <h3 className="font-bold text-lg mb-1">উত্তরের সংক্ষিপ্ত বিস্তারিত</h3>
               <p className="text-sm text-text-secondary opacity-80">
-                এই পরীক্ষার প্রশ্নের পূর্ণ লেখা সার্ভারে পাঠানো হয়নি, তাই এখানে উত্তর-স্ট্যাটাস দেখানো হচ্ছে।
+                এই পরীক্ষার প্রশ্নের পূর্ণ লেখা এখন পাওয়া যাচ্ছে না, তাই এখানে উত্তর-স্ট্যাটাস দেখানো হচ্ছে।
               </p>
             </div>
 
             {resultDetails.map((item, idx) => {
-              const selectedOption =
-                item.selected_option ?? item.selected_option_id ?? null;
+              const selectedOption = item.selected_option ?? item.selected_option_id ?? null;
+              const hasSelectedOption =
+                selectedOption !== null &&
+                selectedOption !== undefined &&
+                String(selectedOption).trim() !== '';
+
+              const selectedAnswerText = item.selected_option_text?.trim()
+                ? item.selected_option_text
+                : hasSelectedOption
+                  ? 'নির্বাচিত উত্তরটি সংরক্ষিত আছে, তবে প্রশ্নের বিবরণ পাওয়া যাচ্ছে না।'
+                  : 'উত্তর দেওয়া হয়নি';
+
+              const correctAnswerText = showCorrectAnswers
+                ? item.correct_option_text?.trim() || null
+                : null;
 
               return (
                 <div
@@ -370,8 +438,8 @@ const Analysis: React.FC = () => {
                       <p className="text-xs font-semibold text-text-secondary mb-1">
                         প্রশ্ন {idx + 1}
                       </p>
-                      <p className="text-sm font-mono break-all text-text-primary opacity-80">
-                        {item.question_id}
+                      <p className="text-sm text-text-secondary opacity-80">
+                        এই প্রশ্নের পূর্ণ লেখা ও অপশন সংরক্ষিত পাওয়া যায়নি।
                       </p>
                     </div>
 
@@ -384,17 +452,20 @@ const Analysis: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-xl border border-border-color bg-card-bg p-3">
                       <p className="text-xs text-text-secondary mb-1">আপনার উত্তর</p>
-                      <p className="font-bold">
-                        {selectedOption === null || selectedOption === undefined || selectedOption === ''
-                          ? 'উত্তর দেওয়া হয়নি'
-                          : `অপশন ${selectedOption}`}
-                      </p>
+                      <p className="font-bold">{selectedAnswerText}</p>
                     </div>
 
                     <div className="rounded-xl border border-border-color bg-card-bg p-3">
                       <p className="text-xs text-text-secondary mb-1">মার্কস</p>
                       <p className="font-bold">{item.marks_awarded ?? 0}</p>
                     </div>
+
+                    {correctAnswerText && (
+                      <div className="rounded-xl border border-border-color bg-card-bg p-3 sm:col-span-2">
+                        <p className="text-xs text-text-secondary mb-1">সঠিক উত্তর</p>
+                        <p className="font-bold">{correctAnswerText}</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 mt-4">

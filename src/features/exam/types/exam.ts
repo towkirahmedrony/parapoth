@@ -5,8 +5,11 @@ type QuestionRow = Database['public']['Tables']['questions']['Row'];
 export interface Option {
   id: string;
   text: string;
-  text_bn?: string; 
-  isCorrect?: boolean; 
+  text_bn?: string;
+  text_en?: string | null;
+  image_url?: string | null;
+  isCorrect?: boolean;
+  is_correct?: boolean;
 }
 
 export interface MediaLibrary {
@@ -57,9 +60,20 @@ export interface QuestionPayload {
   [key: string]: unknown;
 }
 
+export interface ExamResultDetail {
+  question_id: string;
+  selected_option?: string | number | null;
+  selected_option_text?: string | null;
+  correct_option_id?: string | null;
+  correct_option_text?: string | null;
+  is_correct?: boolean | null;
+  marks_awarded?: number;
+  status?: 'correct' | 'wrong' | 'skipped' | 'question_not_found' | string;
+}
+
 export interface ExamResultPayload {
-  id: string;          // 🌟 Analysis.tsx এর জন্য যোগ করা হয়েছে
-  exam_id?: string;    // 🌟 ব্যাকএন্ড থেকে আসলে কাজে লাগবে
+  id: string;
+  exam_id?: string;
   score: number;
   total_marks: number;
   correct_count: number;
@@ -67,10 +81,13 @@ export interface ExamResultPayload {
   skipped_count: number;
   time_taken: number;
   details_json: {
-    questions: Question[]; // 🌟 QuestionPayload[] এর বদলে Question[] দেওয়া হয়েছে
-    userAnswers: Record<string, string>;
-    bookmarked_ids?: string[]; // 🌟 বুকমার্কের জন্য যোগ করা হয়েছে
-  };
+    questions?: Question[];
+    details?: ExamResultDetail[];
+    userAnswers?: Record<string, string>;
+    answers?: Record<string, string>;
+    bookmarked_ids?: string[];
+    correct_answers_revealed?: boolean;
+  } | null;
 }
 
 export interface ExamConfig {
