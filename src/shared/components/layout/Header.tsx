@@ -3,12 +3,14 @@ import { Bell, Flame, Star } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
 import { supabase } from '../../lib/supabase';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useHomeLanguage();
 
   const isDashboardHome =
     location.pathname === '/dashboard' ||
@@ -86,26 +88,26 @@ const Header: React.FC = () => {
       <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-between">
         <Link
           to="/dashboard"
-          aria-label="Porokh dashboard - SSC HSC MCQ model test and online exam preparation"
-          title="Porokh - Online Exam Preparation Platform"
+          aria-label={t('header.logoAria')}
+          title={t('header.logoTitle')}
           className="flex items-center"
         >
           <img
             src="/icons/header.webp"
-            alt="Porokh online exam preparation logo"
+            alt={t('header.logoAlt')}
             className="h-10 w-auto object-contain drop-shadow-sm"
           />
         </Link>
 
         <nav
-          aria-label="Student progress and notification shortcuts"
+          aria-label={t('header.shortcutsLabel')}
           className="flex items-center gap-3"
         >
           <button
             type="button"
             onClick={() => navigate('/dashboard/leaderboard')}
-            aria-label={`Leaderboard and exam practice XP: ${xp}`}
-            title="Leaderboard and XP"
+            aria-label={`${t('header.leaderboardAria')}: ${xp}`}
+            title={t('header.leaderboardTitle')}
             className="flex items-center gap-1.5 rounded-full border border-border-color bg-surface-elevated px-3 py-1.5 transition-all hover:scale-105"
           >
             <Star size={18} className="fill-blue-500 text-blue-500" />
@@ -117,8 +119,8 @@ const Header: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/dashboard/streak')}
-            aria-label={`Daily study streak: ${currentStreak} days`}
-            title="Daily study streak"
+            aria-label={t('header.streakAria', { count: currentStreak })}
+            title={t('header.streakTitle')}
             className="flex items-center gap-1.5 rounded-full border border-border-color bg-surface-elevated px-3 py-1.5 transition-all hover:scale-105"
           >
             <Flame size={18} className="fill-orange-500 text-orange-500" />
@@ -132,10 +134,10 @@ const Header: React.FC = () => {
             onClick={() => navigate('/notifications')}
             aria-label={
               unreadCount > 0
-                ? `${unreadCount} unread exam preparation notifications`
-                : 'No unread notifications'
+                ? t('header.unreadNotifications', { count: unreadCount })
+                : t('header.noUnreadNotifications')
             }
-            title="Notifications"
+            title={t('header.notificationsTitle')}
             className="relative rounded-full bg-surface-elevated p-2 text-text-primary transition-all hover:scale-110"
           >
             <Bell size={22} />

@@ -1,12 +1,15 @@
-import React, { memo, useEffect } from 'react';
+import React, { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, SunMedium, Target } from 'lucide-react';
 import FeatureGrid, { ThemeConfig } from '../components/FeatureGrid';
 import DynamicBanner from '../components/DynamicBanner';
+import HomeLanguageSwitcher from '../components/HomeLanguageSwitcher';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { supabase } from '@/shared/lib/supabase';
 import { useHomeGrids } from '../hooks/useHomeGrids';
+import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
+import type { HomeMessageKey } from '@/shared/i18n/homeMessages';
 
 interface ThemeConfigRow {
   value?: unknown;
@@ -17,36 +20,6 @@ interface DailyGoalStats {
   completed: number;
   total: number;
 }
-
-const SEO_TITLE = 'Porokh — SSC HSC MCQ, Model Test & Exam Preparation';
-const SEO_DESCRIPTION =
-  'Porokh (পরোখ) হলো SSC, HSC ও board exam প্রস্তুতির জন্য MCQ practice, CQ practice, model test, question bank, suggestion, leaderboard ও progress tracking platform.';
-
-const setMetaTag = (name: string, content: string) => {
-  let tag = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
-
-  if (!tag) {
-    tag = document.createElement('meta');
-    tag.setAttribute('name', name);
-    document.head.appendChild(tag);
-  }
-
-  tag.setAttribute('content', content);
-};
-
-const setPropertyMetaTag = (property: string, content: string) => {
-  let tag = document.querySelector<HTMLMetaElement>(
-    `meta[property="${property}"]`
-  );
-
-  if (!tag) {
-    tag = document.createElement('meta');
-    tag.setAttribute('property', property);
-    document.head.appendChild(tag);
-  }
-
-  tag.setAttribute('content', content);
-};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -73,41 +46,23 @@ const clampGoal = (value: number, min: number, max: number) => {
   return Math.max(min, Math.min(value, max));
 };
 
-const getGreetingLabel = () => {
-  const hour = new Date().getHours();
+const getGreetingKey = (hour: number): HomeMessageKey => {
+  if (hour < 5) return 'home.greetingLateNight';
+  if (hour < 12) return 'home.greetingMorning';
+  if (hour < 17) return 'home.greetingAfternoon';
+  if (hour < 20) return 'home.greetingEvening';
 
-  if (hour < 5) return 'শুভ রাত';
-  if (hour < 12) return 'শুভ সকাল';
-  if (hour < 17) return 'শুভ দুপুর';
-  if (hour < 20) return 'শুভ সন্ধ্যা';
-
-  return 'শুভ রাত';
+  return 'home.greetingLateNight';
 };
 
 const Home: React.FC = memo(() => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { features, loading: featuresLoading } = useHomeGrids();
+  const { language, t } = useHomeLanguage();
 
-  useEffect(() => {
-    document.title = SEO_TITLE;
-
-    setMetaTag('description', SEO_DESCRIPTION);
-    setMetaTag(
-      'keywords',
-      'Porokh, পরোখ, exam preparation Bangladesh, SSC MCQ practice, HSC MCQ practice, board exam model test, question bank, CQ practice, online exam, suggestion'
-    );
-
-    setPropertyMetaTag('og:title', SEO_TITLE);
-    setPropertyMetaTag('og:description', SEO_DESCRIPTION);
-    setPropertyMetaTag('og:type', 'website');
-    setPropertyMetaTag('og:url', 'https://parapothexam.web.app/');
-    setPropertyMetaTag('og:image', 'https://parapothexam.web.app/icons/header.webp');
-
-    setMetaTag('twitter:card', 'summary_large_image');
-    setMetaTag('twitter:title', SEO_TITLE);
-    setMetaTag('twitter:description', SEO_DESCRIPTION);
-  }, []);
+  const textFontClass =
+    language === 'bn' ? "font-['Hind_Siliguri']" : 'font-sans';
 
   const metadataName =
     normalizeName(user?.user_metadata?.full_name) ||
@@ -165,7 +120,7 @@ const Home: React.FC = memo(() => {
   const isNameLoading = !resolvedProfileName && isLoading;
 
   const themeConfig = sanitizeThemeConfig(themeData);
-  const greetingLabel = getGreetingLabel();
+  const greetingKey = getGreetingKey(new Date().getHours());
 
   const dailyGoal: DailyGoalStats = { completed: 3, total: 5 };
   const safeTotal = Math.max(dailyGoal.total, 1);
@@ -180,14 +135,22 @@ const Home: React.FC = memo(() => {
           <div className="relative z-10 flex items-center justify-between">
             <div className="min-w-0 flex-1 pr-3">
               {isNameLoading ? (
-                <div className="h-6 w-32 animate-pulse rounded-lg bg-secondary" />
+                <div
+                  role="status"
+                  aria-label={t('home.loadingProfile')}
+                  className="h-6 w-32 animate-pulse rounded-lg bg-secondary"
+                />
               ) : (
                 <>
-                  <h1 className="truncate font-['Hind_Siliguri'] text-lg font-bold text-text-primary">
-                    {resolvedProfileName ?? 'শিক্ষার্থী'}
+                  <h1
+                    className={`truncate text-lg font-bold text-text-primary ${textFontClass}`}
+                  >
+                    {resolvedProfileName ?? t('home.studentFallback')}
                   </h1>
-                  <p className="mt-0.5 truncate font-['Hind_Siliguri'] text-xs text-text-secondary">
-                    আজকের শেখা শুরু হোক
+                  <p
+                    className={`mt-0.5 truncate text-xs text-text-secondary ${textFontClass}`}
+                  >
+                    {t('home.startLearning')}
                   </p>
                 </>
               )}
@@ -195,26 +158,36 @@ const Home: React.FC = memo(() => {
 
             <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-badge-bg px-2.5 py-1.5 text-badge-text">
               <SunMedium className="h-3.5 w-3.5" />
-              <span className="font-['Hind_Siliguri'] text-[11px] font-semibold">
-                {greetingLabel}
+              <span
+                className={`text-[11px] font-semibold ${textFontClass}`}
+              >
+                {t(greetingKey)}
               </span>
             </div>
           </div>
         </section>
 
         <section className="mt-3 rounded-[20px] border border-card-border bg-card-bg px-4 py-4">
-          <p className="font-['Hind_Siliguri'] text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary">
-            Online Exam Preparation
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p
+              className={`text-[11px] font-semibold uppercase leading-5 tracking-[0.16em] text-text-secondary ${textFontClass}`}
+            >
+              {t('home.eyebrow')}
+            </p>
 
-          <h2 className="mt-1 font-['Hind_Siliguri'] text-xl font-bold leading-snug text-text-primary">
-            SSC, HSC ও board exam প্রস্তুতি করুন MCQ, CQ, model test ও question bank দিয়ে
+            <HomeLanguageSwitcher />
+          </div>
+
+          <h2
+            className={`mt-1 text-lg font-bold leading-snug text-text-primary sm:text-xl ${textFontClass}`}
+          >
+            {t('home.heroTitle')}
           </h2>
 
-          <p className="mt-2 font-['Hind_Siliguri'] text-sm leading-6 text-text-secondary">
-            Porokh (পরোখ) শিক্ষার্থীদের জন্য একটি smart exam preparation platform—এখানে
-            chapter-wise MCQ practice, model test, previous question practice,
-            suggestion, leaderboard এবং progress tracking এক জায়গায় পাওয়া যায়।
+          <p
+            className={`mt-2 text-sm leading-6 text-text-secondary ${textFontClass}`}
+          >
+            {t('home.heroBody')}
           </p>
         </section>
 
@@ -236,13 +209,22 @@ const Home: React.FC = memo(() => {
 
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <p className="font-['Hind_Siliguri'] text-base font-bold text-text-primary">
-                    আজকের লক্ষ্য
+                  <p
+                    className={`text-base font-bold text-text-primary ${textFontClass}`}
+                  >
+                    {t('home.dailyGoal')}
                   </p>
                   <ChevronRight className="h-4 w-4 text-text-secondary" />
                 </div>
 
-                <div className="mt-2.5 h-2 rounded-full bg-secondary">
+                <div
+                  role="progressbar"
+                  aria-label={t('home.dailyGoalProgress')}
+                  aria-valuemin={0}
+                  aria-valuemax={dailyGoal.total}
+                  aria-valuenow={dailyGoal.completed}
+                  className="mt-2.5 h-2 rounded-full bg-secondary"
+                >
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-300"
                     style={{ width: progressWidth }}
@@ -258,6 +240,7 @@ const Home: React.FC = memo(() => {
             features={features}
             loading={featuresLoading}
             themeConfig={themeConfig}
+            loadingLabel={t('home.featuresLoading')}
           />
         </section>
       </main>

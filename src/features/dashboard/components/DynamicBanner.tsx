@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Crown } from 'lucide-react';
+import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
 
 interface Banner {
   id: string;
@@ -19,6 +20,7 @@ interface DynamicBannerProps {
 
 const DynamicBanner: React.FC<DynamicBannerProps> = ({ banners, isLoading }) => {
   const navigate = useNavigate();
+  const { t } = useHomeLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -104,12 +106,16 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ banners, isLoading }) => 
                     {banner.title}
                   </p>
                   <p className="mt-0.5 line-clamp-2 font-['Hind_Siliguri'] text-xs leading-snug text-text-secondary">
-                    {banner.target_rules?.description || banner.description || 'বিস্তারিত দেখুন'}
+                    {banner.target_rules?.description ||
+                      banner.description ||
+                      t('home.bannerFallbackDescription')}
                   </p>
                 </div>
 
                 <div className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-                  {banner.target_rules?.button_text || banner.button_text || 'ক্লিক করুন'}
+                  {banner.target_rules?.button_text ||
+                    banner.button_text ||
+                    t('home.bannerFallbackButton')}
                 </div>
               </div>
             </button>
@@ -123,7 +129,10 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ banners, isLoading }) => 
           {banners.map((_, idx) => (
             <button
               key={idx}
+              type="button"
               onClick={() => setCurrentIndex(idx)}
+              aria-label={t('home.bannerSlide', { index: idx + 1 })}
+              aria-current={idx === currentIndex}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 idx === currentIndex ? 'w-4 bg-primary' : 'w-1.5 bg-secondary'
               }`}

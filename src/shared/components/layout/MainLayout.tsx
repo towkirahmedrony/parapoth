@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import { requestNotificationPermission } from '@/features/notifications/services/notificationService';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
 
 const SITE_TITLE = 'Porokh — SSC HSC MCQ, Model Test & Exam Preparation';
 
@@ -86,6 +87,7 @@ const updateSeoMeta = (pathname: string) => {
 export const MainLayout: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const { t } = useHomeLanguage();
 
   useEffect(() => {
     updateSeoMeta(location.pathname);
@@ -106,7 +108,7 @@ export const MainLayout: React.FC = () => {
 
         <main
           className="scrollbar-hide flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 md:p-6 md:pb-6"
-          aria-label="Porokh online exam preparation dashboard for SSC HSC MCQ model test question bank and board exam practice"
+          aria-label={t('layout.mainAria')}
         >
           <div className="mx-auto min-h-[calc(100vh-100px)] w-full max-w-7xl">
             <Suspense fallback={null}>

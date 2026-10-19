@@ -16,16 +16,21 @@ interface FeatureGridProps {
   features: GridItem[];
   loading?: boolean;
   themeConfig?: ThemeConfig;
+  loadingLabel?: string;
 }
 
 const isImageSource = (value: string) => {
   return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/');
 };
 
-const FeatureGrid: React.FC<FeatureGridProps> = memo(({ features, loading = false }) => {
+const FeatureGrid: React.FC<FeatureGridProps> = memo(({ features, loading = false, loadingLabel }) => {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <div
+        className="grid grid-cols-2 gap-3"
+        role={loadingLabel ? 'status' : undefined}
+        aria-label={loadingLabel}
+      >
         {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
           <Skeleton
             key={`feature-skeleton-${index}`}

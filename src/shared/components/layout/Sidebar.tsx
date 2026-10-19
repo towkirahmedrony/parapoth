@@ -3,10 +3,12 @@ import { NavLink } from 'react-router-dom';
 import { Home, Trophy, FileEdit, PieChart, User as UserIcon, LogOut, History } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
 import { supabase } from '@/shared/lib/supabase';
 
 export const Sidebar: React.FC = memo(() => {
   const { user, signOut } = useAuth();
+  const { t } = useHomeLanguage();
 
   const { data: profileData } = useQuery({
     queryKey: ['profile', user?.id],
@@ -33,16 +35,18 @@ export const Sidebar: React.FC = memo(() => {
     return null;
   };
 
-  const fullNameStr = extractName(profileData) || extractName(user?.user_metadata) || extractName(user?.user_metadata?.full_name) || 'শিক্ষার্থী';
+  const fullNameStr = extractName(profileData) || extractName(user?.user_metadata) || extractName(user?.user_metadata?.full_name) || t('home.studentFallback');
   const initialStr = fullNameStr ? fullNameStr.charAt(0).toUpperCase() : 'S';
 
+  // `t` falls back to Bengali outside the homepage, so this chrome is only
+  // localized while the homepage language is active.
   const navItems = [
-    { label: 'হোম', path: '/dashboard/home', icon: Home },
-    { label: 'মডেল টেস্ট', path: '/exam/selection', icon: FileEdit },
-    { label: 'অগ্রগতি', path: '/progress', icon: PieChart },
-    { label: 'লিডারবোর্ড', path: '/dashboard/leaderboard', icon: Trophy },
-    { label: 'হিস্টোরি', path: '/history', icon: History },
-    { label: 'প্রোফাইল', path: '/profile', icon: UserIcon },
+    { label: t('nav.home'), path: '/dashboard/home', icon: Home },
+    { label: t('nav.modelTest'), path: '/exam/selection', icon: FileEdit },
+    { label: t('nav.progress'), path: '/progress', icon: PieChart },
+    { label: t('nav.leaderboard'), path: '/dashboard/leaderboard', icon: Trophy },
+    { label: t('nav.history'), path: '/history', icon: History },
+    { label: t('nav.profile'), path: '/profile', icon: UserIcon },
   ];
 
   return (
@@ -51,7 +55,7 @@ export const Sidebar: React.FC = memo(() => {
     >
       <div className="h-20 flex items-center px-6 border-b border-border-color">
         <span className="text-2xl font-bold font-['Hind_Siliguri'] text-primary">
-          পরোখ
+          {t('brand.name')}
         </span>
       </div>
 
@@ -96,7 +100,7 @@ export const Sidebar: React.FC = memo(() => {
           className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-lg transition-colors border border-transparent text-text-primary bg-secondary hover:bg-accent hover:text-primary"
         >
           <LogOut className="w-4 h-4" />
-          <span className="font-['Hind_Siliguri']">লগ আউট</span>
+          <span className="font-['Hind_Siliguri']">{t('nav.logout')}</span>
         </button>
       </div>
     </aside>
