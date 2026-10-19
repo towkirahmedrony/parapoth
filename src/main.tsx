@@ -3,12 +3,21 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
+import VConsole from 'vconsole';
+
 import App from './App';
 import { AuthProvider } from '@/features/auth/context/AuthProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { queryClient, localStoragePersister } from '@/shared/lib/queryClient';
 
 import './index.css';
+
+// Enable VConsole only during development.
+// This allows inspecting JavaScript errors directly from a mobile browser.
+if (import.meta.env.DEV) {
+  const vConsole = new VConsole({ theme: 'light' });
+  console.info('[Debug] VConsole initialized.');
+}
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -18,13 +27,18 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(_error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(
+    _error: Error
+  ): ErrorBoundaryState {
     return { hasError: true };
   }
 
@@ -56,7 +70,11 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
             >
               ওপস! একটি ত্রুটি হয়েছে।
             </h1>
-            <p style={{ opacity: 0.8 }}>অনুগ্রহ করে পেজটি রিলোড করুন।</p>
+
+            <p style={{ opacity: 0.8 }}>
+              অনুগ্রহ করে পেজটি রিলোড করুন।
+            </p>
+
             <button
               type="button"
               onClick={() => window.location.reload()}
@@ -92,7 +110,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           maxAge: 1000 * 60 * 60 * 24,
         }}
       >
-        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <BrowserRouter
+          future={{
+            v7_relativeSplatPath: true,
+            v7_startTransition: true,
+          }}
+        >
           <AuthProvider>
             <ThemeProvider>
               <App />

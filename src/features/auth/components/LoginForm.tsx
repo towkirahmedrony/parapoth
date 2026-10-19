@@ -98,7 +98,7 @@ export default function LoginForm() {
     onSuccess: async (data) => {
       if (data?.session?.user?.id) {
         try {
-          const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const backendUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
           await fetch(`${backendUrl}/api/v1/auth/save-device`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

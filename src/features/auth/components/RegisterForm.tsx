@@ -119,7 +119,7 @@ export default function RegisterForm({
       // 🚀 [NEW] IP Address ও Device Info ব্যাকএন্ডে সেভ করার জন্য API Call
       if (data.user) {
         try {
-          const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const backendUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
           await fetch(`${backendUrl}/api/v1/auth/save-device`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
