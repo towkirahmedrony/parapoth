@@ -37,7 +37,7 @@ export const GroupLeaderboard: React.FC<GroupLeaderboardProps> = ({
               সাপ্তাহিক লিডারবোর্ড
             </h1>
             <span className="text-text-secondary text-xs mt-1 block">
-              প্যারাপথের অন্যান্য স্কোয়াডের সাথে পাল্লা দিন
+              পরোখের অন্যান্য স্কোয়াডের সাথে পাল্লা দিন
             </span>
           </div>
         </div>

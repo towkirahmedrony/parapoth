@@ -14,8 +14,8 @@ const TermsConditions: React.FC = () => {
         en: 'Terms & Conditions'
       }}
       description={{
-        bn: 'প্যারাপথ ব্যবহার করার আগে অনুগ্রহ করে শর্তাবলি পড়ে নিন।',
-        en: 'Please read these terms carefully before using ParaPoth.'
+        bn: 'পরোখ ব্যবহার করার আগে অনুগ্রহ করে শর্তাবলি পড়ে নিন।',
+        en: 'Please read these terms carefully before using Porokh.'
       }}
       lastUpdated={{
         bn: 'কার্যকর: মার্চ ২০২৬',

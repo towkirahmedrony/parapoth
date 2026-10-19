@@ -14,8 +14,8 @@ const CookiePolicy: React.FC = () => {
         en: 'Cookie Policy'
       }}
       description={{
-        bn: 'প্যারাপথ কীভাবে কুকিজ ব্যবহার করে আপনার ডেটা এবং ব্রাউজিং অভিজ্ঞতা সুরক্ষিত রাখে, তা জানুন।',
-        en: 'Learn how ParaPoth uses cookies to protect your data and secure your browsing experience.'
+        bn: 'পরোখ কীভাবে কুকিজ ব্যবহার করে আপনার ডেটা এবং ব্রাউজিং অভিজ্ঞতা সুরক্ষিত রাখে, তা জানুন।',
+        en: 'Learn how Porokh uses cookies to protect your data and secure your browsing experience.'
       }}
       lastUpdated={{
         bn: 'সর্বশেষ আপডেট: মার্চ ২০২৬',

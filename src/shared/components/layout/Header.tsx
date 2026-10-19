@@ -86,13 +86,13 @@ const Header: React.FC = () => {
       <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-between">
         <Link
           to="/dashboard"
-          aria-label="ParaPoth dashboard - SSC HSC MCQ model test and online exam preparation"
-          title="ParaPoth - Online Exam Preparation Platform"
+          aria-label="Porokh dashboard - SSC HSC MCQ model test and online exam preparation"
+          title="Porokh - Online Exam Preparation Platform"
           className="flex items-center"
         >
           <img
             src="/icons/header.webp"
-            alt="ParaPoth online exam preparation logo"
+            alt="Porokh online exam preparation logo"
             className="h-10 w-auto object-contain drop-shadow-sm"
           />
         </Link>

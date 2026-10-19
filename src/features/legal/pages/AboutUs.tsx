@@ -14,8 +14,8 @@ const AboutUs: React.FC = () => {
         en: 'About Us'
       }}
       description={{
-        bn: 'প্যারাপথের লক্ষ্য, উদ্দেশ্য এবং এর পেছনের নিবেদিত প্রাণ টিম সম্পর্কে বিস্তারিত জানুন।',
-        en: "Learn more about ParaPoth's mission, vision, and the dedicated team behind the platform."
+        bn: 'পরোখের লক্ষ্য, উদ্দেশ্য এবং এর পেছনের নিবেদিত প্রাণ টিম সম্পর্কে বিস্তারিত জানুন।',
+        en: "Learn more about Porokh's mission, vision, and the dedicated team behind the platform."
       }}
       lastUpdated={{
         bn: 'সর্বশেষ আপডেট: মার্চ ২০২৬',

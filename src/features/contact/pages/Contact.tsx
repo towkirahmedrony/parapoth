@@ -33,7 +33,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TEXTS = {
   bn: {
     title: 'আমাদের সাথে যোগাযোগ করুন',
-    subtitle: 'কীভাবে পারাপথ আপনাকে সাহায্য করতে পারে তা জানান।',
+    subtitle: 'কীভাবে পরোখ আপনাকে সাহায্য করতে পারে তা জানান।',
     nameLabel: 'আপনার নাম',
     namePlaceholder: 'যেমন: রহিম',
     emailLabel: 'ইমেইল অ্যাড্রেস',
@@ -59,7 +59,7 @@ const TEXTS = {
   },
   en: {
     title: 'Contact Us',
-    subtitle: 'Let us know how ParaPoth can help you.',
+    subtitle: 'Let us know how Porokh can help you.',
     nameLabel: 'Your Name',
     namePlaceholder: 'e.g., Rahim',
     emailLabel: 'Email Address',

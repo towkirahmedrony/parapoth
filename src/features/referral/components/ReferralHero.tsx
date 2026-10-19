@@ -46,8 +46,8 @@ export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, ref
       try {
         const referralLink = `${window.location.origin}/register?ref=${code}`;
         await navigator.share({
-          title: 'প্যারাপাথ-এ জয়েন করুন (Join ParaPoth)',
-          text: `আমার লিংক দিয়ে প্যারাপাথ-এ অ্যাকাউন্ট খুললে আপনি পেয়ে যাবেন ${refereeBonus} বোনাস লার্নিং কয়েন!`,
+          title: 'পরোখে জয়েন করুন (Join Porokh)',
+          text: `আমার লিংক দিয়ে পরোখে অ্যাকাউন্ট খুললে আপনি পেয়ে যাবেন ${refereeBonus} বোনাস লার্নিং কয়েন!`,
           url: referralLink,
         });
       } catch (err) {}

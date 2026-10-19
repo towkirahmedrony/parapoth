@@ -18,9 +18,9 @@ interface DailyGoalStats {
   total: number;
 }
 
-const SEO_TITLE = 'ParaPoth - SSC HSC MCQ, Model Test & Exam Preparation';
+const SEO_TITLE = 'Porokh — SSC HSC MCQ, Model Test & Exam Preparation';
 const SEO_DESCRIPTION =
-  'ParaPoth হলো SSC, HSC ও board exam প্রস্তুতির জন্য MCQ practice, CQ practice, model test, question bank, suggestion, leaderboard ও progress tracking platform.';
+  'Porokh (পরোখ) হলো SSC, HSC ও board exam প্রস্তুতির জন্য MCQ practice, CQ practice, model test, question bank, suggestion, leaderboard ও progress tracking platform.';
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
@@ -95,7 +95,7 @@ const Home: React.FC = memo(() => {
     setMetaTag('description', SEO_DESCRIPTION);
     setMetaTag(
       'keywords',
-      'ParaPoth, exam preparation Bangladesh, SSC MCQ practice, HSC MCQ practice, board exam model test, question bank, CQ practice, online exam, suggestion'
+      'Porokh, পরোখ, exam preparation Bangladesh, SSC MCQ practice, HSC MCQ practice, board exam model test, question bank, CQ practice, online exam, suggestion'
     );
 
     setPropertyMetaTag('og:title', SEO_TITLE);
@@ -212,7 +212,7 @@ const Home: React.FC = memo(() => {
           </h2>
 
           <p className="mt-2 font-['Hind_Siliguri'] text-sm leading-6 text-text-secondary">
-            ParaPoth শিক্ষার্থীদের জন্য একটি smart exam preparation platform—এখানে
+            Porokh (পরোখ) শিক্ষার্থীদের জন্য একটি smart exam preparation platform—এখানে
             chapter-wise MCQ practice, model test, previous question practice,
             suggestion, leaderboard এবং progress tracking এক জায়গায় পাওয়া যায়।
           </p>

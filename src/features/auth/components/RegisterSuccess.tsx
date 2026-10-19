@@ -35,7 +35,7 @@ export default function RegisterSuccess({ email }: { email: string }) {
       <div className="hidden lg:flex relative overflow-hidden items-center justify-center border-l border-border-color bg-surface">
         <div className="relative z-20 text-center px-12 max-w-lg">
           <h2 className="text-text-primary text-4xl font-bold mb-6">
-            প্যারাপথে স্বাগতম
+            পরোখে স্বাগতম
           </h2>
 
           <p className="text-text-secondary text-lg">

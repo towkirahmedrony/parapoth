@@ -17,7 +17,7 @@ const AuthSideBanner = memo(() => {
             <GraduationCap className="w-7 h-7" />
           </div>
           <span className="font-bold text-2xl tracking-tight text-text-primary">
-            ParaPoth
+            Porokh
           </span>
         </div>
 

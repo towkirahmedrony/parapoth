@@ -2,7 +2,7 @@
 
 **Effective Date:** March, 2026
 
-Welcome to **ParaPoth**. Protecting your private information is our priority. This Privacy Policy applies to the ParaPoth application and platform, governing data collection, usage, and protection. By using ParaPoth, you consent to the data practices described in this statement.
+Welcome to **Porokh**. Protecting your private information is our priority. This Privacy Policy applies to the Porokh application and platform, governing data collection, usage, and protection. By using Porokh, you consent to the data practices described in this statement.
 
 ## 1. Information We Collect
 
@@ -52,15 +52,15 @@ You have full control over your data. You have the right to:
 
 ## 7. Children's Privacy
 
-ParaPoth is designed for students. However, we do not knowingly collect personally identifiable information from children under the age of 13 without verifiable parental consent. If we become aware that we have collected such data, we will take steps to delete it promptly.
+Porokh is designed for students. However, we do not knowingly collect personally identifiable information from children under the age of 13 without verifiable parental consent. If we become aware that we have collected such data, we will take steps to delete it promptly.
 
 ## 8. Legal Compliance
 
-We may disclose your personal information if required to do so by law or in the good faith belief that such action is necessary to comply with legal processes or protect the rights and safety of ParaPoth and its users.
+We may disclose your personal information if required to do so by law or in the good faith belief that such action is necessary to comply with legal processes or protect the rights and safety of Porokh and its users.
 
 ## 9. Changes to This Policy
 
-ParaPoth reserves the right to update this Privacy Policy. We will notify you about significant changes by sending a notice to your primary email address or placing a prominent notice within the app.
+Porokh reserves the right to update this Privacy Policy. We will notify you about significant changes by sending a notice to your primary email address or placing a prominent notice within the app.
 
 ## 10. Contact Us
 

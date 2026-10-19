@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { BackButton } from '@/shared/components/ui/BackButton';
 
-const APP_VERSION = 'ParaPoth v5.0.0 (Supreme)';
+const APP_VERSION = 'Porokh v5.0.0 (Supreme)';
 
 interface SettingItemProps {
   icon: LucideIcon;

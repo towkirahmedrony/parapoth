@@ -14,8 +14,8 @@ const FAQ: React.FC = () => {
         en: 'Frequently Asked Questions'
       }}
       description={{
-        bn: 'প্যারাপথ এবং আমাদের সার্ভিস সম্পর্কিত সাধারণ প্রশ্নগুলোর উত্তর খুঁজুন।',
-        en: 'Find answers to common questions about ParaPoth and our services.'
+        bn: 'পরোখ এবং আমাদের সার্ভিস সম্পর্কিত সাধারণ প্রশ্নগুলোর উত্তর খুঁজুন।',
+        en: 'Find answers to common questions about Porokh and our services.'
       }}
       lastUpdated={{
         bn: 'সর্বশেষ আপডেট: মার্চ ২০২৬',

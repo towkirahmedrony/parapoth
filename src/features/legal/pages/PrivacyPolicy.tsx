@@ -14,8 +14,8 @@ const PrivacyPolicy: React.FC = () => {
         en: 'Privacy Policy'
       }}
       description={{
-        bn: 'জানুন কীভাবে প্যারাপথ আপনার ডাটা এবং গোপনীয়তা সুরক্ষিত রাখে।',
-        en: 'Learn how ParaPoth protects your data and privacy.'
+        bn: 'জানুন কীভাবে পরোখ আপনার ডাটা এবং গোপনীয়তা সুরক্ষিত রাখে।',
+        en: 'Learn how Porokh protects your data and privacy.'
       }}
       lastUpdated={{
         bn: 'সর্বশেষ আপডেট: মার্চ ২০২৬',

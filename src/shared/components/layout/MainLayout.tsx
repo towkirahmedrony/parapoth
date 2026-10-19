@@ -6,10 +6,10 @@ import BottomNav from './BottomNav';
 import { requestNotificationPermission } from '@/features/notifications/services/notificationService';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
-const SITE_TITLE = 'ParaPoth - SSC HSC MCQ, Model Test & Exam Preparation';
+const SITE_TITLE = 'Porokh — SSC HSC MCQ, Model Test & Exam Preparation';
 
 const SITE_DESCRIPTION =
-  'ParaPoth হলো SSC, HSC ও board exam প্রস্তুতির জন্য MCQ practice, CQ exam, model test, question bank, suggestion ও progress tracking platform.';
+  'Porokh (পরোখ) হলো SSC, HSC ও board exam প্রস্তুতির জন্য MCQ practice, CQ exam, model test, question bank, suggestion ও progress tracking platform.';
 
 const updateMetaTag = (
   selector: string,
@@ -32,11 +32,11 @@ const updateSeoMeta = (pathname: string) => {
   const routeTitleMap: Record<string, string> = {
     '/dashboard': SITE_TITLE,
     '/dashboard/home': SITE_TITLE,
-    '/dashboard/question-bank': 'Question Bank - SSC HSC MCQ Practice | ParaPoth',
-    '/dashboard/arena': 'Online Exam Arena - MCQ Model Test | ParaPoth',
-    '/dashboard/leaderboard': 'Leaderboard - Exam Practice Ranking | ParaPoth',
-    '/dashboard/progress': 'Progress Tracking - Exam Preparation | ParaPoth',
-    '/dashboard/streak': 'Daily Study Streak - ParaPoth',
+    '/dashboard/question-bank': 'Question Bank - SSC HSC MCQ Practice | Porokh',
+    '/dashboard/arena': 'Online Exam Arena - MCQ Model Test | Porokh',
+    '/dashboard/leaderboard': 'Leaderboard - Exam Practice Ranking | Porokh',
+    '/dashboard/progress': 'Progress Tracking - Exam Preparation | Porokh',
+    '/dashboard/streak': 'Daily Study Streak - Porokh',
   };
 
   const title = routeTitleMap[pathname] ?? SITE_TITLE;
@@ -54,7 +54,7 @@ const updateSeoMeta = (pathname: string) => {
     'meta[name="keywords"]',
     'name',
     'keywords',
-    'ParaPoth, SSC MCQ, HSC MCQ, MCQ practice, CQ exam, model test, question bank, board exam, online exam preparation, suggestion, leaderboard'
+    'Porokh, পরোখ, SSC MCQ, HSC MCQ, MCQ practice, CQ exam, model test, question bank, board exam, online exam preparation, suggestion, leaderboard'
   );
 
   updateMetaTag('meta[property="og:title"]', 'property', 'og:title', title);
@@ -106,7 +106,7 @@ export const MainLayout: React.FC = () => {
 
         <main
           className="scrollbar-hide flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 md:p-6 md:pb-6"
-          aria-label="ParaPoth online exam preparation dashboard for SSC HSC MCQ model test question bank and board exam practice"
+          aria-label="Porokh online exam preparation dashboard for SSC HSC MCQ model test question bank and board exam practice"
         >
           <div className="mx-auto min-h-[calc(100vh-100px)] w-full max-w-7xl">
             <Suspense fallback={null}>

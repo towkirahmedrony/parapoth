@@ -87,7 +87,7 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center fixed inset-0 z-[9999] bg-app text-text-primary">
         <Wrench className="w-16 h-16 text-text-secondary mb-6" />
         <h1 className="text-3xl font-bold mb-4">সিস্টেম আপডেট চলছে</h1>
-        <p className="text-lg text-text-secondary">{maintenance.message || "প্যারাপথ-এর সার্ভারে কিছু গুরুত্বপূর্ণ কাজ চলছে।"}</p>
+        <p className="text-lg text-text-secondary">{maintenance.message || "পরোখ-এর সার্ভারে কিছু গুরুত্বপূর্ণ কাজ চলছে।"}</p>
       </div>
     );
   }

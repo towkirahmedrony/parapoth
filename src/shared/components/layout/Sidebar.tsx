@@ -51,7 +51,7 @@ export const Sidebar: React.FC = memo(() => {
     >
       <div className="h-20 flex items-center px-6 border-b border-border-color">
         <span className="text-2xl font-bold font-['Hind_Siliguri'] text-primary">
-          প্যারাপথ
+          পরোখ
         </span>
       </div>
 
@@ -86,7 +86,7 @@ export const Sidebar: React.FC = memo(() => {
               {fullNameStr}
             </p>
             <p className="text-xs truncate text-text-secondary">
-              {user?.email || 'student@parapoth.com'}
+              {user?.email || 'student@porokh.com'}
             </p>
           </div>
         </div>

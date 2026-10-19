@@ -1096,7 +1096,7 @@ const AIChatPage = () => {
 
           <div className="mt-2 flex items-center justify-between gap-3 px-1">
             <p className="text-[10px] leading-4 text-text-secondary">
-              ParaPoth AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করে নিন।
+              Porokh AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করে নিন।
             </p>
 
             <span

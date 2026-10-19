@@ -3,6 +3,8 @@ export const STORAGE_KEYS = {
   LANGUAGE: 'app_language',
   ONBOARDING_SEEN: 'onboarding_seen',
   SIDEBAR_COLLAPSED: 'sidebar_collapsed',
+  // Kept stable on purpose: the stored device id is sent to the backend as
+  // x-device-id, and in-progress exam data must survive the rebrand.
   DEVICE_ID: 'parapoth_device_id', // 👈 Updated for precise isolated tracking
   EXAM_PROGRESS_PREFIX: 'parapoth_exam_progress_',
   DAILY_QUOTE: 'daily_greeting_quote',
@@ -11,7 +13,7 @@ export const STORAGE_KEYS = {
   DYN_THEME: 'dyn_theme',
   DISMISSED_NOTICE: 'dismissed_global_notice',
   HOME_GRIDS_DATA: 'home_grids_data',
-  REACT_QUERY_CACHE: 'PARAPOTH_QUERY_CACHE',
+  REACT_QUERY_CACHE: 'POROKH_QUERY_CACHE',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

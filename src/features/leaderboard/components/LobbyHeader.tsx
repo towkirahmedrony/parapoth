@@ -20,7 +20,7 @@ export const LobbyHeader: React.FC<LobbyHeaderProps> = ({
         </div>
         <div>
           <h2 className="text-text-primary font-bold text-lg leading-tight">
-            {groupName || 'প্যারাপথ লবি'}
+            {groupName || 'পরোখ লবি'}
           </h2>
           {groupLevel && (
             <p className="text-text-secondary text-sm">লেভেল {groupLevel} স্কোয়াড</p>

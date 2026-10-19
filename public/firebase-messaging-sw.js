@@ -18,7 +18,7 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Background message: ', payload);
   
   // ব্যাকএন্ড থেকে পাঠানো 'data' পেলোড থেকে ডেটা নিচ্ছি
-  const title = payload.data?.title || 'প্যারাপথ';
+  const title = payload.data?.title || 'পরোখ';
   
   const notificationOptions = {
     body: payload.data?.body,
