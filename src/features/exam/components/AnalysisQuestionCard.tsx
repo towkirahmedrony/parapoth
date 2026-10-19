@@ -3,6 +3,8 @@ import { CheckCircle2, XCircle, MinusCircle, ChevronDown, ChevronUp, AlertCircle
 import { Question } from '../types/exam';
 import { formatBoardRef } from '../../leaderboard/utils/xpCalculator';
 import MathDisplay from '@/shared/components/content/MathDisplay';
+import QuestionText from '@/shared/components/content/QuestionText';
+import { localize } from '@/shared/utils/questionFormat';
 
 export interface AnalysisQuestionCardProps {
   question: Question;
@@ -104,14 +106,21 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   const boardTag = formatBoardRef(rawExamRef || '');
 
   const questionText = useMemo(() => {
-    let text = question.text_bn || question.text || "";
-    if (typeof question.body === 'object' && question.body !== null) {
-      text = question.body.text_bn || question.body.text || text;
-    } else if (typeof question.body === 'string' && question.body.trim() !== '') {
-      text = question.body;
+    let text = localize(question.text_bn || question.text || '', 'bn');
+    const body = question.body;
+    if (body && typeof body === 'object') {
+      const b = body as Record<string, unknown>;
+      text = localize(b.text_bn || b.text || body, 'bn') || text;
+    } else if (typeof body === 'string' && body.trim() !== '') {
+      text = localize(body, 'bn') || text;
     }
     return text;
   }, [question.text_bn, question.text, question.body]);
+
+  const explanationText = useMemo(
+    () => localize(question.explanation, 'bn').trim() || FALLBACK_EXPLANATION,
+    [question.explanation]
+  );
 
   const imageUrl = question.image_url || question.media_library?.file_url;
 
@@ -164,7 +173,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
 
       <div className="p-4 sm:p-5 bg-surface">
         <div className="font-['Hind_Siliguri'] text-[15px] sm:text-base mb-5 leading-relaxed text-text-primary">
-          <MathDisplay content={questionText} />
+          <QuestionText text={questionText} />
           {imageUrl && (
             <img 
               src={imageUrl} 
@@ -199,7 +208,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
                 className={`p-3.5 sm:p-4 rounded-xl border text-sm sm:text-base flex justify-between items-start gap-3 transition-colors ${containerClasses}`}
               >
                 <div className={`font-['Hind_Siliguri'] flex-1 ${textClasses}`}>
-                  <MathDisplay content={opt.text_bn || opt.text || opt.text_en || ''} />
+                  <MathDisplay content={localize(opt.text_bn || opt.text || opt.text_en || '', 'bn')} />
                 </div>
                 {isAns && <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-emerald-500" />}
                 {isSelected && showCorrectAnswers && !isAns && <XCircle size={18} className="shrink-0 mt-0.5 text-red-500" />}
@@ -228,7 +237,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
                  </span>
               </div>
               <div className="text-sm sm:text-base font-['Hind_Siliguri'] leading-relaxed opacity-90 text-text-secondary">
-                <MathDisplay content={question.explanation || FALLBACK_EXPLANATION} />
+                <MathDisplay content={explanationText} className="whitespace-pre-line" />
               </div>
             </div>
           )}

@@ -15,7 +15,7 @@ import './index.css';
 // Enable VConsole only during development.
 // This allows inspecting JavaScript errors directly from a mobile browser.
 if (import.meta.env.DEV) {
-  const vConsole = new VConsole({ theme: 'light' });
+  new VConsole({ theme: 'light' });
   console.info('[Debug] VConsole initialized.');
 }
 
