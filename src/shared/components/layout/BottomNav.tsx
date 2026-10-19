@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Trophy, Play, PieChart, User, LucideIcon } from 'lucide-react';
-import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 const NAV_LINK_CONTAINER_CLASS = "w-full h-full flex items-center justify-center";
 
@@ -26,7 +26,7 @@ const NavItem: React.FC<NavItemProps> = ({ Icon, label, isActive }) => (
 
 const BottomNav: React.FC = () => {
   const location = useLocation();
-  const { t } = useHomeLanguage();
+  const { t } = useLanguage();
   
   if (location.pathname.startsWith('/exam/arena')) {
     return null;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface ProgressHeaderProps {
   user?: {
@@ -8,9 +9,11 @@ interface ProgressHeaderProps {
 }
 
 export const ProgressHeader: React.FC<ProgressHeaderProps> = ({ user }) => {
+  const { t } = useLanguage();
+
   // Safe fallbacks to prevent crashes
-  const userName = user?.name || 'Student';
-  const userBatch = user?.batch || 'N/A';
+  const userName = user?.name || t('home.studentFallback');
+  const userBatch = user?.batch || t('progress.batchFallback');
   const initial = userName.charAt(0).toUpperCase();
 
   return (
@@ -25,7 +28,7 @@ export const ProgressHeader: React.FC<ProgressHeaderProps> = ({ user }) => {
               {userName}
             </h1>
             <span className="inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-medium bg-badge-bg text-badge-text border border-border-color">
-              Batch: {userBatch}
+              {t('progress.batch', { batch: userBatch })}
             </span>
           </div>
         </div>

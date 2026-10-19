@@ -4,12 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, SunMedium, Target } from 'lucide-react';
 import FeatureGrid, { ThemeConfig } from '../components/FeatureGrid';
 import DynamicBanner from '../components/DynamicBanner';
-import HomeLanguageSwitcher from '../components/HomeLanguageSwitcher';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { supabase } from '@/shared/lib/supabase';
 import { useHomeGrids } from '../hooks/useHomeGrids';
-import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
-import type { HomeMessageKey } from '@/shared/i18n/homeMessages';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import type { AppMessageKey } from '@/shared/i18n/messages';
 
 interface ThemeConfigRow {
   value?: unknown;
@@ -46,7 +45,7 @@ const clampGoal = (value: number, min: number, max: number) => {
   return Math.max(min, Math.min(value, max));
 };
 
-const getGreetingKey = (hour: number): HomeMessageKey => {
+const getGreetingKey = (hour: number): AppMessageKey => {
   if (hour < 5) return 'home.greetingLateNight';
   if (hour < 12) return 'home.greetingMorning';
   if (hour < 17) return 'home.greetingAfternoon';
@@ -59,7 +58,7 @@ const Home: React.FC = memo(() => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { features, loading: featuresLoading } = useHomeGrids();
-  const { language, t } = useHomeLanguage();
+  const { language, t } = useLanguage();
 
   const textFontClass =
     language === 'bn' ? "font-['Hind_Siliguri']" : 'font-sans';
@@ -174,8 +173,6 @@ const Home: React.FC = memo(() => {
             >
               {t('home.eyebrow')}
             </p>
-
-            <HomeLanguageSwitcher />
           </div>
 
           <h2

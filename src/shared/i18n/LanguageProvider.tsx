@@ -11,29 +11,29 @@ import { useLocation } from 'react-router-dom';
 import { STORAGE_KEYS } from '@/shared/constants/storageKeys';
 import { StorageUtils } from '@/shared/utils/storage';
 import {
-  DEFAULT_HOME_LANGUAGE,
-  HOME_MESSAGES,
-  isHomeLanguage,
-  type HomeLanguage,
-  type HomeMessageKey,
-} from './homeMessages';
+  APP_MESSAGES,
+  DEFAULT_APP_LANGUAGE,
+  isAppLanguage,
+  type AppLanguage,
+  type AppMessageKey,
+} from './messages';
 
 type MessageValues = Record<string, string | number>;
 
-export interface HomeLanguageContextValue {
-  /** Currently stored language preference. */
-  language: HomeLanguage;
-  setLanguage: (language: HomeLanguage) => void;
+export interface LanguageContextValue {
+  /** Currently stored language preference (single authoritative state). */
+  language: AppLanguage;
+  setLanguage: (language: AppLanguage) => void;
   /**
-   * Homepage-scoped translator. Off the homepage it always returns Bengali so
-   * pages that have not been migrated yet keep their current copy.
+   * Application-wide translator. Falls back to Bengali, then to the raw key,
+   * so a missing translation can never crash a screen.
    */
-  t: (key: HomeMessageKey, values?: MessageValues) => string;
-  /** True while the visitor is on the homepage. */
+  t: (key: AppMessageKey, values?: MessageValues) => string;
+  /** True while the visitor is on a homepage route (drives SEO metadata). */
   isHomepage: boolean;
 }
 
-const HomeLanguageContext = createContext<HomeLanguageContextValue | null>(null);
+const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 const HOMEPAGE_PATHS = new Set(['/', '/dashboard', '/dashboard/home']);
 
@@ -51,22 +51,24 @@ const formatMessage = (template: string, values?: MessageValues): string => {
   );
 };
 
-const normalizeLanguage = (value: unknown): HomeLanguage => {
-  if (typeof value !== 'string') return DEFAULT_HOME_LANGUAGE;
+const normalizeLanguage = (value: unknown): AppLanguage => {
+  if (typeof value !== 'string') return DEFAULT_APP_LANGUAGE;
   const normalized = value.trim().toLowerCase();
-  return isHomeLanguage(normalized) ? normalized : DEFAULT_HOME_LANGUAGE;
+  return isAppLanguage(normalized) ? normalized : DEFAULT_APP_LANGUAGE;
 };
 
 /**
  * Reads the stored preference without clearing or rewriting unrelated keys.
  * Handles JSON values (`"en"`), plain strings (`en`) and unreadable storage.
+ * This is the same STORAGE_KEYS.LANGUAGE mechanism the homepage switcher
+ * used before, so previously saved preferences keep working.
  */
-const readStoredLanguage = (): HomeLanguage => {
-  if (typeof window === 'undefined') return DEFAULT_HOME_LANGUAGE;
+const readStoredLanguage = (): AppLanguage => {
+  if (typeof window === 'undefined') return DEFAULT_APP_LANGUAGE;
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEYS.LANGUAGE);
-    if (!raw) return DEFAULT_HOME_LANGUAGE;
+    if (!raw) return DEFAULT_APP_LANGUAGE;
 
     try {
       return normalizeLanguage(JSON.parse(raw));
@@ -74,7 +76,7 @@ const readStoredLanguage = (): HomeLanguage => {
       return normalizeLanguage(raw);
     }
   } catch {
-    return DEFAULT_HOME_LANGUAGE;
+    return DEFAULT_APP_LANGUAGE;
   }
 };
 
@@ -98,8 +100,8 @@ const upsertMetaTag = (
   tag.setAttribute('content', content);
 };
 
-const applyHomepageMetadata = (language: HomeLanguage): void => {
-  const messages = HOME_MESSAGES[language];
+const applyHomepageMetadata = (language: AppLanguage): void => {
+  const messages = APP_MESSAGES[language];
 
   document.title = messages['meta.title'];
 
@@ -112,15 +114,21 @@ const applyHomepageMetadata = (language: HomeLanguage): void => {
   upsertMetaTag('name', 'twitter:description', messages['meta.description']);
 };
 
-export function HomeLanguageProvider({ children }: { children: ReactNode }) {
+/**
+ * Application-level language provider. One state instance lives at the app
+ * root and is shared by the Homepage, Settings, Progress and History pages
+ * (plus the navigation chrome), so switching once updates every screen
+ * immediately and survives refresh via localStorage.
+ */
+export function LanguageProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [language, setLanguageState] =
-    useState<HomeLanguage>(readStoredLanguage);
+    useState<AppLanguage>(readStoredLanguage);
 
   const isHomepage = isHomepagePath(location.pathname);
 
-  const setLanguage = useCallback((nextLanguage: HomeLanguage) => {
-    if (!isHomeLanguage(nextLanguage)) return;
+  const setLanguage = useCallback((nextLanguage: AppLanguage) => {
+    if (!isAppLanguage(nextLanguage)) return;
 
     setLanguageState(nextLanguage);
     StorageUtils.set(STORAGE_KEYS.LANGUAGE, nextLanguage);
@@ -138,56 +146,45 @@ export function HomeLanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: HomeMessageKey, values?: MessageValues): string => {
-      const activeLanguage = isHomepage ? language : DEFAULT_HOME_LANGUAGE;
+    (key: AppMessageKey, values?: MessageValues): string => {
       const template =
-        HOME_MESSAGES[activeLanguage][key] ??
-        HOME_MESSAGES[DEFAULT_HOME_LANGUAGE][key] ??
+        APP_MESSAGES[language][key] ??
+        APP_MESSAGES[DEFAULT_APP_LANGUAGE][key] ??
         key;
 
       return formatMessage(template, values);
     },
-    [isHomepage, language]
+    [language]
   );
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
-    const root = document.documentElement;
+    // The document language always reflects the active preference.
+    document.documentElement.lang = language;
 
-    if (!isHomepage) {
-      // Other routes are Bengali-only in this phase; keep the document honest.
-      root.lang = DEFAULT_HOME_LANGUAGE;
-      return;
+    if (isHomepage) {
+      applyHomepageMetadata(language);
     }
-
-    root.lang = language;
-    applyHomepageMetadata(language);
-
-    return () => {
-      root.lang = DEFAULT_HOME_LANGUAGE;
-    };
   }, [isHomepage, language]);
 
-  const value = useMemo<HomeLanguageContextValue>(
+  const value = useMemo<LanguageContextValue>(
     () => ({ language, setLanguage, t, isHomepage }),
     [language, setLanguage, t, isHomepage]
   );
 
   return (
-    <HomeLanguageContext.Provider value={value}>
+    <LanguageContext.Provider value={value}>
       {children}
-    </HomeLanguageContext.Provider>
+    </LanguageContext.Provider>
   );
 }
 
-export const useHomeLanguage = (): HomeLanguageContextValue => {
-  const context = useContext(HomeLanguageContext);
+export const useLanguage = (): LanguageContextValue => {
+  const context = useContext(LanguageContext);
 
   if (!context) {
-    throw new Error(
-      'useHomeLanguage must be used within a HomeLanguageProvider'
-    );
+    throw new Error('useLanguage must be used within a LanguageProvider');
   }
 
   return context;

@@ -2,9 +2,8 @@ import React, { memo } from 'react';
 import { Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { HistoryItem } from '../types/history';
-
-const toBanglaDigit = (s: number | string): string => 
-  String(s).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { LOCALE_BY_LANGUAGE, localizeDigits } from '@/shared/i18n/messages';
 
 interface Props {
   item: HistoryItem;
@@ -12,34 +11,55 @@ interface Props {
 
 export const HistoryCard: React.FC<Props> = memo(({ item }) => {
   const navigate = useNavigate();
-  const dateStr = item.submitted_at || item.created_at || item.taken_at || new Date().toISOString();
+  const { language, t } = useLanguage();
+
+  const dateStr = item.submitted_at || item.created_at || item.taken_at || '';
+  const parsedDate = dateStr ? new Date(dateStr) : null;
+  const hasValidDate = !!parsedDate && !Number.isNaN(parsedDate.getTime());
+
+  const title =
+    item.details_json?.exam_title?.trim() || t('history.cardFallbackTitle');
+
+  const hasTotal = Number(item.total_marks) > 0;
+  const percentage = hasTotal
+    ? Math.round((Number(item.score) / Number(item.total_marks)) * 100)
+    : null;
 
   return (
     <div className="bg-card-bg border border-card-border p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow flex justify-between items-center group">
       <div className="flex-1 overflow-hidden pr-4">
         <h3 className="text-text-primary text-lg font-bold mb-1 truncate">
-          {item.details_json?.exam_title || "মডেল টেস্ট"}
+          {title}
         </h3>
-        <div className="text-text-secondary flex items-center text-sm space-x-3">
-          <span className="flex items-center">
-            <Clock className="w-3 h-3 mr-1 shrink-0"/> 
-            {new Date(dateStr).toLocaleDateString('bn-BD')}
-          </span>
+        <div className="text-text-secondary flex items-center flex-wrap gap-x-3 gap-y-1 text-sm">
+          {hasValidDate && (
+            <span className="flex items-center">
+              <Clock className="w-3 h-3 mr-1 shrink-0" aria-hidden="true" />
+              {parsedDate!.toLocaleDateString(LOCALE_BY_LANGUAGE[language])}
+            </span>
+          )}
+          {percentage !== null && (
+            <span className="rounded-full bg-badge-bg px-2 py-0.5 text-xs font-semibold text-badge-text">
+              {t('history.cardPercent', {
+                percent: localizeDigits(percentage, language),
+              })}
+            </span>
+          )}
         </div>
       </div>
       <div className="text-right shrink-0">
         <div className="text-primary text-2xl font-bold">
-          {toBanglaDigit(item.score)}
+          {localizeDigits(item.score, language)}
           <span className="text-text-secondary text-sm ml-1">
-            /{toBanglaDigit(item.total_marks)}
+            /{localizeDigits(item.total_marks, language)}
           </span>
         </div>
         <button 
           onClick={() => navigate(`/exam/analysis/${item.id}`, { state: item })}
           className="text-primary text-xs hover:underline mt-1 transition-colors hover:opacity-80 active:scale-95" 
-          aria-label="বিস্তারিত দেখুন"
+          aria-label={t('history.cardDetails')}
         >
-          বিস্তারিত দেখুন
+          {t('history.cardDetails')}
         </button>
       </div>
     </div>

@@ -9,10 +9,15 @@ import { SubjectReportSection } from '../components/SubjectReportSection';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
 
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
-const ProgressSkeleton: React.FC = () => {
+const ProgressSkeleton: React.FC<{ label: string }> = ({ label }) => {
   return (
-    <div className="min-h-screen font-['Hind_Siliguri'] px-4 pt-4 pb-20 flex flex-col gap-4 bg-app text-text-primary">
+    <div
+      role="status"
+      aria-label={label}
+      className="min-h-screen px-4 pt-4 pb-20 flex flex-col gap-4 bg-app text-text-primary"
+    >
       <div className="rounded-2xl p-4 flex items-center gap-4 shadow-sm animate-pulse bg-card-bg border border-card-border">
         <div className="w-16 h-16 rounded-full shrink-0 bg-secondary" />
         <div className="flex-col space-y-2 flex-1">
@@ -43,36 +48,53 @@ const ProgressSkeleton: React.FC = () => {
 };
 
 const Progress: React.FC = () => {
-  const { data, isPending, isError } = useProgressData();
+  const { data, isPending, isError, refetch } = useProgressData();
+  const { language, t } = useLanguage();
+
+  const textFontClass =
+    language === 'bn' ? "font-['Hind_Siliguri']" : 'font-sans';
 
   if (isPending && !data) {
-    return <ProgressSkeleton />;
+    return <ProgressSkeleton label={t('progress.loadingLabel')} />;
   }
 
   if (isError && !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 font-['Hind_Siliguri'] bg-app text-text-primary">
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center gap-4 p-4 bg-app text-text-primary ${textFontClass}`}
+      >
         <EmptyState
-          title="ডেটা লোড করতে সমস্যা হয়েছে!"
-          message="দয়া করে আবার চেষ্টা করুন অথবা ইন্টারনেট সংযোগ চেক করুন।"
+          title={t('progress.errorTitle')}
+          message={t('progress.errorMessage')}
         />
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-app"
+        >
+          {t('progress.retry')}
+        </button>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 font-['Hind_Siliguri'] bg-app text-text-primary">
+      <div
+        className={`min-h-screen flex items-center justify-center p-4 bg-app text-text-primary ${textFontClass}`}
+      >
         <EmptyState
-          title="কোনো প্রগ্রেস ডেটা পাওয়া যায়নি!"
-          message="আপনি এখনো কোনো পরীক্ষায় অংশগ্রহণ করেননি।"
+          title={t('progress.emptyTitle')}
+          message={t('progress.emptyMessage')}
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen font-['Hind_Siliguri'] pb-24 flex flex-col gap-6 animate-in fade-in duration-500 px-4 pt-4 bg-app text-text-primary">
+    <div
+      className={`min-h-screen pb-24 flex flex-col gap-6 animate-in fade-in duration-500 px-4 pt-4 bg-app text-text-primary ${textFontClass}`}
+    >
       <ProgressHeader user={data.user} />
       <MetricsGrid metrics={data.metrics} />
       <ActivityHeatmap data={data.activityHeatmap} />

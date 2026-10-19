@@ -1,14 +1,14 @@
 import React, { memo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Trophy, FileEdit, PieChart, User as UserIcon, LogOut, History } from 'lucide-react';
+import { Home, Trophy, FileEdit, PieChart, User as UserIcon, LogOut, History, Settings as SettingsIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { supabase } from '@/shared/lib/supabase';
 
 export const Sidebar: React.FC = memo(() => {
   const { user, signOut } = useAuth();
-  const { t } = useHomeLanguage();
+  const { t } = useLanguage();
 
   const { data: profileData } = useQuery({
     queryKey: ['profile', user?.id],
@@ -38,8 +38,7 @@ export const Sidebar: React.FC = memo(() => {
   const fullNameStr = extractName(profileData) || extractName(user?.user_metadata) || extractName(user?.user_metadata?.full_name) || t('home.studentFallback');
   const initialStr = fullNameStr ? fullNameStr.charAt(0).toUpperCase() : 'S';
 
-  // `t` falls back to Bengali outside the homepage, so this chrome is only
-  // localized while the homepage language is active.
+  // Nav labels always follow the active application language.
   const navItems = [
     { label: t('nav.home'), path: '/dashboard/home', icon: Home },
     { label: t('nav.modelTest'), path: '/exam/selection', icon: FileEdit },
@@ -47,6 +46,7 @@ export const Sidebar: React.FC = memo(() => {
     { label: t('nav.leaderboard'), path: '/dashboard/leaderboard', icon: Trophy },
     { label: t('nav.history'), path: '/history', icon: History },
     { label: t('nav.profile'), path: '/profile', icon: UserIcon },
+    { label: t('nav.settings'), path: '/settings', icon: SettingsIcon },
   ];
 
   return (

@@ -8,16 +8,19 @@ import {
   Tooltip 
 } from 'recharts';
 import { RadarData } from '../../types/progress';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface SubjectRadarProps {
   data: RadarData[];
 }
 
 export const SubjectRadar: React.FC<SubjectRadarProps> = React.memo(({ data }) => {
+  const { t } = useLanguage();
+
   if (!data || data.length === 0) {
     return (
       <div className="h-[300px] w-full flex items-center justify-center text-sm text-text-secondary">
-        স্কিল ম্যাপিং এর জন্য ডেটা নেই।
+        {t('progress.radarEmpty')}
       </div>
     );
   }
@@ -32,7 +35,7 @@ export const SubjectRadar: React.FC<SubjectRadarProps> = React.memo(({ data }) =
             tick={{ fill: 'currentColor', fillOpacity: 0.6, fontSize: 12 }} 
           />
           <Radar
-            name="Score"
+            name={t('progress.chartScore')}
             dataKey="A"
             stroke="currentColor"
             strokeWidth={2}
@@ -54,7 +57,7 @@ export const SubjectRadar: React.FC<SubjectRadarProps> = React.memo(({ data }) =
       
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
         <span className="text-[10px] font-bold opacity-50 text-text-primary">
-          MASTERY
+          {t('progress.radarMastery')}
         </span>
       </div>
     </div>

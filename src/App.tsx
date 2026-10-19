@@ -7,7 +7,7 @@ import { requestNotificationPermission, listenForForegroundMessages } from '@/fe
 
 // Layout & Guards
 import { SystemGuard } from '@/shared/components/layout/SystemGuard';
-import { HomeLanguageProvider } from '@/shared/i18n/HomeLanguageProvider';
+import { LanguageProvider } from '@/shared/i18n/LanguageProvider';
 
 // Routes
 import AppRoutes from '@/app/routes/AppRoutes';
@@ -44,11 +44,11 @@ const App: React.FC = () => {
           },
         }}
       />
-      <HomeLanguageProvider>
+      <LanguageProvider>
         <SystemGuard>
           <AppRoutes />
         </SystemGuard>
-      </HomeLanguageProvider>
+      </LanguageProvider>
     </>
   );
 };

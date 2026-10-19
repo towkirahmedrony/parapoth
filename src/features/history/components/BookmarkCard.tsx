@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Trash2, Bookmark } from 'lucide-react';
 import { BookmarkItem } from '../types/history';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface Props {
   item: BookmarkItem;
@@ -13,12 +14,13 @@ const getQuestionData = (questionsData: any) => {
 };
 
 export const BookmarkCard: React.FC<Props> = memo(({ item, onDelete }) => {
+  const { t } = useLanguage();
   const qData = getQuestionData(item.questions);
 
   const renderBody = (body: any): string => {
-    if (!body) return "প্রশ্ন লোড হয়নি";
+    if (!body) return t('history.questionNotLoaded');
     if (typeof body === 'string') return body;
-    return body?.bn || body?.text || body?.en || body?.content || "প্রশ্ন লোড হয়নি";
+    return body?.bn || body?.text || body?.en || body?.content || t('history.questionNotLoaded');
   };
 
   return (
@@ -30,17 +32,19 @@ export const BookmarkCard: React.FC<Props> = memo(({ item, onDelete }) => {
         />
         {item.note && (
           <div className="bg-surface border border-border-color text-text-secondary text-sm flex items-center p-2 rounded w-fit mt-2">
-            <Bookmark className="w-3 h-3 mr-2 shrink-0 text-text-secondary" /> 
+            <Bookmark className="w-3 h-3 mr-2 shrink-0 text-text-secondary" aria-hidden="true" /> 
             <span className="truncate max-w-[200px] sm:max-w-xs">{item.note}</span>
           </div>
         )}
       </div>
       <button 
+        type="button"
         onClick={() => onDelete(item.id)}
-        aria-label="Delete bookmark"
+        aria-label={t('history.deleteBookmarkAria')}
+        title={t('history.deleteBookmarkAria')}
         className="text-accent bg-surface border border-border-color hover:bg-surface-elevated h-10 w-10 shrink-0 rounded-full transition-colors flex items-center justify-center active:scale-95"
       >
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Crown } from 'lucide-react';
-import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface Banner {
   id: string;
@@ -20,7 +20,7 @@ interface DynamicBannerProps {
 
 const DynamicBanner: React.FC<DynamicBannerProps> = ({ banners, isLoading }) => {
   const navigate = useNavigate();
-  const { t } = useHomeLanguage();
+  const { t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);

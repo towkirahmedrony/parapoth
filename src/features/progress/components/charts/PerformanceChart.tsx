@@ -9,6 +9,8 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { ChartData } from '../../types/progress';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 interface PerformanceChartProps {
   data: ChartData[];
@@ -22,6 +24,8 @@ interface CustomTooltipProps {
 }
 
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  const { language, t } = useLanguage();
+
   if (active && payload && payload.length) {
     return (
       <div className="p-3 rounded-lg shadow-xl bg-card-bg border border-border-color">
@@ -29,7 +33,8 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
           {label}
         </p>
         <p className="font-bold text-sm text-text-primary">
-          স্কোর: {payload[0].value}%
+          {t('progress.chartScore')}:{' '}
+          {localizeDigits(payload[0].value, language)}%
         </p>
       </div>
     );
@@ -38,10 +43,12 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 };
 
 export const PerformanceChart: React.FC<PerformanceChartProps> = React.memo(({ data }) => {
+  const { t } = useLanguage();
+
   if (!data || data.length === 0) {
     return (
       <div className="h-[300px] w-full flex items-center justify-center text-sm text-text-secondary">
-        পর্যাপ্ত ডেটা নেই।
+        {t('progress.chartEmpty')}
       </div>
     );
   }

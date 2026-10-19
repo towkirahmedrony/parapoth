@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Trash2, XCircle, CheckCircle } from 'lucide-react';
 import { MistakeItem } from '../types/history';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface Props {
   item: MistakeItem;
@@ -16,11 +17,13 @@ const safeParse = (data: any) => {
 };
 
 export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
+  const { t } = useLanguage();
+
   const rawQuestions = item.questions;
   const qData = Array.isArray(rawQuestions) ? rawQuestions[0] : rawQuestions;
 
   const bodyData = safeParse(qData?.body);
-  let bodyHtml = "প্রশ্ন লোড হয়নি বা মুছে ফেলা হয়েছে";
+  let bodyHtml = t('history.questionMissing');
   if (bodyData) {
     if (typeof bodyData === 'string') bodyHtml = bodyData;
     else if (bodyData.bn) bodyHtml = bodyData.bn;
@@ -31,11 +34,11 @@ export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
   const optionsData = safeParse(qData?.options);
   const optionsArray = Array.isArray(optionsData) ? optionsData : [];
 
-  let userAns = "উত্তর পাওয়া যায়নি";
+  let userAns = t('history.answerMissing');
   const selectedData = safeParse(item.selected_option);
   
   if (typeof selectedData === 'object' && selectedData !== null) {
-      userAns = selectedData.bn || selectedData.text || selectedData.en || "অজানা উত্তর";
+      userAns = selectedData.bn || selectedData.text || selectedData.en || t('history.unknownAnswer');
   } else if (optionsArray.length > 0 && selectedData !== null) {
       const matchedOpt = optionsArray.find((opt: any) => 
           String(opt?.id) === String(selectedData) || 
@@ -50,14 +53,14 @@ export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
               const opt = optionsArray[idx];
               userAns = opt.bn || opt.text || opt.en || String(selectedData);
           } else {
-              userAns = String(selectedData) === '[object Object]' ? 'ডেটাবেজে ভুল সেভ হয়েছে' : String(selectedData);
+              userAns = String(selectedData) === '[object Object]' ? t('history.saveError') : String(selectedData);
           }
       }
   } else {
-      userAns = String(item.selected_option) === '[object Object]' ? 'ডেটাবেজে ভুল সেভ হয়েছে' : String(item.selected_option);
+      userAns = String(item.selected_option) === '[object Object]' ? t('history.saveError') : String(item.selected_option);
   }
 
-  let correctAns = "সঠিক উত্তর সেট করা নেই";
+  let correctAns = t('history.correctNotSet');
   if (optionsArray.length > 0) {
       const correctOpt = optionsArray.find((opt: any) => 
           opt?.isCorrect === true || 
@@ -66,7 +69,7 @@ export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
           String(opt?.isCorrect) === 'true'
       );
       if (correctOpt) {
-          correctAns = correctOpt.bn || correctOpt.text || correctOpt.en || "অজানা";
+          correctAns = correctOpt.bn || correctOpt.text || correctOpt.en || t('history.unknown');
       }
   }
 
@@ -74,13 +77,16 @@ export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
     <div className="bg-card-bg border border-card-border p-5 rounded-xl shadow-sm relative group transition-all">
       <div className="flex justify-between items-start mb-3">
         <span className="bg-badge-bg text-badge-text px-2 py-1 rounded text-xs font-bold">
-          ভুল উত্তর
+          {t('history.mistakeBadge')}
         </span>
         <button 
+          type="button"
           onClick={() => onDelete(item.id)}
+          aria-label={t('history.deleteMistakeAria')}
+          title={t('history.deleteMistakeAria')}
           className="bg-surface border border-border-color text-accent hover:bg-surface-elevated p-2 rounded-full transition-colors flex items-center justify-center active:scale-95"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
       
@@ -92,7 +98,7 @@ export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
         <div className="bg-surface border border-border-color p-3 rounded-lg">
           <span className="text-accent flex items-center mb-1 font-semibold">
-            <XCircle className="w-3 h-3 mr-1 shrink-0"/> আপনার উত্তর
+            <XCircle className="w-3 h-3 mr-1 shrink-0" aria-hidden="true" /> {t('history.mistakeYourAnswer')}
           </span>
           <p className="text-text-secondary">
             {userAns}
@@ -100,7 +106,7 @@ export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
         </div>
         <div className="bg-surface border border-border-color p-3 rounded-lg">
           <span className="text-text-primary flex items-center mb-1 font-semibold">
-            <CheckCircle className="w-3 h-3 mr-1 shrink-0"/> সঠিক উত্তর
+            <CheckCircle className="w-3 h-3 mr-1 shrink-0" aria-hidden="true" /> {t('history.mistakeCorrectAnswer')}
           </span>
           <p className="text-text-secondary">
             {correctAns}

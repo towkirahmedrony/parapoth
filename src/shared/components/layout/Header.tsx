@@ -3,14 +3,14 @@ import { Bell, Flame, Star } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { supabase } from '../../lib/supabase';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { t } = useHomeLanguage();
+  const { t } = useLanguage();
 
   const isDashboardHome =
     location.pathname === '/dashboard' ||

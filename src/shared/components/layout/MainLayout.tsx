@@ -5,7 +5,7 @@ import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import { requestNotificationPermission } from '@/features/notifications/services/notificationService';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 const SITE_TITLE = 'Porokh — SSC HSC MCQ, Model Test & Exam Preparation';
 
@@ -87,7 +87,7 @@ const updateSeoMeta = (pathname: string) => {
 export const MainLayout: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const { t } = useHomeLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     updateSeoMeta(location.pathname);

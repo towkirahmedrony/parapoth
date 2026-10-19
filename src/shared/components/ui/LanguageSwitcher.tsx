@@ -1,24 +1,21 @@
 import React from 'react';
-import { useHomeLanguage } from '@/shared/i18n/HomeLanguageProvider';
-import { HOME_LANGUAGES, type HomeLanguage } from '@/shared/i18n/homeMessages';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { APP_LANGUAGES, LANGUAGE_OPTION_LABELS } from '@/shared/i18n/messages';
 
-const OPTION_LABELS: Record<HomeLanguage, string> = {
-  bn: 'বাংলা',
-  en: 'English',
-};
-
-interface HomeLanguageSwitcherProps {
+interface LanguageSwitcherProps {
   className?: string;
 }
 
 /**
- * Homepage language switch. Native buttons keep it keyboard accessible and
- * `aria-pressed` exposes the current selection to assistive technology.
+ * Language preference switch (বাংলা / English). Native buttons keep it
+ * keyboard accessible and `aria-pressed` exposes the current selection to
+ * assistive technology. The selection is applied immediately and persisted
+ * through the app-level language preference (no page reload required).
  */
-const HomeLanguageSwitcher: React.FC<HomeLanguageSwitcherProps> = ({
+const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   className = '',
 }) => {
-  const { language, setLanguage, t } = useHomeLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <div
@@ -26,7 +23,7 @@ const HomeLanguageSwitcher: React.FC<HomeLanguageSwitcherProps> = ({
       aria-label={t('language.groupLabel')}
       className={`inline-flex shrink-0 items-center rounded-full border border-border-color bg-surface-elevated p-0.5 ${className}`}
     >
-      {HOME_LANGUAGES.map((option) => {
+      {APP_LANGUAGES.map((option) => {
         const isActive = language === option;
 
         return (
@@ -36,6 +33,7 @@ const HomeLanguageSwitcher: React.FC<HomeLanguageSwitcherProps> = ({
             lang={option}
             onClick={() => setLanguage(option)}
             aria-pressed={isActive}
+            title={LANGUAGE_OPTION_LABELS[option]}
             className={`rounded-full px-2.5 py-1.5 text-[11px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card-bg sm:px-3 sm:text-xs ${
               option === 'bn' ? "font-['Hind_Siliguri']" : 'font-sans'
             } ${
@@ -44,7 +42,7 @@ const HomeLanguageSwitcher: React.FC<HomeLanguageSwitcherProps> = ({
                 : 'text-text-secondary hover:bg-secondary hover:text-text-primary'
             }`}
           >
-            {OPTION_LABELS[option]}
+            {LANGUAGE_OPTION_LABELS[option]}
           </button>
         );
       })}
@@ -52,4 +50,4 @@ const HomeLanguageSwitcher: React.FC<HomeLanguageSwitcherProps> = ({
   );
 };
 
-export default HomeLanguageSwitcher;
+export default LanguageSwitcher;

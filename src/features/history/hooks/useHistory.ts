@@ -7,7 +7,12 @@ export const useHistory = (activeTab: TabType) => {
   const queryClient = useQueryClient();
 
   // 1. History Query
-  const { data: historyData = [], isLoading: isHistoryLoading } = useQuery({
+  const {
+    data: historyData = [],
+    isLoading: isHistoryLoading,
+    isError: isHistoryError,
+    refetch: refetchHistory,
+  } = useQuery({
     queryKey: ['history', 'exams'],
     queryFn: async () => {
       const { data } = await apiClient.get('/history/exams');
@@ -18,7 +23,12 @@ export const useHistory = (activeTab: TabType) => {
   });
 
   // 2. Mistakes Query
-  const { data: mistakeData = [], isLoading: isMistakeLoading } = useQuery({
+  const {
+    data: mistakeData = [],
+    isLoading: isMistakeLoading,
+    isError: isMistakeError,
+    refetch: refetchMistakes,
+  } = useQuery({
     queryKey: ['history', 'mistakes'],
     queryFn: async () => {
       const { data } = await apiClient.get('/history/mistakes');
@@ -29,7 +39,12 @@ export const useHistory = (activeTab: TabType) => {
   });
 
   // 3. Bookmarks Query
-  const { data: bookmarkData = [], isLoading: isBookmarkLoading } = useQuery({
+  const {
+    data: bookmarkData = [],
+    isLoading: isBookmarkLoading,
+    isError: isBookmarkError,
+    refetch: refetchBookmarks,
+  } = useQuery({
     queryKey: ['history', 'bookmarks'],
     queryFn: async () => {
       const { data } = await apiClient.get('/history/bookmarks');
@@ -70,6 +85,18 @@ export const useHistory = (activeTab: TabType) => {
     (activeTab === 'mistakes' && isMistakeLoading) ||
     (activeTab === 'bookmarks' && isBookmarkLoading);
 
+  // Combined Error / Refetch for the tab that is currently visible
+  const isError =
+    (activeTab === 'history' && isHistoryError) ||
+    (activeTab === 'mistakes' && isMistakeError) ||
+    (activeTab === 'bookmarks' && isBookmarkError);
+
+  const refetch = useCallback(() => {
+    if (activeTab === 'history') return refetchHistory();
+    if (activeTab === 'mistakes') return refetchMistakes();
+    return refetchBookmarks();
+  }, [activeTab, refetchHistory, refetchMistakes, refetchBookmarks]);
+
   // Wrappers to match the existing API signature expected by History.tsx
   const deleteMistake = useCallback(async (id: string) => {
     try {
@@ -93,6 +120,8 @@ export const useHistory = (activeTab: TabType) => {
 
   return {
     isLoading,
+    isError,
+    refetch,
     historyData,
     mistakeData,
     bookmarkData,
