@@ -3,6 +3,7 @@ import {
   Award,
   CalendarDays,
   Clock3,
+  Landmark,
   ListChecks,
   PlayCircle,
 } from 'lucide-react';
@@ -14,6 +15,7 @@ import { formatAdmissionCount } from '../lib/admissionLabels';
 interface AdmissionExamCardProps {
   exam: AdmissionExam;
   onStart: (examId: string) => void;
+  universityName?: string | null;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -26,6 +28,7 @@ const STATUS_STYLES: Record<string, string> = {
 export const AdmissionExamCard: React.FC<AdmissionExamCardProps> = ({
   exam,
   onStart,
+  universityName,
 }) => {
   const { t, language } = useLanguage();
   const availability = getAdmissionExamAvailability(exam);
@@ -75,6 +78,13 @@ export const AdmissionExamCard: React.FC<AdmissionExamCardProps> = ({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-text-secondary">
+        {universityName && (
+          <span className="inline-flex items-center gap-1.5">
+            <Landmark className="h-3.5 w-3.5" aria-hidden="true" />
+            {universityName}
+          </span>
+        )}
+
         {exam.year !== null && (
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />

@@ -225,6 +225,7 @@ const AdmissionExamListPage: React.FC = () => {
             <AdmissionExamCard
               key={exam.id}
               exam={exam}
+              universityName={universityName}
               onStart={(examId) => navigate(`/admission/exam/${examId}`)}
             />
           ))}

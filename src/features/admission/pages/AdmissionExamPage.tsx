@@ -337,6 +337,7 @@ const AdmissionExamPage: React.FC = () => {
               onOptionSelect={(optionId) =>
                 handleSelectOption(currentQuestion.id, optionId)
               }
+              imageAlt={t('admission.questionImageAlt')}
             />
 
             <div className="mt-4 flex items-center justify-between gap-3">

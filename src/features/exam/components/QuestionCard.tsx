@@ -7,12 +7,15 @@ interface QuestionCardProps {
   question: Question;
   selectedOptionId?: string | null;
   onOptionSelect: (optionId: string) => void;
+  /** Optional localized alt text; existing callers keep the English default. */
+  imageAlt?: string;
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = memo(({
   question,
   selectedOptionId,
   onOptionSelect,
+  imageAlt = 'Question',
 }) => {
   
   let questionText = question.text_bn || question.text || "";
@@ -64,7 +67,7 @@ const QuestionCard: React.FC<QuestionCardProps> = memo(({
             {questionImageUrl && (
               <img
                 src={questionImageUrl}
-                alt="Question"
+                alt={imageAlt}
                 className="max-h-72 w-full rounded-xl border border-border-color bg-surface object-contain"
               />
             )}
