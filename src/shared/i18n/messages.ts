@@ -227,6 +227,10 @@ const bn = {
   'history.saveError': 'ডেটাবেজে ভুল সেভ হয়েছে',
   'history.correctNotSet': 'সঠিক উত্তর সেট করা নেই',
   'history.unknown': 'অজানা',
+
+  'exam.submitFailed': 'পরীক্ষা জমা দেওয়া যায়নি। আপনার উত্তরগুলো সংরক্ষিত আছে, আবার চেষ্টা করুন।',
+  'exam.submitNetworkFailed':
+    'সার্ভারের সাথে সংযোগ করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।',
 } as const;
 
 export type AppMessageKey = keyof typeof bn;
@@ -419,6 +423,11 @@ const en: Record<AppMessageKey, string> = {
   'history.saveError': 'Saved incorrectly in database',
   'history.correctNotSet': 'Correct answer not set',
   'history.unknown': 'Unknown',
+
+  'exam.submitFailed':
+    'Could not submit the exam. Your answers are still here — please try again.',
+  'exam.submitNetworkFailed':
+    'Could not reach the server. Check your connection and try again.',
 };
 
 export const APP_MESSAGES: Record<AppLanguage, Record<AppMessageKey, string>> =

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/features/exam/utils/examSubmission.test.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "bump:patch": "npm version patch",

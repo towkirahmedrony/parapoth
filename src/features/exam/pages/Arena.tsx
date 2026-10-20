@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, memo, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import LiveQuestionCard from '../components/LiveQuestionCard';
 import ExamTimer from '../components/ExamTimer';
 import ExamHeader from '../components/ExamHeader';
@@ -8,10 +8,19 @@ import ExamHeader from '../components/ExamHeader';
 import ReportModal, { ReportPayload as ModalReportPayload } from '@/shared/components/feedback/ReportModal';
 import ConfirmModal from '@/shared/components/feedback/ConfirmModal';
 import { apiClient } from '@/shared/lib/apiClient';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import toast from 'react-hot-toast';
 import { ExamConfig, ExamQuestion } from '../types/exam';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
+import {
+  buildSubmissionStorageKey,
+  buildSubmitPayload,
+  clearSubmissionId,
+  extractSubmittedResultId,
+  getOrCreateSubmissionId,
+  resolveSubmitErrorMessage,
+} from '../utils/examSubmission';
 
 const defaultConfig: ExamConfig = {
   questionCount: 10,
@@ -58,6 +67,8 @@ const Arena: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { subjectSlug } = useParams<{ subjectSlug: string }>();
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
 
   const passedConfig = location.state?.config as ExtendedExamConfig | undefined;
   const config = useMemo<ExtendedExamConfig>(() => {
@@ -79,6 +90,18 @@ const Arena: React.FC = () => {
   const hasSubmittedRef = useRef(false);
   const targetEndTimeRef = useRef<number | null>(null);
   const timeLeftRef = useRef(initialDurationSeconds);
+
+  // One idempotency key per examination session. It survives a reload during a
+  // slow submission, so a retry is recognised by the backend as the same
+  // submission instead of producing a second result.
+  const submissionStorageKey = useMemo(
+    () =>
+      buildSubmissionStorageKey(
+        `${subjectSlug || 'all'}-${config.questionCount}-${config.duration}`
+      ),
+    [subjectSlug, config.questionCount, config.duration]
+  );
+  const [submissionId] = useState(() => getOrCreateSubmissionId(submissionStorageKey));
 
   const {
     data: questions = [],
@@ -128,33 +151,37 @@ const Arena: React.FC = () => {
   }, [isLoading, questions.length, initialDurationSeconds]);
 
   const submitExamMutation = useMutation({
-    mutationFn: async (payload: {
-      exam_id?: string;
-      session_id?: string;
-      answers: Record<string, string>;
-      time_taken: number;
-      question_ids: string[];
-    }) => {
+    mutationFn: async (payload: ReturnType<typeof buildSubmitPayload>) => {
       const res = await apiClient.post<SubmitExamResponse>(SUBMIT_ENDPOINT, payload);
-      return res.data;
-    },
-    onSuccess: (response) => {
-      const resultData = response?.data || response;
 
-      if (resultData?.id) {
-        navigate(`/exam/analysis/${resultData.id}`, {
-          state: resultData,
-          replace: true,
-        });
-      } else {
-        navigate('/exam/analysis', {
-          state: resultData,
-          replace: true,
-        });
-      }
+      // Validate the response before leaving the exam page. Without a persisted
+      // result id there is nothing to navigate to, and a retry is safe because
+      // the request carries the same submission id.
+      const resultId = extractSubmittedResultId(res.data);
+      const result = res.data?.data ?? res.data;
+
+      return { resultId, result };
     },
-    onError: () => {
-      toast.error('পরীক্ষা সাবমিট করতে সমস্যা হয়েছে!');
+    onSuccess: ({ resultId, result }) => {
+      clearSubmissionId(submissionStorageKey);
+      queryClient.invalidateQueries({ queryKey: ['history'] });
+
+      // Navigate only after the backend confirmed persistence.
+      navigate(`/exam/analysis/${resultId}`, {
+        state: result,
+        replace: true,
+      });
+    },
+    onError: (error) => {
+      toast.error(
+        resolveSubmitErrorMessage(error, {
+          generic: t('exam.submitFailed'),
+          network: t('exam.submitNetworkFailed'),
+        })
+      );
+
+      // Keep the student on the page with their answers intact so the
+      // submission can be retried.
       hasSubmittedRef.current = false;
     },
   });
@@ -169,16 +196,18 @@ const Arena: React.FC = () => {
     const timeTaken = initialDurationSeconds - Math.max(0, timeLeftRef.current);
     const questionIds = questions.map((q) => q.id);
 
-    const payloadForBackend = {
-      ...(examId ? { exam_id: examId } : {}),
-      ...(sessionId ? { session_id: sessionId } : {}),
+    const payloadForBackend = buildSubmitPayload({
+      examId,
+      // `session_id` is the backend's idempotency key, so it must identify this
+      // submission attempt rather than describe the exam.
+      sessionId: submissionId,
       answers: userAnswers,
-      time_taken: timeTaken,
-      question_ids: questionIds,
-    };
+      questionIds,
+      timeTaken,
+    });
 
     submitExam(payloadForBackend);
-  }, [questions, userAnswers, initialDurationSeconds, examId, sessionId, submitExam]);
+  }, [questions, userAnswers, initialDurationSeconds, examId, submissionId, submitExam]);
 
   useEffect(() => {
     if (timeLeft <= 0 && questions.length > 0 && !hasSubmittedRef.current) {
