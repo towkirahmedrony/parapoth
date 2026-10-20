@@ -56,7 +56,7 @@ const getGreetingKey = (hour: number): AppMessageKey => {
 
 const Home: React.FC = memo(() => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading, profileLoading } = useAuth();
   const { features, loading: featuresLoading } = useHomeGrids();
   const { language, t } = useLanguage();
 
@@ -66,24 +66,6 @@ const Home: React.FC = memo(() => {
   const metadataName =
     normalizeName(user?.user_metadata?.full_name) ||
     normalizeName(user?.user_metadata?.name);
-
-  const { data: dbProfileName, isLoading } = useQuery({
-    queryKey: ['profiles', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, username')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      return normalizeName(data?.full_name) || normalizeName(data?.username);
-    },
-    enabled: !!user?.id,
-  });
 
   const { data: themeData } = useQuery({
     queryKey: ['app_configs', 'theme_config'],
@@ -115,8 +97,11 @@ const Home: React.FC = memo(() => {
     },
   });
 
-  const resolvedProfileName = dbProfileName ?? metadataName ?? null;
-  const isNameLoading = !resolvedProfileName && isLoading;
+  const resolvedProfileName =
+    normalizeName(user?.full_name) ||
+    normalizeName(user?.username) ||
+    metadataName;
+  const isNameLoading = authLoading || profileLoading;
 
   const themeConfig = sanitizeThemeConfig(themeData);
   const greetingKey = getGreetingKey(new Date().getHours());

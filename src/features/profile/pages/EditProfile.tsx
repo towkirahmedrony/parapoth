@@ -8,6 +8,7 @@ import { EDUCATION_BOARDS, CLASS_LEVELS, ACADEMIC_GROUPS } from '../utils/profil
 import apiClient from '../../../shared/lib/apiClient';
 import { supabase } from '../../../shared/lib/supabase';
 import { QUERY_KEYS } from '../../../shared/constants/storageKeys';
+import { useAuth } from '../../auth/hooks/useAuth';
 
 // Components
 import FormInputGroup from '../components/FormInputGroup';
@@ -36,6 +37,7 @@ const EditProfile: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { user: authUser, updateUserProfile } = useAuth();
 
   const [formData, setFormData] = useState<Partial<UserProfileData>>({});
 
@@ -96,6 +98,12 @@ const EditProfile: React.FC = () => {
       }
     },
     onSuccess: () => {
+      if (authUser) {
+        updateUserProfile(authUser.id, {
+          full_name: formData.full_name ?? null,
+          username: formData.username ?? null,
+        });
+      }
       const queryKey = Array.isArray(QUERY_KEYS.USER_PROFILE) ? QUERY_KEYS.USER_PROFILE : [QUERY_KEYS.USER_PROFILE];
       queryClient.invalidateQueries({ queryKey });
       navigate(-1);

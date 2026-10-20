@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/shared/lib/apiClient';
-import { TabType, HistoryItem, MistakeItem, BookmarkItem } from '../types/history';
+import { TabType, MistakeItem, BookmarkItem } from '../types/history';
+import { getExamHistory } from '../services/historyService';
 
 export const useHistory = (activeTab: TabType) => {
   const queryClient = useQueryClient();
@@ -14,10 +15,7 @@ export const useHistory = (activeTab: TabType) => {
     refetch: refetchHistory,
   } = useQuery({
     queryKey: ['history', 'exams'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/history/exams');
-      return data.data as HistoryItem[];
-    },
+    queryFn: getExamHistory,
     enabled: activeTab === 'history',
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

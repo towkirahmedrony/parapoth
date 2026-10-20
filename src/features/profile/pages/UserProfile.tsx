@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { getCurrentUserProfile } from '../services/profileService';
+import type { UserProfileData } from '../types/profile';
 import { QUERY_KEYS } from '@/shared/constants/storageKeys';
 import ProfileHeader from '../components/ProfileHeader';
 import MenuSection from '../components/MenuSection';
@@ -16,17 +17,29 @@ const getGenderText = (g?: string) => {
 };
 
 const UserProfile: React.FC = () => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // ডাটাবেজ থেকে সবসময় ফ্রেশ প্রোফাইল ডাটা ফেচ করা
   const { data: profileData } = useQuery({
-    queryKey: Array.isArray(QUERY_KEYS.USER_PROFILE) ? QUERY_KEYS.USER_PROFILE : [QUERY_KEYS.USER_PROFILE],
+    queryKey: [...QUERY_KEYS.USER_PROFILE, authUser?.id ?? null],
     queryFn: getCurrentUserProfile,
+    enabled: !authLoading && !!authUser?.id,
   });
 
-  // যদি ফ্রেশ ডাটা থাকে তবে সেটা ব্যবহার হবে, অন্যথায় authUser-এর ডাটা
-  const user: any = profileData || authUser;
+  // Never render cached profile data belonging to a different signed-in user.
+  const user: UserProfileData | null = profileData && authUser && profileData.id === authUser.id
+    ? profileData
+    : authUser
+      ? {
+          id: authUser.id,
+          full_name: authUser.full_name ?? undefined,
+          username: authUser.username ?? undefined,
+          avatar_url: authUser.avatar_url ?? undefined,
+          email: authUser.email ?? undefined,
+          user_metadata: authUser.user_metadata,
+        }
+      : null;
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-300 pb-24 bg-app text-text-primary">

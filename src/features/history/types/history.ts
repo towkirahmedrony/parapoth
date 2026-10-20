@@ -18,8 +18,12 @@ export interface QuestionOption {
 
 export interface HistoryItem {
   id: string;
+  exam_id?: string | null;
   score: number;
   total_marks: number;
+  exam_title?: string | null;
+  subject_name_en?: string | null;
+  subject_name_bn?: string | null;
   // Date fields matching database schema variations
   taken_at?: string;
   submitted_at?: string;

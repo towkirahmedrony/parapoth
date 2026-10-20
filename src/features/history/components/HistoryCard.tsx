@@ -18,7 +18,10 @@ export const HistoryCard: React.FC<Props> = memo(({ item }) => {
   const hasValidDate = !!parsedDate && !Number.isNaN(parsedDate.getTime());
 
   const title =
-    item.details_json?.exam_title?.trim() || t('history.cardFallbackTitle');
+    item.exam_title?.trim() || item.details_json?.exam_title?.trim() || t('history.cardFallbackTitle');
+  const subjectName =
+    (language === 'bn' ? item.subject_name_bn : item.subject_name_en)?.trim() ||
+    (language === 'bn' ? item.subject_name_en : item.subject_name_bn)?.trim();
 
   const hasTotal = Number(item.total_marks) > 0;
   const percentage = hasTotal
@@ -31,6 +34,11 @@ export const HistoryCard: React.FC<Props> = memo(({ item }) => {
         <h3 className="text-text-primary text-lg font-bold mb-1 truncate">
           {title}
         </h3>
+        {subjectName && (
+          <p className="text-text-secondary text-sm mb-1 truncate">
+            {subjectName}
+          </p>
+        )}
         <div className="text-text-secondary flex items-center flex-wrap gap-x-3 gap-y-1 text-sm">
           {hasValidDate && (
             <span className="flex items-center">

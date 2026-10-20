@@ -16,9 +16,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [role, setRole] = useState<string>('student');
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [profileLoading, setProfileLoading] = useState<boolean>(false);
 
   const mountedRef = useRef(true);
   const roleFetchRef = useRef(false);
+  const activeUserIdRef = useRef<string | null>(null);
 
   const enrichUserWithProfile = useCallback(async (authUser: AppUser | null) => {
     if (!authUser?.id || !mountedRef.current) return;
@@ -47,6 +49,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
     } catch (error) {
       console.warn('Profile enrichment failed:', error);
+    } finally {
+      if (mountedRef.current && activeUserIdRef.current === authUser.id) {
+        setProfileLoading(false);
+      }
     }
   }, []);
 
@@ -71,11 +77,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  const updateUserProfile = useCallback((userId: string, profile: Pick<AppUser, 'full_name' | 'username' | 'avatar_url'>) => {
+    setUser((current) => current?.id === userId ? { ...current, ...profile } : current);
+  }, []);
+
   const applySession = useCallback((currentSession: Session | null) => {
     setSession(currentSession);
+    activeUserIdRef.current = currentSession?.user.id ?? null;
 
     if (!currentSession?.user) {
       setUser(null);
+      setProfileLoading(false);
       setRole('student');
       setPermissions([]);
       setLoading(false);
@@ -89,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } as AppUser;
 
     setUser(baseUser);
+    setProfileLoading(true);
     setLoading(false);
 
     void fetchRoleData();
@@ -103,6 +116,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setSession(null);
       setUser(null);
+      activeUserIdRef.current = null;
+      setProfileLoading(false);
       setRole('student');
       setPermissions([]);
     } catch (error) {
@@ -138,6 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (error) {
         console.error('Auth initialization failed:', error);
         if (!mountedRef.current) return;
+        setProfileLoading(false);
         setLoading(false);
       }
     };
@@ -164,8 +180,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     role,
     permissions,
     loading,
+    profileLoading,
+    updateUserProfile,
     signOut
-  }), [session, user, role, permissions, loading, signOut]);
+  }), [session, user, role, permissions, loading, profileLoading, updateUserProfile, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -75,8 +75,15 @@ const History: React.FC = () => {
 
     const matched = query
       ? historyData.filter((item) => {
-          const title = (item.details_json?.exam_title || '').toLowerCase();
-          return title.includes(query);
+          const searchableText = [
+            item.exam_title,
+            item.details_json?.exam_title,
+            item.subject_name_en,
+            item.subject_name_bn,
+          ].filter((value): value is string => typeof value === 'string')
+            .join(' ')
+            .toLowerCase();
+          return searchableText.includes(query);
         })
       : historyData;
 
