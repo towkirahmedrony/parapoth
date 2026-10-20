@@ -1,12 +1,12 @@
-import React, { memo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { memo, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, GraduationCap, SunMedium, Target } from 'lucide-react';
+import { SunMedium } from 'lucide-react';
 import FeatureGrid, { ThemeConfig } from '../components/FeatureGrid';
 import DynamicBanner from '../components/DynamicBanner';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { supabase } from '@/shared/lib/supabase';
 import { useHomeGrids } from '../hooks/useHomeGrids';
+import { useLiveExamActive } from '../hooks/useLiveExamActive';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import type { AppMessageKey } from '@/shared/i18n/messages';
 
@@ -15,10 +15,19 @@ interface ThemeConfigRow {
   ui_theme_settings?: unknown;
 }
 
-interface DailyGoalStats {
-  completed: number;
-  total: number;
+interface HomeBannerRow {
+  id: string;
+  title: string | null;
+  image_url: string | null;
+  action_link: string | null;
+  target_rules: unknown;
+  description?: string | null;
+  button_text?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }
+
+const LIVE_EXAM_LINK_PREFIX = '/exam/live';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -41,10 +50,6 @@ const normalizeName = (value: unknown): string | null => {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 };
 
-const clampGoal = (value: number, min: number, max: number) => {
-  return Math.max(min, Math.min(value, max));
-};
-
 const getGreetingKey = (hour: number): AppMessageKey => {
   if (hour < 5) return 'home.greetingLateNight';
   if (hour < 12) return 'home.greetingMorning';
@@ -54,10 +59,24 @@ const getGreetingKey = (hour: number): AppMessageKey => {
   return 'home.greetingLateNight';
 };
 
+const isLiveExamBanner = (banner: HomeBannerRow) => {
+  return (banner.action_link ?? '').startsWith(LIVE_EXAM_LINK_PREFIX);
+};
+
+const isWithinSchedule = (banner: HomeBannerRow, now: number) => {
+  const start = banner.start_date ? Date.parse(banner.start_date) : NaN;
+  const end = banner.end_date ? Date.parse(banner.end_date) : NaN;
+
+  if (!Number.isNaN(start) && now < start) return false;
+  if (!Number.isNaN(end) && now > end) return false;
+
+  return true;
+};
+
 const Home: React.FC = memo(() => {
-  const navigate = useNavigate();
   const { user, loading: authLoading, profileLoading } = useAuth();
   const { features, loading: featuresLoading } = useHomeGrids();
+  const { isLive: isLiveExamActive } = useLiveExamActive();
   const { language, t } = useLanguage();
 
   const textFontClass =
@@ -82,7 +101,7 @@ const Home: React.FC = memo(() => {
     },
   });
 
-  const { data: activeBanners, isLoading: bannersLoading } = useQuery({
+  const { data: activeBanners } = useQuery({
     queryKey: ['home_banners'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -97,6 +116,17 @@ const Home: React.FC = memo(() => {
     },
   });
 
+  // লাইভ এক্সাম ব্যানার শুধু এক্সাম চলাকালীন দেখাবে; বাকি ব্যানার আগের মতোই।
+  const visibleBanners = useMemo(() => {
+    const now = Date.now();
+
+    return ((activeBanners ?? []) as HomeBannerRow[]).filter((banner) => {
+      if (!isWithinSchedule(banner, now)) return false;
+      if (isLiveExamBanner(banner)) return isLiveExamActive;
+      return true;
+    });
+  }, [activeBanners, isLiveExamActive]);
+
   const resolvedProfileName =
     normalizeName(user?.full_name) ||
     normalizeName(user?.username) ||
@@ -105,12 +135,6 @@ const Home: React.FC = memo(() => {
 
   const themeConfig = sanitizeThemeConfig(themeData);
   const greetingKey = getGreetingKey(new Date().getHours());
-
-  const dailyGoal: DailyGoalStats = { completed: 3, total: 5 };
-  const safeTotal = Math.max(dailyGoal.total, 1);
-  const progressWidth = `${
-    (clampGoal(dailyGoal.completed, 0, safeTotal) / safeTotal) * 100
-  }%`;
 
   return (
     <div className="min-h-screen bg-app pb-24">
@@ -151,102 +175,11 @@ const Home: React.FC = memo(() => {
           </div>
         </section>
 
-        <section className="mt-3 rounded-[20px] border border-card-border bg-card-bg px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <p
-              className={`text-[11px] font-semibold uppercase leading-5 tracking-[0.16em] text-text-secondary ${textFontClass}`}
-            >
-              {t('home.eyebrow')}
-            </p>
-          </div>
-
-          <h2
-            className={`mt-1 text-lg font-bold leading-snug text-text-primary sm:text-xl ${textFontClass}`}
-          >
-            {t('home.heroTitle')}
-          </h2>
-
-          <p
-            className={`mt-2 text-sm leading-6 text-text-secondary ${textFontClass}`}
-          >
-            {t('home.heroBody')}
-          </p>
-        </section>
-
-        <section className="mt-3">
-          <Link
-            to="/admission"
-            className="group flex w-full items-center gap-3 rounded-[20px] border border-card-border bg-card-bg px-4 py-4 text-left transition-all hover:border-primary/40 hover:shadow-sm active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-badge-bg text-badge-text">
-              <GraduationCap className="h-6 w-6" aria-hidden="true" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p
-                className={`text-base font-bold text-text-primary ${textFontClass}`}
-              >
-                {t('home.admissionTitle')}
-              </p>
-              <p
-                className={`mt-0.5 line-clamp-2 text-xs leading-5 text-text-secondary ${textFontClass}`}
-              >
-                {t('home.admissionBody')}
-              </p>
-              <span
-                className={`mt-1.5 inline-block text-xs font-semibold text-primary ${textFontClass}`}
-              >
-                {t('home.admissionCta')}
-              </span>
-            </div>
-
-            <ChevronRight className="h-5 w-5 shrink-0 text-text-secondary transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-          </Link>
-        </section>
-
         <DynamicBanner
-          banners={activeBanners ?? null}
-          isLoading={bannersLoading}
+          key={visibleBanners.length}
+          banners={visibleBanners.length > 0 ? visibleBanners : null}
+          isLoading={false}
         />
-
-        <section className="mt-3">
-          <button
-            type="button"
-            onClick={() => navigate('/progress')}
-            className="w-full rounded-[20px] border border-card-border bg-card-bg px-3 py-3 text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-badge-bg text-badge-text">
-                <Target className="h-6 w-6" />
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p
-                    className={`text-base font-bold text-text-primary ${textFontClass}`}
-                  >
-                    {t('home.dailyGoal')}
-                  </p>
-                  <ChevronRight className="h-4 w-4 text-text-secondary" />
-                </div>
-
-                <div
-                  role="progressbar"
-                  aria-label={t('home.dailyGoalProgress')}
-                  aria-valuemin={0}
-                  aria-valuemax={dailyGoal.total}
-                  aria-valuenow={dailyGoal.completed}
-                  className="mt-2.5 h-2 rounded-full bg-secondary"
-                >
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-300"
-                    style={{ width: progressWidth }}
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-        </section>
 
         <section className="mt-3">
           <FeatureGrid
