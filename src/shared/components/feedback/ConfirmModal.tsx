@@ -8,6 +8,7 @@ export interface ConfirmModalProps {
   onCancel: () => void;
   confirmText?: string;
   cancelText?: string;
+  loadingText?: string;
   isLoading?: boolean;
 }
 
@@ -19,6 +20,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onCancel,
   confirmText = 'হ্যাঁ',
   cancelText = 'না',
+  loadingText = 'অপেক্ষা করুন...',
   isLoading = false
 }) => {
   if (!isOpen) return null;
@@ -46,7 +48,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             disabled={isLoading}
             className="flex-1 py-3 font-bold rounded-xl transition-colors disabled:opacity-50 bg-primary text-primary-foreground hover:opacity-90" 
           >
-            {isLoading ? 'অপেক্ষা করুন...' : confirmText}
+            {isLoading ? loadingText : confirmText}
           </button>
         </div>
       </div>

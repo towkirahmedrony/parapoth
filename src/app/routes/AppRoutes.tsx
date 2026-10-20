@@ -28,6 +28,26 @@ const Arena = lazy(() => import('@/features/exam/pages/Arena'));
 const Analysis = lazy(() => import('@/features/exam/pages/Analysis'));
 const QuestionBank = lazy(() => import('@/features/question-bank/pages/QuestionBank'));
 
+// Admission (lazy loaded)
+const AdmissionLandingPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionLandingPage')
+);
+const AdmissionGroupPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionGroupPage')
+);
+const AdmissionUniversityListPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionUniversityListPage')
+);
+const AdmissionUniversityPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionUniversityPage')
+);
+const AdmissionExamListPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionExamListPage')
+);
+const AdmissionExamPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionExamPage')
+);
+
 // AI Chat Integration (Lazy Loaded)
 const AIChatPage = lazy(() => import('@/features/ai/pages/AIChatPage'));
 
@@ -169,6 +189,21 @@ const AppRoutes: React.FC = () => {
           }
         />
 
+        {/*
+          Admission exams use a fullscreen shell and the existing
+          server-issued attempt/submission lifecycle.
+          Declared with static segments so it outranks
+          "/admission/:groupSlug/:examType".
+        */}
+        <Route
+          path="/admission/exam/:examId"
+          element={
+            <PermissionGuard>
+              <AdmissionExamPage />
+            </PermissionGuard>
+          }
+        />
+
         <Route
           path="/parasathi"
           element={
@@ -259,6 +294,22 @@ const AppRoutes: React.FC = () => {
           <Route path="group" element={<Lobby />} />
           <Route path="group/:groupId/battle" element={<Placeholder title="গ্রুপ ব্যাটেল" />} />
           <Route path="group/:groupId/focus" element={<Placeholder title="ফোকাস সেশন" />} />
+
+          {/* Admission */}
+          <Route path="admission" element={<AdmissionLandingPage />} />
+          <Route path="admission/:groupSlug" element={<AdmissionGroupPage />} />
+          <Route
+            path="admission/:groupSlug/:examType"
+            element={<AdmissionUniversityListPage />}
+          />
+          <Route
+            path="admission/:groupSlug/:examType/:universitySlug"
+            element={<AdmissionUniversityPage />}
+          />
+          <Route
+            path="admission/:groupSlug/:examType/:universitySlug/exams"
+            element={<AdmissionExamListPage />}
+          />
 
           {/* Academic & Materials */}
           <Route path="suggestion" element={<Placeholder title="সাজেশন" />} />

@@ -11,6 +11,7 @@ export type ExamAnswers = Record<string, string>;
 
 export type SubmitPayloadInput = {
   examId?: string | null;
+  attemptId?: string | null;
   sessionId?: string | null;
   answers: ExamAnswers;
   questionIds: string[];
@@ -19,6 +20,7 @@ export type SubmitPayloadInput = {
 
 export type SubmitPayload = {
   exam_id?: string;
+  attempt_id?: string;
   session_id?: string;
   answers: ExamAnswers;
   time_taken: number;
@@ -39,6 +41,7 @@ export class MalformedSubmitResponseError extends Error {
  */
 export const buildSubmitPayload = ({
   examId,
+  attemptId,
   sessionId,
   answers,
   questionIds,
@@ -53,6 +56,12 @@ export const buildSubmitPayload = ({
   const normalizedExamId = typeof examId === 'string' ? examId.trim() : '';
 
   if (normalizedExamId) payload.exam_id = normalizedExamId;
+
+  // Server-issued attempt id. When present the backend grades against the
+  // frozen attempt question set and ignores any client-invented scope.
+  const normalizedAttemptId = typeof attemptId === 'string' ? attemptId.trim() : '';
+
+  if (normalizedAttemptId) payload.attempt_id = normalizedAttemptId;
 
   const normalizedSessionId = typeof sessionId === 'string' ? sessionId.trim() : '';
 

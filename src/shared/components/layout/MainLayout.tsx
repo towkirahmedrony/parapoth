@@ -40,7 +40,9 @@ const updateSeoMeta = (pathname: string) => {
     '/dashboard/streak': 'Daily Study Streak - Porokh',
   };
 
-  const title = routeTitleMap[pathname] ?? SITE_TITLE;
+  const title = pathname.startsWith('/admission')
+    ? 'Admission Preparation - Model Tests & Past Exams | Porokh'
+    : routeTitleMap[pathname] ?? SITE_TITLE;
 
   document.title = title;
 

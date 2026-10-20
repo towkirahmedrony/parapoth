@@ -5,6 +5,8 @@ import clsx from 'clsx';
 interface ExamTimerProps {
   seconds: number;
   layout?: 'compact' | 'card';
+  /** Optional localized label; existing callers keep the Bengali default. */
+  label?: string;
 }
 
 const formatTime = (totalSeconds: number): string => {
@@ -14,7 +16,7 @@ const formatTime = (totalSeconds: number): string => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
-const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds, layout = 'compact' }) => {
+const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds, layout = 'compact', label = 'বাকি সময়' }) => {
   const isUrgent = seconds < 300 && seconds > 0;
   const timeString = formatTime(seconds);
 
@@ -34,7 +36,7 @@ const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds, layout = 'compact' 
         )}>
           <Clock size={18} />
           <span className="text-sm font-medium">
-            বাকি সময়
+            {label}
           </span>
         </div>
         <div className="text-4xl font-mono font-bold tracking-tight">

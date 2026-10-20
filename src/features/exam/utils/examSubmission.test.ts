@@ -47,6 +47,7 @@ const answers = {
 test('payload carries the attempt identifiers, answers and question set', () => {
   const payload = buildSubmitPayload({
     examId: 'exam-1',
+    attemptId: 'attempt-1',
     sessionId: 'submission-key-123',
     answers,
     questionIds: ['question-1', 'question-2'],
@@ -55,6 +56,7 @@ test('payload carries the attempt identifiers, answers and question set', () => 
 
   assert.deepEqual(payload.answers, answers);
   assert.equal(payload.exam_id, 'exam-1');
+  assert.equal(payload.attempt_id, 'attempt-1');
   assert.equal(payload.session_id, 'submission-key-123');
   assert.deepEqual(payload.question_ids, ['question-1', 'question-2']);
   assert.equal(payload.time_taken, 92);
@@ -76,6 +78,7 @@ test('payload copies answers so later state changes cannot mutate a retry', () =
 test('payload omits optional identifiers instead of sending null', () => {
   const payload = buildSubmitPayload({
     examId: null,
+    attemptId: '   ',
     sessionId: '   ',
     answers,
     questionIds: ['question-1'],
@@ -83,6 +86,7 @@ test('payload omits optional identifiers instead of sending null', () => {
   });
 
   assert.equal('exam_id' in payload, false);
+  assert.equal('attempt_id' in payload, false);
   assert.equal('session_id' in payload, false);
   assert.equal(payload.time_taken, 0);
 });

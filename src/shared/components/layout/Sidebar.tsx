@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Trophy, FileEdit, PieChart, User as UserIcon, LogOut, History, Settings as SettingsIcon } from 'lucide-react';
+import { Home, Trophy, FileEdit, PieChart, User as UserIcon, LogOut, History, Settings as SettingsIcon, GraduationCap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
@@ -42,6 +42,7 @@ export const Sidebar: React.FC = memo(() => {
   const navItems = [
     { label: t('nav.home'), path: '/dashboard/home', icon: Home },
     { label: t('nav.modelTest'), path: '/exam/selection', icon: FileEdit },
+    { label: t('nav.admission'), path: '/admission', icon: GraduationCap },
     { label: t('nav.progress'), path: '/progress', icon: PieChart },
     { label: t('nav.leaderboard'), path: '/dashboard/leaderboard', icon: Trophy },
     { label: t('nav.history'), path: '/history', icon: History },

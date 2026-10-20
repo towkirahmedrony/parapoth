@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, SunMedium, Target } from 'lucide-react';
+import { ChevronRight, GraduationCap, SunMedium, Target } from 'lucide-react';
 import FeatureGrid, { ThemeConfig } from '../components/FeatureGrid';
 import DynamicBanner from '../components/DynamicBanner';
 import { useAuth } from '../../auth/hooks/useAuth';
@@ -186,6 +186,37 @@ const Home: React.FC = memo(() => {
           >
             {t('home.heroBody')}
           </p>
+        </section>
+
+        <section className="mt-3">
+          <Link
+            to="/admission"
+            className="group flex w-full items-center gap-3 rounded-[20px] border border-card-border bg-card-bg px-4 py-4 text-left transition-all hover:border-primary/40 hover:shadow-sm active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-badge-bg text-badge-text">
+              <GraduationCap className="h-6 w-6" aria-hidden="true" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p
+                className={`text-base font-bold text-text-primary ${textFontClass}`}
+              >
+                {t('home.admissionTitle')}
+              </p>
+              <p
+                className={`mt-0.5 line-clamp-2 text-xs leading-5 text-text-secondary ${textFontClass}`}
+              >
+                {t('home.admissionBody')}
+              </p>
+              <span
+                className={`mt-1.5 inline-block text-xs font-semibold text-primary ${textFontClass}`}
+              >
+                {t('home.admissionCta')}
+              </span>
+            </div>
+
+            <ChevronRight className="h-5 w-5 shrink-0 text-text-secondary transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+          </Link>
         </section>
 
         <DynamicBanner

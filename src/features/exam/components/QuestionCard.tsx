@@ -16,23 +16,58 @@ const QuestionCard: React.FC<QuestionCardProps> = memo(({
 }) => {
   
   let questionText = question.text_bn || question.text || "";
+  let bodyImageUrl: string | null = null;
+
   if (typeof question.body === 'object' && question.body !== null) {
     questionText = question.body.text_bn || question.body.text || questionText;
+    bodyImageUrl =
+      (question.body as { image_url?: string | null }).image_url ?? null;
   } else if (typeof question.body === 'string' && question.body.trim() !== '') {
     questionText = question.body;
   }
 
+  const questionImageUrl =
+    question.media_library?.file_url || question.image_url || bodyImageUrl;
+
   const options = question.options || [];
+  const comprehensionImageUrl =
+    question.comprehension?.media_library?.file_url ||
+    question.comprehension?.image_url;
 
   return (
     <div className="w-full max-w-3xl mx-auto rounded-2xl shadow-sm border border-card-border bg-card-bg transition-shadow hover:shadow-md duration-300">
+      {question.comprehension && (
+        <div className="border-b border-border-color bg-surface p-5 md:p-6">
+          {comprehensionImageUrl && (
+            <img
+              src={comprehensionImageUrl}
+              alt=""
+              className="mb-3 max-h-72 w-full rounded-xl border border-border-color bg-surface-elevated object-contain"
+            />
+          )}
+          <div className="text-[15px] font-['Hind_Siliguri'] leading-relaxed text-text-secondary">
+            <MathDisplay content={question.comprehension.body} />
+          </div>
+        </div>
+      )}
+
       <div className="p-5 md:p-6 lg:p-8">
         <div className="flex items-start gap-4 mb-6 md:mb-8 pr-2">
           <span className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full font-bold text-sm font-mono shadow-sm bg-badge-bg text-badge-text border border-border-color">
             Q
           </span>
-          <div className="text-[17px] md:text-[18px] font-medium font-['Hind_Siliguri'] leading-relaxed w-full pt-1 text-text-primary">
-             <MathDisplay content={questionText} />
+          <div className="w-full space-y-3 pt-1">
+            <div className="text-[17px] md:text-[18px] font-medium font-['Hind_Siliguri'] leading-relaxed text-text-primary">
+              <MathDisplay content={questionText} />
+            </div>
+
+            {questionImageUrl && (
+              <img
+                src={questionImageUrl}
+                alt="Question"
+                className="max-h-72 w-full rounded-xl border border-border-color bg-surface object-contain"
+              />
+            )}
           </div>
         </div>
 
@@ -53,6 +88,13 @@ const QuestionCard: React.FC<QuestionCardProps> = memo(({
                   </div>
                   <span className={`text-[15px] md:text-[16px] font-['Hind_Siliguri'] leading-snug ${isSelected ? 'text-text-primary font-semibold' : 'text-text-secondary font-normal'}`}>
                     <MathDisplay content={option.text_bn || option.text} />
+                    {option.image_url && (
+                      <img
+                        src={option.image_url}
+                        alt=""
+                        className="mt-2 max-h-32 rounded-lg border border-border-color object-contain"
+                      />
+                    )}
                   </span>
                 </div>
                 {isSelected && (
