@@ -4,6 +4,7 @@ import { FileText, Building2 } from 'lucide-react';
 import ModelTestTab from '../components/ModelTestTab';
 import BoardExamTab from '../components/BoardExamTab';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { FreeUsageIndicator } from '@/features/access/components/FreeUsageIndicator';
 
 type TabType = 'model' | 'board';
 
@@ -51,6 +52,12 @@ const Selection: React.FC = () => {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      {!isDetailView && (
+        <div className="w-full max-w-4xl mx-auto px-3 pt-3">
+          <FreeUsageIndicator />
+        </div>
+      )}
+
       {!isDetailView && (
         <div className="sticky top-0 z-10 w-full backdrop-blur-md transition-all duration-300 shadow-sm bg-surface/90 border-b border-border-color">
           <div className="flex w-full max-w-4xl mx-auto px-2 sm:px-4">

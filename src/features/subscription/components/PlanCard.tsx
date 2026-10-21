@@ -4,26 +4,26 @@ import { Tables } from '@/shared/types/supabase';
 import Button from '@/shared/components/ui/Button';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { pickLang } from '@/shared/i18n/localize';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 type SubscriptionPlan = Tables<'subscription_plans'>;
 
 interface PlanCardProps {
   plan: SubscriptionPlan;
   onSelect: (plan: SubscriptionPlan) => void;
+  isSelected?: boolean;
 }
 
-const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
-  const { language } = useLanguage();
+const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect, isSelected = false }) => {
+  const { language, t } = useLanguage();
   const isDiscounted = plan.discounted_price !== null && plan.discounted_price < plan.price;
   const currentPrice = isDiscounted ? plan.discounted_price : plan.price;
-  
-  // Safe calculation to prevent NaN or Infinity if plan.price is 0 or invalid
+
   const discountPercent = useMemo(() => {
     if (!isDiscounted || !plan.discounted_price || !plan.price) return 0;
     return Math.round(((plan.price - plan.discounted_price) / plan.price) * 100);
   }, [isDiscounted, plan.price, plan.discounted_price]);
 
-  // Safe parsing for features
   const featuresList = useMemo(() => {
     const toList = (value: unknown): string[] => {
       if (Array.isArray(value)) return value.map(String);
@@ -44,58 +44,61 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
   if (!plan) return null;
 
   return (
-    <div 
-      className={`relative flex flex-col p-6 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card-bg ${
-        isDiscounted ? 'shadow-md border-primary' : 'border-card-border'
+    <div
+      className={`relative flex flex-col rounded-2xl border-2 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-card-bg ${
+        isSelected
+          ? 'border-primary shadow-lg ring-2 ring-primary/30'
+          : isDiscounted
+            ? 'border-primary shadow-md'
+            : 'border-card-border'
       }`}
     >
-      
-      {/* Badge for Discount */}
       {isDiscounted && discountPercent > 0 && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-full shadow-sm flex items-center gap-1">
+        <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-accent px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-sm">
           <Star size={12} fill="currentColor" />
-          SAVE {discountPercent}%
+          SAVE {localizeDigits(discountPercent, language)}%
         </div>
       )}
 
-      <div className="text-center mb-6 pt-2">
-        <h3 className="text-xl font-bold mb-2 text-text-primary">{pickLang(language, plan.name, plan.name_en)}</h3>
+      <div className="mb-6 pt-2 text-center">
+        <h3 className="mb-2 text-xl font-bold text-text-primary">
+          {pickLang(language, plan.name, plan.name_en)}
+        </h3>
         <div className="flex items-center justify-center gap-2">
           <span className="text-3xl font-extrabold text-primary">
-            ৳{currentPrice}
+            ৳{localizeDigits(currentPrice ?? 0, language)}
           </span>
           {isDiscounted && (
-            <span className="text-lg line-through text-text-secondary">
-              ৳{plan.price}
+            <span className="text-lg text-text-secondary line-through">
+              ৳{localizeDigits(plan.price, language)}
             </span>
           )}
         </div>
-        <p className="text-sm mt-1 text-text-secondary">
-          For {plan.duration_days} Days
+        <p className="mt-1 text-sm text-text-secondary">
+          {t('premium.days', { days: localizeDigits(plan.duration_days, language) })}
         </p>
       </div>
 
-      <div className="flex-1 mb-8">
+      <div className="mb-8 flex-1">
         <ul className="space-y-3">
           {featuresList.map((feature, idx) => (
             <li key={idx} className="flex items-start gap-3">
               <div className="mt-1 min-w-[18px]">
                 <Check size={18} className="text-primary" />
               </div>
-              <span className="text-sm leading-tight text-text-primary">
-                {String(feature)}
-              </span>
+              <span className="text-sm leading-tight text-text-primary">{String(feature)}</span>
             </li>
           ))}
         </ul>
       </div>
 
-      <Button 
+      <Button
         onClick={() => onSelect(plan)}
-        className="w-full py-3 font-semibold text-lg shadow-lg"
-        variant={isDiscounted ? 'primary' : 'outline'}
+        className="w-full py-3 text-lg font-semibold shadow-lg"
+        variant={isSelected || isDiscounted ? 'primary' : 'outline'}
+        aria-pressed={isSelected}
       >
-        Choose Plan
+        {t('premium.choose_plan')}
       </Button>
     </div>
   );

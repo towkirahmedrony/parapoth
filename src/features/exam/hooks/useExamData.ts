@@ -20,6 +20,8 @@ export const useGenerateExam = (topicIds: string[], questionCount: number) => {
 
 // ২. এক্সাম সাবমিট করে রেজাল্ট সেভ করা
 export const useSubmitExamResult = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (resultData: ExamResultData) => {
       // 🌟 ফিক্স: ব্যাকএন্ডের SubmitExamDTO এর সাথে ফিল্ডগুলো ম্যাপ করা হলো
@@ -32,6 +34,10 @@ export const useSubmitExamResult = () => {
       // 🌟 ফিক্স: পাথ থেকে '/api/v1/' সরানো হয়েছে
       const response = await apiClient.post('/exams/user/submit', payload);
       return response.data.data;
+    },
+    onSuccess: () => {
+      // Finishing an exam can change quota state; refresh the authoritative view.
+      queryClient.invalidateQueries({ queryKey: ['me', 'access'] });
     },
     onError: () => {
       toast.error('Failed to submit exam results. Please try again.');

@@ -10,6 +10,7 @@ import MenuSection from '../components/MenuSection';
 import { InfoCard, InfoRow } from '../components/InfoCard';
 import { User, GraduationCap } from 'lucide-react';
 import LanguageSwitcher from '@/shared/components/ui/LanguageSwitcher';
+import { MyPlanCard } from '@/features/access/components/MyPlanCard';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 const getGenderText = (g?: string) => {
@@ -55,6 +56,8 @@ const UserProfile: React.FC = () => {
         user={user} 
         onEdit={() => navigate('/edit-profile')} 
       />
+
+      <MyPlanCard />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

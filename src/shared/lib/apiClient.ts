@@ -53,6 +53,24 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
+    const accessPayload = error.response?.data as
+      | { code?: string; details?: Record<string, unknown> }
+      | undefined;
+    const accessCode = accessPayload?.code;
+
+    // Metered and premium rejections are surfaced app-wide so any screen can
+    // open the correct paywall state without duplicating error parsing.
+    if (
+      error.response?.status === 403 &&
+      (accessCode === 'FREE_LIMIT_REACHED' || accessCode === 'PREMIUM_REQUIRED')
+    ) {
+      window.dispatchEvent(
+        new CustomEvent('access:error', {
+          detail: { code: accessCode, details: accessPayload?.details ?? null },
+        })
+      );
+    }
+
     if (error.response?.status === 401) {
       if (import.meta.env.DEV) {
         console.warn('Unauthorized request. Dispatching logout event.');

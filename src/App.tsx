@@ -8,6 +8,7 @@ import { requestNotificationPermission, listenForForegroundMessages } from '@/fe
 // Layout & Guards
 import { SystemGuard } from '@/shared/components/layout/SystemGuard';
 import { LanguageProvider } from '@/shared/i18n/LanguageProvider';
+import { PaywallProvider } from '@/features/access/context/PaywallProvider';
 
 // Routes
 import AppRoutes from '@/app/routes/AppRoutes';
@@ -45,9 +46,11 @@ const App: React.FC = () => {
         }}
       />
       <LanguageProvider>
-        <SystemGuard>
-          <AppRoutes />
-        </SystemGuard>
+        <PaywallProvider>
+          <SystemGuard>
+            <AppRoutes />
+          </SystemGuard>
+        </PaywallProvider>
       </LanguageProvider>
     </>
   );

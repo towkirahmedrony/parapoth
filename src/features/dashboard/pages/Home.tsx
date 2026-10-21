@@ -8,6 +8,8 @@ import { supabase } from '@/shared/lib/supabase';
 import { useHomeGrids } from '../hooks/useHomeGrids';
 import { useLiveExamActive } from '../hooks/useLiveExamActive';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { FreeUsageIndicator } from '@/features/access/components/FreeUsageIndicator';
+import { PromoBanner } from '@/features/access/components/PromoBanner';
 import type { AppMessageKey } from '@/shared/i18n/messages';
 
 interface ThemeConfigRow {
@@ -180,6 +182,12 @@ const Home: React.FC = memo(() => {
             </div>
           </div>
         </section>
+
+        <section className="mt-2 flex flex-wrap items-center gap-2 px-1">
+          <FreeUsageIndicator />
+        </section>
+
+        <PromoBanner className="mt-2" />
 
         <DynamicBanner
           key={visibleBanners.length}

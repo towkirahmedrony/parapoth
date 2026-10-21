@@ -1,9 +1,10 @@
 import React, { memo } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
-import { ChevronRight, LayoutGrid } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Lock } from 'lucide-react';
 import { useCurriculumTree } from '../hooks/useContentData';
 import { getIconByName } from '@/shared/utils/iconMapper';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
+import { usePaywall } from '@/features/access/context/PaywallProvider';
 
 interface SubjectListProps {
   onSelect: (id: string) => void;
@@ -14,10 +15,13 @@ export interface CurriculumSubject {
   name_bn?: string;
   title?: string;
   icon_url?: string | null;
+  is_locked?: boolean | null;
+  is_premium?: boolean | null;
 }
 
 const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
   const { t } = useLanguage();
+  const { openPaywall } = usePaywall();
   const { data: subjects, isLoading } = useCurriculumTree();
   if (isLoading) {
   return (
@@ -48,8 +52,24 @@ const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
           return (
             <button
               key={subject.id}
-              onClick={() => onSelect(subject.id)}
-              className="flex items-center gap-4 p-4 md:p-5 rounded-2xl border border-card-border bg-card-bg transition-all group text-left shadow-sm hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-focus-ring"
+              onClick={() => {
+                if (subject.is_locked) {
+                  openPaywall({ reason: 'premium_content' });
+                  return;
+                }
+                onSelect(subject.id);
+              }}
+              aria-label={
+                subject.is_locked
+                  ? `${subject.name_bn || subject.title || ''} — ${t('premium.a11y_locked')}`
+                  : undefined
+              }
+              aria-disabled={subject.is_locked || undefined}
+              className={`flex items-center gap-4 p-4 md:p-5 rounded-2xl border transition-all group text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-focus-ring ${
+                subject.is_locked
+                  ? 'border-primary/30 bg-card-bg/60 opacity-80 hover:opacity-100'
+                  : 'border-card-border bg-card-bg hover:shadow-md hover:-translate-y-0.5'
+              }`}
             >
               <div className="h-14 w-14 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner bg-badge-bg text-badge-text">
                 <IconComponent size={26} strokeWidth={2.5} />
@@ -59,6 +79,12 @@ const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
                   {subject.name_bn || subject.title || 'Untitled Subject'}
                 </h3>
               </div>
+              {subject.is_locked ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                  <Lock size={11} />
+                  {t('premium.locked_label')}
+                </span>
+              ) : null}
               <div className="w-8 h-8 rounded-full flex items-center justify-center transition-colors group-hover:bg-surface-elevated">
                 <ChevronRight size={20} className="text-text-secondary group-hover:text-text-primary transition-colors" />
               </div>
