@@ -1,3 +1,10 @@
+window.addEventListener('vite:preloadError', () => {
+  if (!sessionStorage.getItem('chunk-reloaded')) {
+    sessionStorage.setItem('chunk-reloaded', '1');
+    window.location.reload();
+  }
+});
+
 import './debug/vconsole';
 import React, { ErrorInfo } from 'react';
 import ReactDOM from 'react-dom/client';
