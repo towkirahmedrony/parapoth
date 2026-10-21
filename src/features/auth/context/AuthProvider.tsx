@@ -28,7 +28,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, institution, total_xp')
+        .select('id, username, full_name, avatar_url, institution, total_xp, language_preference')
         .eq('id', authUser.id)
         .single();
 
@@ -43,6 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           full_name: profile.full_name ?? (prev as any).full_name ?? null,
           avatar_url: profile.avatar_url ?? (prev as any).avatar_url ?? null,
           institution: profile.institution ?? (prev as any).institution ?? null,
+          language_preference: profile.language_preference ?? (prev as any).language_preference ?? 'bn',
           total_xp: profile.total_xp ?? 0,
           total_score: profile.total_xp ?? 0
         } as AppUser;

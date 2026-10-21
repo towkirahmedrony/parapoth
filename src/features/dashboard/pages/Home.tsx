@@ -18,11 +18,17 @@ interface ThemeConfigRow {
 interface HomeBannerRow {
   id: string;
   title: string | null;
+  title_en?: string | null;
+  title_bn?: string | null;
   image_url: string | null;
   action_link: string | null;
   target_rules: unknown;
   description?: string | null;
+  description_en?: string | null;
+  description_bn?: string | null;
   button_text?: string | null;
+  button_text_en?: string | null;
+  button_text_bn?: string | null;
   start_date?: string | null;
   end_date?: string | null;
 }

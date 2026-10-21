@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Crown } from 'lucide-react';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   if (!user) return null;
@@ -25,7 +27,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
     }
   };
 
-  const displayName = user.full_name || 'অজানা শিক্ষার্থী';
+  const displayName = user.full_name || t('leaderboard.unknownStudent');
 
   const rankColors: Record<number, string> = {
     1: '#EAB308', // Gold
@@ -57,7 +59,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
             >
                 <img 
                     src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`} 
-                    alt={`${displayName} এর ছবি`}
+                    alt={displayName}
                     className="w-full h-full rounded-full object-cover bg-secondary" 
                 />
             </div>
@@ -73,7 +75,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
                 {displayName}
             </span>
             <span className="text-[9px] truncate max-w-[100px] text-text-secondary">
-                {user.institution || 'শিক্ষার্থী'}
+                {user.institution || t('leaderboard.student')}
             </span>
         </div>
       </div>

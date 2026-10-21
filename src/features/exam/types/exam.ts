@@ -16,6 +16,18 @@ export interface MediaLibrary {
   file_url: string;
 }
 
+export interface LocalizedQuestionBody {
+  text?: string | null;
+  text_bn?: string | null;
+  text_en?: string | null;
+  image_url?: string | null;
+}
+
+export interface LocalizedExplanation {
+  bn?: string | null;
+  en?: string | null;
+}
+
 export interface Comprehension {
   id: string;
   body: string; 
@@ -32,9 +44,10 @@ export interface Question extends Omit<QuestionRow, 'options' | 'body' | 'exam_r
   board_ref?: string | null;
   text?: string;
   text_bn?: string; 
-  body?: { text?: string; text_bn?: string } | string | null; 
+  text_en?: string | null;
+  body?: LocalizedQuestionBody | string | null;
   exam_references?: unknown; 
-  explanation?: string | null; 
+  explanation?: LocalizedExplanation | string | null;
 }
 
 export interface ExamState {
@@ -101,6 +114,7 @@ export interface QuestionOption {
   isCorrect: boolean;
   text?: string;
   text_bn?: string;
+  text_en?: string;
   [key: string]: unknown;
 }
 

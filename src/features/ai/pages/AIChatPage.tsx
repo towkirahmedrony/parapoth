@@ -29,6 +29,7 @@ import { fetchAiSubjects, sendChatMessage } from '../services/aiService';
 import type { Subject } from '../types/ai';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { supabase } from '@/shared/lib/supabase';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 type ChatRole = 'user' | 'assistant' | 'system';
 type ChatMessageStatus = 'sending' | 'sent' | 'failed';
@@ -242,6 +243,7 @@ const deleteChatSession = async (sessionId: string): Promise<void> => {
 
 const AIChatPage = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const queryClient = useQueryClient();
 
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
@@ -311,6 +313,7 @@ const AIChatPage = () => {
         message: variables.message,
         subjectId: variables.subjectId,
         sessionId: variables.sessionId,
+        lang: language,
       }),
     onSuccess: async (data, variables) => {
       setMessages(prev =>

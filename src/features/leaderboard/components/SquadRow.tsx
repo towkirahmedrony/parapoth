@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Squad } from '../types/groupLeaderboard';
 
 interface SquadRowProps {
@@ -7,6 +8,7 @@ interface SquadRowProps {
 }
 
 export const SquadRow: React.FC<SquadRowProps> = ({ squad, isPinned = false }) => {
+  const { t } = useLanguage();
   const getMedal = (rank: number): React.ReactNode => {
     if (rank === 1) return '🥇';
     if (rank === 2) return '🥈';
@@ -32,7 +34,7 @@ export const SquadRow: React.FC<SquadRowProps> = ({ squad, isPinned = false }) =
         <h3 className={`font-bold ${isPinned ? 'text-primary' : 'text-text-primary'}`}>
           {squad.name}
         </h3>
-        <p className="text-xs text-text-secondary">লেভেল {squad.group_level ?? 1}</p>
+        <p className="text-xs text-text-secondary">{t('leaderboard.level', { level: squad.group_level ?? 1 })}</p>
       </div>
       
       <div className="text-right">

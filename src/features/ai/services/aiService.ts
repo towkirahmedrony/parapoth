@@ -1,5 +1,6 @@
 import apiClient from '@/shared/lib/apiClient';
 import { Subject } from '../types/ai';
+import type { AppLanguage } from '@/shared/i18n/messages';
 
 /**
  * আপনার content.routes.ts অনুযায়ী সাবজেক্ট নিয়ে আসা।
@@ -18,6 +19,7 @@ export const sendChatMessage = async (payload: {
   message: string;
   subjectId: string;
   sessionId?: string | null;
+  lang?: AppLanguage;
 }) => {
   const response = await apiClient.post('/ai/chat', payload);
   return response.data.data;

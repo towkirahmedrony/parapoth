@@ -9,6 +9,8 @@ import ProfileHeader from '../components/ProfileHeader';
 import MenuSection from '../components/MenuSection';
 import { InfoCard, InfoRow } from '../components/InfoCard';
 import { User, GraduationCap } from 'lucide-react';
+import LanguageSwitcher from '@/shared/components/ui/LanguageSwitcher';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 const getGenderText = (g?: string) => {
   if (g === 'Male') return 'ছাত্র';
@@ -19,6 +21,7 @@ const getGenderText = (g?: string) => {
 const UserProfile: React.FC = () => {
   const { user: authUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   // ডাটাবেজ থেকে সবসময় ফ্রেশ প্রোফাইল ডাটা ফেচ করা
   const { data: profileData } = useQuery({
@@ -42,7 +45,10 @@ const UserProfile: React.FC = () => {
       : null;
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-300 pb-24 bg-app text-text-primary">
+    <div className={`container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-300 pb-24 bg-app text-text-primary ${language === 'bn' ? "font-['Hind_Siliguri']" : 'font-sans'}`}>
+      <div className="flex justify-end">
+        <LanguageSwitcher />
+      </div>
       
       {/* Profile Header */}
       <ProfileHeader 

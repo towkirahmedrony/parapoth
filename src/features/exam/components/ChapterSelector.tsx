@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Layers } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
 import { Chapter } from '../types/content';
@@ -12,6 +13,7 @@ interface ChapterSelectorProps {
 }
 
 export const ChapterSelector: React.FC<ChapterSelectorProps> = memo(({ isLoading, chapters, selectedChapter, selectedSubject, onSelect }) => {
+  const { t } = useLanguage();
   return (
     <div className="mb-6 w-full group">
       <label className="text-sm md:text-base font-semibold mb-2.5 flex items-center gap-2 text-text-primary">
@@ -27,7 +29,7 @@ export const ChapterSelector: React.FC<ChapterSelectorProps> = memo(({ isLoading
             onChange={(e) => onSelect(e.target.value)}
             disabled={!selectedSubject}
           >
-            <option value="all" className="bg-surface text-text-primary">📚 সম্পূর্ণ বই (ডিফল্ট)</option>
+            <option value="all" className="bg-surface text-text-primary">📚 {t('exam.fullBook')}</option>
             {chapters.map(chap => (
               <option key={chap.id} value={chap.id} className="bg-surface text-text-primary">
                 {chap.name_bn}

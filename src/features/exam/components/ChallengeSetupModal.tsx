@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
 import { X, Swords } from 'lucide-react';
@@ -70,11 +71,11 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
   const challengeMutation = useMutation({
     mutationFn: async () => {
       if (!selectedSubject) {
-        throw new Error('অনুগ্রহ করে একটি বিষয় নির্বাচন করুন');
+        throw new Error(t('exam.selectSubjectError'));
       }
 
       if (!user?.id) {
-        throw new Error('ইউজার তথ্য পাওয়া যাচ্ছে না');
+        throw new Error(t('exam.userMissing'));
       }
 
       const examId = `battle_${Date.now()}`;
@@ -123,12 +124,12 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
       return true;
     },
     onSuccess: () => {
-      toast.success('চ্যালেঞ্জ সফলভাবে পাঠানো হয়েছে! 🚀');
+      toast.success(t('exam.challengeSuccess'));
       onClose();
     },
     onError: (error: Error) => {
       console.error("Battle Creation Error:", error);
-      toast.error(error.message || 'চ্যালেঞ্জ পাঠাতে সমস্যা হয়েছে');
+      toast.error(error.message || t('exam.challengeError'));
     }
   });
 
@@ -139,6 +140,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
   // Hook rules strictly followed: early return comes AFTER all hooks
   if (!isOpen) return null;
 
+  const { t } = useLanguage();
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm bg-black/50">
       <div className="w-full sm:w-96 rounded-t-3xl sm:rounded-3xl p-6 transform transition-all animate-slide-up bg-surface-elevated border border-border-color">

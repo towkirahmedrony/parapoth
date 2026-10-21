@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { X } from 'lucide-react';
 import notificationGif from '@/assets/animations/notifications.gif';
 
@@ -8,6 +9,7 @@ interface NotificationModalProps {
 }
 
 const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -15,7 +17,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }
       <div className="rounded-2xl w-full max-w-sm overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-200 bg-surface-elevated">
         <div className="flex justify-between items-center p-4 border-b border-border-color">
           <h3 className="font-semibold text-lg font-['Hind_Siliguri'] text-text-primary">
-            পারমিশন প্রয়োজন
+            {t('notification.permissionTitle')}
           </h3>
           <button 
             onClick={onClose}
@@ -35,7 +37,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }
           </div>
           
           <p className="font-['Hind_Siliguri'] leading-relaxed text-text-secondary">
-            নোটিফিকেশন চালু করতে আপনার ব্রাউজারের উপরে অ্যাড্রেস বারের বাম পাশে থাকা <strong className="text-text-primary">লক (🔒) বা শিল্ড আইকনে</strong> ক্লিক করুন এবং <strong className="text-text-primary">Notifications</strong> অপশনটি <strong className="text-text-primary">Allow</strong> করে দিন।
+            {t('notification.permissionGuide')}
           </p>
         </div>
 
@@ -47,7 +49,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }
             }}
             className="w-full py-3 rounded-xl font-medium font-['Hind_Siliguri'] hover:opacity-90 transition-all shadow-lg shadow-primary/30 bg-primary text-primary-foreground"
           >
-            ঠিক আছে, রিলোড দিন
+            {t('notification.reload')}
           </button>
         </div>
       </div>

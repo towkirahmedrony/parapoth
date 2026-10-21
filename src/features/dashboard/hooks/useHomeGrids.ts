@@ -5,6 +5,8 @@ import { QUERY_KEYS } from '@/shared/constants/storageKeys';
 export interface GridItem {
   id: string;
   title: string;
+  title_bn?: string | null;
+  title_en?: string | null;
   icon_name: string;
   link: string | null;
   bg_color: string | null;
@@ -38,6 +40,8 @@ const sanitizeGridItem = (input: unknown): GridItem | null => {
   return {
     id,
     title,
+    title_bn: toNullableString(input.title_bn),
+    title_en: toNullableString(input.title_en),
     icon_name: iconName,
     link: toNullableString(input.link),
     bg_color: toNullableString(input.bg_color),

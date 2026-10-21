@@ -1,8 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { economyService } from '../services/economyService';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 export const useEconomy = () => {
   const queryClient = useQueryClient();
+  const { language } = useLanguage();
 
   // ইউজারের বর্তমান কয়েন ব্যালেন্স ফেচ করা
   const { 
@@ -23,8 +25,8 @@ export const useEconomy = () => {
     error: itemsError,
     refetch: refetchItems
   } = useQuery({
-    queryKey: ['marketplaceItems'],
-    queryFn: economyService.getMarketplaceItems,
+    queryKey: ['marketplaceItems', language],
+    queryFn: () => economyService.getMarketplaceItems(language),
     staleTime: 1000 * 60 * 30, // আইটেম সহজে চেঞ্জ হয় না, তাই ৩০ মিনিট ক্যাশ থাকবে
   });
 

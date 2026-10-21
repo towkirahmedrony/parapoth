@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface InfoCardProps {
   title: string;
@@ -32,22 +33,24 @@ interface InfoRowProps {
   isVerified?: boolean;
 }
 
-export const InfoRow: React.FC<InfoRowProps> = memo(({ label, value, isVerified }) => (
-  <div className="flex justify-between items-center group">
+export const InfoRow: React.FC<InfoRowProps> = memo(({ label, value, isVerified }) => {
+  const { t } = useLanguage();
+  return <div className="flex justify-between items-center group">
     <span className="text-sm font-medium font-['Hind_Siliguri'] transition-colors text-text-secondary">
       {label}
     </span>
     <div className="text-right flex items-center gap-2">
       <span className={`text-sm font-semibold font-['Hind_Siliguri'] ${value ? 'text-text-primary' : 'text-text-secondary'}`}>
-        {value || "দেওয়া নেই"}
+        {value || t('profile.notProvided')}
       </span>
       {isVerified && (
         <span className="text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wide font-['Hind_Siliguri'] bg-badge-bg text-badge-text">
-          ভেরিফাইড
+          {t('profile.verified')}
         </span>
       )}
     </div>
   </div>
-));
+  ;
+});
 
 InfoRow.displayName = 'InfoRow';

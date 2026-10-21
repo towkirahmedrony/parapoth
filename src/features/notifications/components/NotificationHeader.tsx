@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { ArrowLeft, Bell, Megaphone } from 'lucide-react';
 
 interface NotificationHeaderProps {
@@ -8,6 +9,7 @@ interface NotificationHeaderProps {
 }
 
 const NotificationHeader: React.FC<NotificationHeaderProps> = ({ activeTab, setActiveTab, onBack }) => {
+  const { t } = useLanguage();
   return (
     <div className="sticky top-0 z-30 backdrop-blur-md border-b bg-surface/90 border-border-color">
       <div className="flex items-center justify-between p-4">
@@ -18,7 +20,7 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({ activeTab, setA
           >
             <ArrowLeft size={24} />
           </button>
-          <h1 className="text-xl font-bold text-text-primary">নোটিফিকেশন</h1>
+          <h1 className="text-xl font-bold text-text-primary">{t('notification.title')}</h1>
         </div>
       </div>
 
@@ -32,7 +34,7 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({ activeTab, setA
           }`}
         >
           <Bell size={18} />
-          নোটিফিকেশন
+          {t('notification.tabNotifications')}
           {activeTab === 'notifications' && (
             <span className="absolute bottom-0 w-full h-0.5 rounded-t-full shadow-sm bg-primary" />
           )}
@@ -47,7 +49,7 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({ activeTab, setA
           }`}
         >
           <Megaphone size={18} />
-          নোটিশ বোর্ড
+          {t('notification.tabNotices')}
           {activeTab === 'notices' && (
             <span className="absolute bottom-0 w-full h-0.5 rounded-t-full shadow-sm bg-primary" />
           )}

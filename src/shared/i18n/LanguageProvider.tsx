@@ -10,6 +10,8 @@ import {
 import { useLocation } from 'react-router-dom';
 import { STORAGE_KEYS } from '@/shared/constants/storageKeys';
 import { StorageUtils } from '@/shared/utils/storage';
+import { supabase } from '@/shared/lib/supabase';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
   APP_MESSAGES,
   DEFAULT_APP_LANGUAGE,
@@ -122,6 +124,7 @@ const applyHomepageMetadata = (language: AppLanguage): void => {
  */
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const { user } = useAuth();
   const [language, setLanguageState] =
     useState<AppLanguage>(readStoredLanguage);
 
@@ -132,7 +135,22 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     setLanguageState(nextLanguage);
     StorageUtils.set(STORAGE_KEYS.LANGUAGE, nextLanguage);
-  }, []);
+    if (user?.id) {
+      void supabase
+        .from('profiles')
+        .update({ language_preference: nextLanguage })
+        .eq('id', user.id);
+    }
+  }, [user?.id]);
+
+  // A signed-in profile is authoritative; localStorage remains the offline/logged-out mirror.
+  useEffect(() => {
+    if (!user?.language_preference || !isAppLanguage(user.language_preference)) return;
+    if (user.language_preference !== language) {
+      setLanguageState(user.language_preference);
+      StorageUtils.set(STORAGE_KEYS.LANGUAGE, user.language_preference);
+    }
+  }, [language, user?.language_preference]);
 
   // Keep tabs in sync when the preference changes elsewhere.
   useEffect(() => {

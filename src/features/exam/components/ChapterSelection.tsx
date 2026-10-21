@@ -1,4 +1,5 @@
 import React, { useState, memo, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { ChevronDown, ChevronRight, Check, ChevronLeft, Minus, ArrowRight, AlertCircle } from 'lucide-react';
 import { Subject, Chapter } from '../types/content';
 
@@ -31,6 +32,7 @@ const Checkbox = memo(({ status, onClick }: { status: 'checked' | 'unchecked' | 
 Checkbox.displayName = 'Checkbox';
 
 const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, onProceed }) => {
+  const { t } = useLanguage();
   const [expandedChapters, setExpandedChapters] = useState<string[]>([]);
   const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set());
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -102,7 +104,7 @@ const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, on
 
   const handleProceedClick = () => {
     if (selectedTopicIds.size === 0) {
-      setErrorMsg("অনুগ্রহ করে পরীক্ষা দেওয়ার জন্য ন্যূনতম একটি টপিক বা অধ্যায় সিলেক্ট করুন।");
+      setErrorMsg(t('exam.topicRequired'));
       return;
     }
     onProceed(Array.from(selectedTopicIds));
@@ -121,7 +123,7 @@ const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, on
             </button>
             <div className="flex flex-col">
               <h2 className="text-lg md:text-xl font-bold leading-tight text-text-primary">{subject.name_bn}</h2>
-              <span className="text-xs md:text-sm opacity-70 text-text-secondary">{selectedTopicIds.size} টি টপিক সিলেক্ট করা হয়েছে</span>
+              <span className="text-xs md:text-sm opacity-70 text-text-secondary">{t('exam.topicsSelected', { count: selectedTopicIds.size })}</span>
             </div>
           </div>
           <Checkbox status={getSubjectStatus()} onClick={handleSubjectCheck} />
@@ -177,7 +179,7 @@ const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, on
                               {topic.name_bn}
                             </span>
                             <span className="text-xs text-text-secondary opacity-60">
-                               {topic.total_questions || 0} টি প্রশ্ন
+                               {t('exam.questionsCount', { count: topic.total_questions || 0 })}
                             </span>
                           </div>
                         </div>
@@ -207,7 +209,7 @@ const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, on
                 : 'bg-secondary text-text-secondary opacity-60 cursor-not-allowed'
             }`}
           >
-            এগিয়ে যান
+            {t('exam.continue')}
             <ArrowRight size={22} />
           </button>
         </div>

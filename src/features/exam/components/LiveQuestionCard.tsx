@@ -1,7 +1,9 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { CheckCircle2, Flag } from 'lucide-react';
 import { Question, ExamQuestion } from '../types/exam';
 import MathDisplay from '@/shared/components/content/MathDisplay';
+import { pickLang } from '@/shared/i18n/localize';
 
 interface LiveQuestionCardProps {
   question: Question | ExamQuestion;
@@ -18,11 +20,12 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
   onSelectOption,
   onReport,
 }) => {
+  const { language } = useLanguage();
   const isLocked = !!selectedOptionId;
   
-  let questionText = question.text_bn || question.text || "";
+  let questionText = pickLang(language, question.text_bn, question.text_en) || question.text || "";
   if (typeof question.body === 'object' && question.body !== null) {
-    questionText = question.body.text_bn || question.body.text || questionText;
+    questionText = pickLang(language, question.body.text_bn, question.body.text_en) || question.body.text || questionText;
   } else if (typeof question.body === 'string' && question.body.trim() !== '') {
     questionText = question.body;
   }
@@ -30,6 +33,7 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
   const qImageUrl = question.media_library?.file_url || question.image_url;
   const compImageUrl = question.comprehension?.media_library?.file_url || question.comprehension?.image_url;
 
+  const { t } = useLanguage();
   return (
     <div className="rounded-2xl border border-card-border bg-card-bg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 relative group">
       
@@ -38,7 +42,7 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
         <div className="border-b border-border-color bg-surface p-5 md:p-6 relative">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
           <h4 className="text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2 text-text-primary opacity-80">
-            উদ্দীপক
+            {t('exam.stimulus')}
           </h4>
           
           {compImageUrl && (
@@ -62,10 +66,10 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
             onReport(question.id);
           }}
           className="absolute top-4 right-4 p-2 rounded-lg border border-border-color bg-card-bg text-text-secondary transition-opacity z-10 shadow-sm flex items-center gap-1.5 opacity-60 hover:opacity-100 md:opacity-0 md:group-hover:opacity-100"
-          title="রিপোর্ট করুন"
+          title={t('exam.report')}
         >
           <Flag size={14} strokeWidth={2.5} />
-          <span className="text-[10px] font-medium hidden sm:inline-block">রিপোর্ট</span>
+          <span className="text-[10px] font-medium hidden sm:inline-block">{t('exam.reportShort')}</span>
         </button>
 
         {/* 2. Question Area */}
@@ -107,7 +111,7 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
                     {isSelected && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
                   </div>
                   <span className={`text-[15px] md:text-[16px] font-['Hind_Siliguri'] leading-snug ${isSelected ? 'text-text-primary font-semibold' : 'text-text-secondary font-normal'}`}>
-                    <MathDisplay content={option.text_bn || option.text} />
+                    <MathDisplay content={pickLang(language, option.text_bn, option.text_en) || option.text} />
                   </span>
                 </div>
                 {isSelected && (

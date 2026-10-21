@@ -1,8 +1,28 @@
 import React, { useState } from 'react';
 import { useEconomy } from '../hooks/useEconomy';
 import { MarketplaceItem } from '../types/economy';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
+
+const getFeatures = (item: MarketplaceItem, language: string): string[] => {
+  const values = (source: unknown, lang: string): string[] => {
+    if (Array.isArray(source)) return source.map(String);
+    if (source && typeof source === 'object') {
+      const localized = source as { bn?: unknown; en?: unknown };
+      const preferred = lang === 'en' ? localized.en : localized.bn;
+      const fallback = lang === 'en' ? localized.bn : localized.en;
+      const list = Array.isArray(preferred) && preferred.length ? preferred : fallback;
+      return Array.isArray(list) ? list.map(String) : [];
+    }
+    return [];
+  };
+  const english = values(item.features_en, 'en');
+  const selected = language === 'en' && english.length ? english : values(item.features, language);
+  return selected.length ? selected : values(item.features_en, language);
+};
 
 const Marketplace: React.FC = () => {
+  const { language } = useLanguage();
   const { 
     coinBalance, 
     isCoinsLoading, 
@@ -78,10 +98,10 @@ const Marketplace: React.FC = () => {
           marketplaceItems.map((item: MarketplaceItem) => (
             <div key={item.id} className="rounded-2xl bg-card-bg border border-card-border p-6 flex flex-col justify-between hover:ring-1 hover:ring-focus-ring transition-all">
               <div>
-                <h3 className="text-xl font-bold mb-2 text-text-primary font-['Hind_Siliguri']">{item.title}</h3>
-                <p className="text-sm mb-4 text-text-secondary font-['Hind_Siliguri']">{item.description}</p>
+                <h3 className="text-xl font-bold mb-2 text-text-primary font-['Hind_Siliguri']">{pickLang(language, item.title, item.title_en)}</h3>
+                <p className="text-sm mb-4 text-text-secondary font-['Hind_Siliguri']">{pickLang(language, item.description, item.description_en)}</p>
                 <ul className="space-y-2 mb-6">
-                  {item.features?.map((f, i) => (
+                  {getFeatures(item, language).map((f, i) => (
                     <li key={i} className="text-xs text-text-secondary flex items-center gap-2 font-['Hind_Siliguri']">
                       ✅ {f}
                     </li>

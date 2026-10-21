@@ -19,6 +19,7 @@ import {
   Home,
   HelpCircle,
 } from 'lucide-react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 type ResultDetailItem = {
   question_id: string;
@@ -32,7 +33,9 @@ type ResultDetailItem = {
   status?: 'correct' | 'wrong' | 'skipped' | 'question_not_found' | string;
 };
 
-const ActionButtons = memo(({ onHome, onBack }: { onHome: () => void; onBack: () => void }) => (
+const ActionButtons = memo(({ onHome, onBack }: { onHome: () => void; onBack: () => void }) => {
+  const { t } = useLanguage();
+  return (
   <>
     <button
       type="button"
@@ -40,7 +43,7 @@ const ActionButtons = memo(({ onHome, onBack }: { onHome: () => void; onBack: ()
       className="flex-1 font-bold py-3.5 md:py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring bg-secondary text-text-primary border border-border-color"
     >
       <Home size={18} />
-      হোমপেজ
+      {t('analysis.home')}
     </button>
 
     <button
@@ -49,10 +52,11 @@ const ActionButtons = memo(({ onHome, onBack }: { onHome: () => void; onBack: ()
       className="flex-1 font-bold py-3.5 md:py-4 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 text-sm md:text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring bg-primary text-primary-foreground"
     >
       <ArrowLeft size={18} />
-      পিছনে যান
+      {t('analysis.back')}
     </button>
   </>
-));
+  );
+});
 ActionButtons.displayName = 'ActionButtons';
 
 const getSafeDetailsJson = (result: any) => {
@@ -73,12 +77,15 @@ const getSafeDetailsJson = (result: any) => {
   return {};
 };
 
-const getStatusText = (item: ResultDetailItem) => {
-  if (item.status === 'question_not_found') return 'প্রশ্ন পাওয়া যায়নি';
-  if (item.status === 'skipped' || item.is_correct === null) return 'স্কিপ';
-  if (item.is_correct === true || item.status === 'correct') return 'সঠিক';
-  if (item.is_correct === false || item.status === 'wrong') return 'ভুল';
-  return 'অজানা';
+const getStatusText = (item: ResultDetailItem, language: 'bn' | 'en') => {
+  const labels = language === 'bn'
+    ? { missing: 'প্রশ্ন পাওয়া যায়নি', skipped: 'স্কিপ', correct: 'সঠিক', wrong: 'ভুল', unknown: 'অজানা' }
+    : { missing: 'Question not found', skipped: 'Skipped', correct: 'Correct', wrong: 'Wrong', unknown: 'Unknown' };
+  if (item.status === 'question_not_found') return labels.missing;
+  if (item.status === 'skipped' || item.is_correct === null) return labels.skipped;
+  if (item.is_correct === true || item.status === 'correct') return labels.correct;
+  if (item.is_correct === false || item.status === 'wrong') return labels.wrong;
+  return labels.unknown;
 };
 
 const getStatusIcon = (item: ResultDetailItem) => {
@@ -118,6 +125,7 @@ const getStatusCardClass = (item: ResultDetailItem) => {
 };
 
 const Analysis: React.FC = () => {
+  const { language, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -348,7 +356,7 @@ const Analysis: React.FC = () => {
             <div className="flex flex-col items-center p-3 md:p-4 rounded-xl border border-border-color bg-surface transition-transform hover:scale-[1.02]">
               <CheckCircle2 className="text-text-primary mb-1.5" size={24} />
               <span className="text-xs md:text-sm font-semibold text-text-secondary opacity-90">
-                সঠিক
+                {t('analysis.correct')}
               </span>
               <span className="text-xl md:text-2xl font-bold text-text-primary">
                 {result.correct_count ?? 0}
@@ -358,7 +366,7 @@ const Analysis: React.FC = () => {
             <div className="flex flex-col items-center p-3 md:p-4 rounded-xl border border-border-color bg-surface transition-transform hover:scale-[1.02]">
               <XCircle className="text-text-primary mb-1.5" size={24} />
               <span className="text-xs md:text-sm font-semibold text-text-secondary opacity-90">
-                ভুল
+                {t('analysis.wrong')}
               </span>
               <span className="text-xl md:text-2xl font-bold text-text-primary">
                 {result.wrong_count ?? 0}
@@ -368,7 +376,7 @@ const Analysis: React.FC = () => {
             <div className="flex flex-col items-center p-3 md:p-4 rounded-xl border border-border-color bg-surface transition-transform hover:scale-[1.02]">
               <MinusCircle className="text-text-primary mb-1.5" size={24} />
               <span className="text-xs md:text-sm font-semibold text-text-secondary opacity-90">
-                স্কিপ
+                {t('analysis.skipped')}
               </span>
               <span className="text-xl md:text-2xl font-bold text-text-primary">
                 {result.skipped_count ?? 0}
@@ -378,7 +386,7 @@ const Analysis: React.FC = () => {
 
           <div className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border shadow-sm font-mono text-lg md:text-xl bg-surface border-border-color">
             <span className="font-semibold opacity-70 text-sm md:text-base font-['Hind_Siliguri'] text-text-secondary">
-              প্রাপ্ত স্কোর:
+              {t('analysis.score')}
             </span>
             <span className="font-bold text-text-primary">
               {result.score ?? 0} / {result.total_marks ?? 0}
@@ -436,33 +444,33 @@ const Analysis: React.FC = () => {
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <p className="text-xs font-semibold text-text-secondary mb-1">
-                        প্রশ্ন {idx + 1}
+                        {t('analysis.questionNumber', { index: idx + 1 })}
                       </p>
                       <p className="text-sm text-text-secondary opacity-80">
-                        এই প্রশ্নের পূর্ণ লেখা ও অপশন সংরক্ষিত পাওয়া যায়নি।
+                        {t('analysis.questionMissing')}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-color bg-card-bg text-sm font-bold">
                       {getStatusIcon(item)}
-                      <span>{getStatusText(item)}</span>
+                      <span>{getStatusText(item, language)}</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-xl border border-border-color bg-card-bg p-3">
-                      <p className="text-xs text-text-secondary mb-1">আপনার উত্তর</p>
+                      <p className="text-xs text-text-secondary mb-1">{t('analysis.yourAnswer')}</p>
                       <p className="font-bold">{selectedAnswerText}</p>
                     </div>
 
                     <div className="rounded-xl border border-border-color bg-card-bg p-3">
-                      <p className="text-xs text-text-secondary mb-1">মার্কস</p>
+                      <p className="text-xs text-text-secondary mb-1">{t('analysis.marks')}</p>
                       <p className="font-bold">{item.marks_awarded ?? 0}</p>
                     </div>
 
                     {correctAnswerText && (
                       <div className="rounded-xl border border-border-color bg-card-bg p-3 sm:col-span-2">
-                        <p className="text-xs text-text-secondary mb-1">সঠিক উত্তর</p>
+                        <p className="text-xs text-text-secondary mb-1">{t('analysis.correctAnswer')}</p>
                         <p className="font-bold">{correctAnswerText}</p>
                       </div>
                     )}
@@ -474,7 +482,7 @@ const Analysis: React.FC = () => {
                       onClick={() => handleReport(item.question_id)}
                       className="px-4 py-2 rounded-xl border border-border-color bg-card-bg text-sm font-semibold active:scale-95 transition-all"
                     >
-                      রিপোর্ট
+                      {t('analysis.report')}
                     </button>
 
                     <button
@@ -482,7 +490,7 @@ const Analysis: React.FC = () => {
                       onClick={() => handleBookmark(item.question_id)}
                       className="px-4 py-2 rounded-xl border border-border-color bg-card-bg text-sm font-semibold active:scale-95 transition-all"
                     >
-                      বুকমার্ক
+                      {t('analysis.bookmark')}
                     </button>
                   </div>
                 </div>
@@ -495,9 +503,9 @@ const Analysis: React.FC = () => {
               <MinusCircle size={32} className="opacity-40" />
             </div>
 
-            <h3 className="text-lg font-bold opacity-80 mb-1">বিস্তারিত তথ্য নেই</h3>
+            <h3 className="text-lg font-bold opacity-80 mb-1">{t('analysis.noDetails')}</h3>
             <p className="text-sm opacity-60">
-              এই পরীক্ষার প্রশ্নের বিস্তারিত তথ্য সার্ভারে সংরক্ষিত নেই।
+              {t('analysis.noDetailsBody')}
             </p>
           </div>
         )}

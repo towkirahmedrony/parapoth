@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Clock } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -16,7 +17,9 @@ const formatTime = (totalSeconds: number): string => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
-const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds, layout = 'compact', label = 'বাকি সময়' }) => {
+const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds, layout = 'compact', label }) => {
+  const { t } = useLanguage();
+  const resolvedLabel = label ?? t('exam.timeLeft');
   const isUrgent = seconds < 300 && seconds > 0;
   const timeString = formatTime(seconds);
 
@@ -36,7 +39,7 @@ const ExamTimer: React.FC<ExamTimerProps> = memo(({ seconds, layout = 'compact',
         )}>
           <Clock size={18} />
           <span className="text-sm font-medium">
-            {label}
+            {resolvedLabel}
           </span>
         </div>
         <div className="text-4xl font-mono font-bold tracking-tight">

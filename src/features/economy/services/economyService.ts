@@ -1,5 +1,6 @@
 import apiClient from '@/shared/lib/apiClient';
 import { MarketplaceItem, PurchaseResponse } from '../types/economy';
+import type { AppLanguage } from '@/shared/i18n/messages';
 
 export const economyService = {
   // ইউজারের বর্তমান ব্যালেন্স দেখা
@@ -10,8 +11,8 @@ export const economyService = {
   },
 
   // মার্কেটপ্লেসের আইটেম লিস্ট আনা
-  getMarketplaceItems: async (): Promise<MarketplaceItem[]> => {
-    const response = await apiClient.get('/marketplace/items');
+  getMarketplaceItems: async (language: AppLanguage = 'bn'): Promise<MarketplaceItem[]> => {
+    const response = await apiClient.get('/marketplace/items', { params: { lang: language } });
     // FIXED: res.data.data থেকে অ্যারে বের করা হলো, যাতে .map() ক্র্যাশ না করে
     return response.data?.data || response.data || [];
   },

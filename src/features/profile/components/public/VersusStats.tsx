@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { motion } from 'framer-motion';
 import { Trophy, Target, Flame, BookOpen, LucideIcon } from 'lucide-react';
 
@@ -48,6 +49,7 @@ const StatRow: React.FC<StatRowProps> = ({ icon: Icon, label, myValue, theirValu
 };
 
 const VersusStats: React.FC<VersusStatsProps> = ({ stats, opponentName }) => {
+  const { t } = useLanguage();
   const { my_stats, their_stats } = stats;
 
   return (
@@ -58,21 +60,21 @@ const VersusStats: React.FC<VersusStatsProps> = ({ stats, opponentName }) => {
     >
       <div className="flex justify-between items-center mb-4 px-4">
         <span className="text-xs font-bold font-['Inter'] text-text-secondary">
-          YOU
+          {t('leaderboard.you')}
         </span>
         <span className="text-xs font-bold px-3 py-1 rounded-full border bg-badge-bg text-badge-text border-border-color">
           VS
         </span>
         <span className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right text-text-secondary">
-          {opponentName || 'THEM'}
+          {opponentName || t('leaderboard.them')}
         </span>
       </div>
 
       <div className="space-y-1">
         <StatRow icon={Trophy} label="XP" myValue={my_stats?.total_xp || 0} theirValue={their_stats?.total_xp || 0} />
-        <StatRow icon={Target} label="সঠিকতা" myValue={my_stats?.accuracy || 0} theirValue={their_stats?.accuracy || 0} unit="%" />
-        <StatRow icon={Flame} label="স্ট্রিক" myValue={my_stats?.current_streak || 0} theirValue={their_stats?.current_streak || 0} />
-        <StatRow icon={BookOpen} label="পরীক্ষা" myValue={my_stats?.total_exams || 0} theirValue={their_stats?.total_exams || 0} />
+        <StatRow icon={Target} label={t('leaderboard.accuracy')} myValue={my_stats?.accuracy || 0} theirValue={their_stats?.accuracy || 0} unit="%" />
+        <StatRow icon={Flame} label={t('profile.streak')} myValue={my_stats?.current_streak || 0} theirValue={their_stats?.current_streak || 0} />
+        <StatRow icon={BookOpen} label={t('leaderboard.exams')} myValue={my_stats?.total_exams || 0} theirValue={their_stats?.total_exams || 0} />
       </div>
     </motion.div>
   );

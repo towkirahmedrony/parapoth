@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { ChevronRight, LayoutGrid } from 'lucide-react';
 import { useCurriculumTree } from '../hooks/useContentData';
 import { getIconByName } from '@/shared/utils/iconMapper';
@@ -16,10 +17,10 @@ export interface CurriculumSubject {
 }
 
 const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
+  const { t } = useLanguage();
   const { data: subjects, isLoading } = useCurriculumTree();
-
   if (isLoading) {
-    return (
+  return (
       <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full">
          <Skeleton className="h-[88px] w-full rounded-2xl bg-surface-elevated" />
          <Skeleton className="h-[88px] w-full rounded-2xl bg-surface-elevated" />
@@ -32,8 +33,8 @@ const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
     return (
       <div className="p-8 text-center flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-color m-4 max-w-3xl mx-auto">
         <LayoutGrid size={48} className="mb-4 text-text-secondary" />
-        <h3 className="text-lg font-semibold text-text-primary">কোনো বিষয় পাওয়া যায়নি</h3>
-        <p className="text-sm mt-1 text-text-secondary">অনুগ্রহ করে পরে আবার চেষ্টা করুন।</p>
+        <h3 className="text-lg font-semibold text-text-primary">{t('exam.noSubjects')}</h3>
+        <p className="text-sm mt-1 text-text-secondary">{t('exam.tryAgainLater')}</p>
       </div>
     );
   }

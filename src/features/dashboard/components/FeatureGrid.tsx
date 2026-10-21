@@ -4,6 +4,8 @@ import { ChevronRight } from 'lucide-react';
 import { getIconByName } from '@/shared/utils/iconMapper';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
 import type { GridItem } from '../hooks/useHomeGrids';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
 
 const SKELETON_COUNT = 4;
 
@@ -24,6 +26,7 @@ const isImageSource = (value: string) => {
 };
 
 const FeatureGrid: React.FC<FeatureGridProps> = memo(({ features, loading = false, loadingLabel }) => {
+  const { language } = useLanguage();
   if (loading) {
     return (
       <div
@@ -73,7 +76,7 @@ const FeatureGrid: React.FC<FeatureGridProps> = memo(({ features, loading = fals
 
             <div className="relative z-10 mt-3 flex flex-1 flex-col items-center justify-center">
               <span className="line-clamp-2 font-['Hind_Siliguri'] text-base font-bold leading-snug tracking-tight text-text-primary">
-                {item.title}
+                {pickLang(language, item.title_bn, item.title_en) || item.title}
               </span>
             </div>
 

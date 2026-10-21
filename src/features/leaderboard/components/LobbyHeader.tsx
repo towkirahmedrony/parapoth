@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Trophy, Shield } from 'lucide-react';
 
 interface LobbyHeaderProps {
@@ -7,11 +8,8 @@ interface LobbyHeaderProps {
   onTrophyClick: () => void;
 }
 
-export const LobbyHeader: React.FC<LobbyHeaderProps> = ({ 
-  groupName, 
-  groupLevel, 
-  onTrophyClick 
-}) => {
+export const LobbyHeader: React.FC<LobbyHeaderProps> = ({ groupName, groupLevel, onTrophyClick }) => {
+  const { t } = useLanguage();
   return (
     <div className="bg-card-bg border-b border-border-color p-4 flex items-center justify-between sticky top-0 z-10">
       <div className="flex items-center gap-3">
@@ -20,10 +18,10 @@ export const LobbyHeader: React.FC<LobbyHeaderProps> = ({
         </div>
         <div>
           <h2 className="text-text-primary font-bold text-lg leading-tight">
-            {groupName || 'পরোখ লবি'}
+            {groupName || t('leaderboard.defaultLobby')}
           </h2>
           {groupLevel && (
-            <p className="text-text-secondary text-sm">লেভেল {groupLevel} স্কোয়াড</p>
+            <p className="text-text-secondary text-sm">{t('leaderboard.levelSquad', { level: groupLevel })}</p>
           )}
         </div>
       </div>
@@ -31,7 +29,7 @@ export const LobbyHeader: React.FC<LobbyHeaderProps> = ({
       <button 
         onClick={onTrophyClick}
         className="hover:bg-surface-elevated p-2 rounded-full transition-colors"
-        aria-label="লিডারবোর্ড খুলুন"
+        aria-label={t('leaderboard.open')}
       >
         <Trophy className="text-primary w-6 h-6" />
       </button>

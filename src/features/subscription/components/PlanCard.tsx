@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { Check, Star } from 'lucide-react';
 import { Tables } from '@/shared/types/supabase';
 import Button from '@/shared/components/ui/Button';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
 
 type SubscriptionPlan = Tables<'subscription_plans'>;
 
@@ -11,6 +13,7 @@ interface PlanCardProps {
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
+  const { language } = useLanguage();
   const isDiscounted = plan.discounted_price !== null && plan.discounted_price < plan.price;
   const currentPrice = isDiscounted ? plan.discounted_price : plan.price;
   
@@ -22,8 +25,21 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
 
   // Safe parsing for features
   const featuresList = useMemo(() => {
-    return Array.isArray(plan.features) ? plan.features : [];
-  }, [plan.features]);
+    const toList = (value: unknown): string[] => {
+      if (Array.isArray(value)) return value.map(String);
+      if (value && typeof value === 'object') {
+        const localized = value as { bn?: unknown; en?: unknown };
+        const preferred = language === 'en' ? localized.en : localized.bn;
+        const fallback = language === 'en' ? localized.bn : localized.en;
+        const list = Array.isArray(preferred) && preferred.length ? preferred : fallback;
+        return Array.isArray(list) ? list.map(String) : [];
+      }
+      return [];
+    };
+    const selected = language === 'en' && plan.features_en != null ? plan.features_en : plan.features;
+    const result = toList(selected);
+    return result.length ? result : toList(plan.features);
+  }, [language, plan.features, plan.features_en]);
 
   if (!plan) return null;
 
@@ -43,7 +59,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect }) => {
       )}
 
       <div className="text-center mb-6 pt-2">
-        <h3 className="text-xl font-bold mb-2 text-text-primary">{plan.name}</h3>
+        <h3 className="text-xl font-bold mb-2 text-text-primary">{pickLang(language, plan.name, plan.name_en)}</h3>
         <div className="flex items-center justify-center gap-2">
           <span className="text-3xl font-extrabold text-primary">
             ৳{currentPrice}

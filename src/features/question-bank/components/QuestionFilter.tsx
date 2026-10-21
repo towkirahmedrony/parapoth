@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Filter, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -23,13 +24,6 @@ interface QuestionFilterProps {
   ) => void;
   onReset: () => void;
 }
-
-const SORT_OPTIONS: Array<{ value: QuestionBankFilterState['sortBy']; label: string }> = [
-  { value: 'newest', label: 'নতুন' },
-  { value: 'oldest', label: 'পুরানো' },
-  { value: 'most_attempted', label: 'বেশি চেষ্টা' },
-  { value: 'least_attempted', label: 'কম চেষ্টা' },
-];
 
 const YEARS = Array.from({ length: 15 }, (_, i) => {
   const year = new Date().getFullYear() - i;
@@ -82,15 +76,15 @@ function ToggleChip(props: {
 }
 
 export const QuestionFilter: React.FC<QuestionFilterProps> = ({
-  filters,
-  chapters,
-  topics,
-  boards,
-  colleges,
-  admissions,
-  onFilterChange,
-  onReset,
+  filters, chapters, topics, boards, colleges, admissions, onFilterChange, onReset,
 }) => {
+  const { t } = useLanguage();
+  const sortOptions: Array<{ value: QuestionBankFilterState['sortBy']; label: string }> = [
+    { value: 'newest', label: t('questionBank.newest') },
+    { value: 'oldest', label: t('questionBank.oldest') },
+    { value: 'most_attempted', label: t('questionBank.mostAttempted') },
+    { value: 'least_attempted', label: t('questionBank.leastAttempted') },
+  ];
   return (
     <Card className="rounded-3xl border border-card-border bg-card-bg p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -98,7 +92,7 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
           <div className="rounded-xl bg-secondary p-2 text-text-primary">
             <Filter className="h-4 w-4" />
           </div>
-          <h3 className="text-sm font-semibold text-text-primary">ফিল্টার</h3>
+          <h3 className="text-sm font-semibold text-text-primary">{t('questionBank.filter')}</h3>
         </div>
 
         <Button
@@ -117,18 +111,18 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
           <Input
             value={filters.search}
             onChange={(event) => onFilterChange('search', event.target.value)}
-            placeholder="খুঁজুন..."
+            placeholder={t('questionBank.search')}
             className="h-10 rounded-xl pl-9 bg-input-bg border-input-border text-sm text-text-primary focus:ring-focus-ring"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-1">
           <SelectField
-            label="অধ্যায়"
+            label={t('questionBank.chapter')}
             value={filters.chapterId}
             onChange={(value) => onFilterChange('chapterId', value)}
             options={[
-              { value: '', label: 'সব অধ্যায়' },
+              { value: '', label: t('questionBank.allChapters') },
               ...chapters.map((item) => ({
                 value: item.id,
                 label: item.name_bn,
@@ -137,11 +131,11 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
           />
 
           <SelectField
-            label="টপিক"
+            label={t('questionBank.topic')}
             value={filters.topicId}
             onChange={(value) => onFilterChange('topicId', value)}
             options={[
-              { value: '', label: 'সব টপিক' },
+              { value: '', label: t('questionBank.allTopics') },
               ...topics.map((item) => ({
                 value: item.id,
                 label: item.name_bn,
@@ -150,28 +144,28 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
           />
 
           <SelectField
-            label="উৎস"
+            label={t('questionBank.source')}
             value={filters.institutionType}
             onChange={(value) => onFilterChange('institutionType', value)}
             options={[
-              { value: '', label: 'সব উৎস' },
-              { value: 'board', label: 'বোর্ড' },
-              { value: 'college', label: 'কলেজ' },
-              { value: 'admission', label: 'এডমিশন' },
+              { value: '', label: t('questionBank.allSources') },
+              { value: 'board', label: t('questionBank.board') },
+              { value: 'college', label: t('questionBank.college') },
+              { value: 'admission', label: t('questionBank.admission') },
             ]}
           />
 
           {filters.institutionType && (
             <SelectField
               label={
-                filters.institutionType === 'board' ? 'বোর্ড নির্বাচন করুন' :
-                filters.institutionType === 'college' ? 'কলেজ নির্বাচন করুন' : 
-                'এডমিশন নির্বাচন করুন'
+                filters.institutionType === 'board' ? t('questionBank.selectBoard') :
+                filters.institutionType === 'college' ? t('questionBank.selectCollege') :
+                t('questionBank.selectAdmission')
               }
               value={filters.institutionEiin}
               onChange={(value) => onFilterChange('institutionEiin', value)}
               options={[
-                { value: '', label: 'সব নির্বাচন করুন' },
+                { value: '', label: t('questionBank.allSelect') },
                 ...(filters.institutionType === 'board' ? boards :
                    filters.institutionType === 'college' ? colleges :
                    admissions).map((item) => ({
@@ -183,20 +177,20 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
           )}
 
           <SelectField
-            label="সাল"
+            label={t('questionBank.year')}
             value={filters.year}
             onChange={(value) => onFilterChange('year', value)}
             options={[
-              { value: '', label: 'সব সাল' },
+              { value: '', label: t('questionBank.allYears') },
               ...YEARS,
             ]}
           />
 
           <SelectField
-            label="সাজান"
+            label={t('questionBank.sort')}
             value={filters.sortBy}
             onChange={(value) => onFilterChange('sortBy', value as QuestionBankFilterState['sortBy'])}
-            options={SORT_OPTIONS}
+            options={sortOptions}
           />
         </div>
 
@@ -209,17 +203,17 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
           <div className="flex flex-wrap gap-1.5">
             <ToggleChip
               active={filters.bookmarkedOnly}
-              label="সেভ করা"
+              label={t('questionBank.saved')}
               onClick={() => onFilterChange('bookmarkedOnly', !filters.bookmarkedOnly)}
             />
             <ToggleChip
               active={filters.mistakesOnly}
-              label="ভুল গুলো"
+              label={t('questionBank.mistakes')}
               onClick={() => onFilterChange('mistakesOnly', !filters.mistakesOnly)}
             />
             <ToggleChip
               active={filters.premiumOnly}
-              label="প্রিমিয়াম"
+              label={t('questionBank.premium')}
               onClick={() => onFilterChange('premiumOnly', !filters.premiumOnly)}
             />
           </div>

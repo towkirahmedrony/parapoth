@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import {
   ArrowRight,
   Bookmark,
@@ -135,6 +136,7 @@ function QuestionCard(props: {
 }
 
 export default function QuestionBank() {
+  const { t } = useLanguage();
   const {
     filters,
     updateFilter,
@@ -264,10 +266,10 @@ export default function QuestionBank() {
                 <Card className="rounded-[20px] border border-card-border bg-card-bg p-3 shadow-sm">
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h2 className="text-sm font-bold text-text-primary">ফলাফল</h2>
+                      <h2 className="text-sm font-bold text-text-primary">{t('questionBank.results')}</h2>
                       <p className="text-[11px] text-text-secondary font-medium">
-                        {stats.total} টি প্রশ্ন পাওয়া গেছে
-                        {activeFilterCount > 0 ? ` • ${activeFilterCount} টি ফিল্টার` : ''}
+                        {stats.total} {t('questionBank.found', { count: stats.total })}
+                        {activeFilterCount > 0 ? ` • ${t('questionBank.filters', { count: activeFilterCount })}` : ''}
                       </p>
                     </div>
 
@@ -299,18 +301,18 @@ export default function QuestionBank() {
                 ) : error ? (
                   <Card className="rounded-[20px] border border-border-color bg-card-bg p-6">
                     <div className="space-y-2 text-center">
-                      <h3 className="text-sm font-bold text-text-primary">ত্রুটি হয়েছে</h3>
+                      <h3 className="text-sm font-bold text-text-primary">{t('questionBank.error')}</h3>
                       <p className="text-[11px] text-text-secondary font-medium">
-                        {(error as Error)?.message || 'প্রশ্ন লোড করা সম্ভব হয়নি।'}
+                        {(error as Error)?.message || t('questionBank.loadError')}
                       </p>
                     </div>
                   </Card>
                 ) : questions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Search className="h-10 w-10 text-text-secondary mb-3 opacity-30" />
-                    <EmptyState title="কোনো প্রশ্ন নেই" />
+                    <EmptyState title={t('questionBank.empty')} />
                     <p className="mt-1 text-[11px] text-text-secondary font-medium">
-                      আবার চেষ্টা করুন।
+                      {t('questionBank.tryAgain')}
                     </p>
                   </div>
                 ) : (

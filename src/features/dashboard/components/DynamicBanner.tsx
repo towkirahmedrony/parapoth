@@ -2,15 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Crown } from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
 
 interface Banner {
   id: string;
   title: string | null;
+  title_bn?: string | null;
+  title_en?: string | null;
   image_url: string | null;
   action_link: string | null;
   target_rules: any;
   description?: string | null;
+  description_bn?: string | null;
+  description_en?: string | null;
   button_text?: string | null;
+  button_text_bn?: string | null;
+  button_text_en?: string | null;
 }
 
 interface DynamicBannerProps {
@@ -20,7 +27,7 @@ interface DynamicBannerProps {
 
 const DynamicBanner: React.FC<DynamicBannerProps> = ({ banners, isLoading }) => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -103,18 +110,24 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ banners, isLoading }) => 
 
                 <div className="min-w-0 flex-1">
                   <p className="font-['Hind_Siliguri'] text-base font-bold leading-tight text-text-primary">
-                    {banner.title}
+                    {pickLang(language, banner.title_bn || banner.title, banner.title_en)}
                   </p>
                   <p className="mt-0.5 line-clamp-2 font-['Hind_Siliguri'] text-xs leading-snug text-text-secondary">
-                    {banner.target_rules?.description ||
-                      banner.description ||
+                    {pickLang(
+                      language,
+                      banner.target_rules?.description_bn || banner.description_bn || banner.description,
+                      banner.target_rules?.description_en || banner.description_en,
+                    ) ||
                       t('home.bannerFallbackDescription')}
                   </p>
                 </div>
 
                 <div className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-                  {banner.target_rules?.button_text ||
-                    banner.button_text ||
+                  {pickLang(
+                    language,
+                    banner.target_rules?.button_text_bn || banner.button_text_bn || banner.button_text,
+                    banner.target_rules?.button_text_en || banner.button_text_en,
+                  ) ||
                     t('home.bannerFallbackButton')}
                 </div>
               </div>

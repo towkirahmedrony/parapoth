@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/shared/lib/apiClient';
 import { useLocalStorage } from '@/shared/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/shared/constants/storageKeys';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
 
@@ -20,6 +22,7 @@ interface SystemConfig {
   ui_theme_settings?: any;
   maintenance_mode?: boolean;
   maintenance_message?: string;
+  maintenance_message_en?: string | null;
   is_force_update_required?: boolean;
   min_app_version?: string;
 }
@@ -29,6 +32,7 @@ interface SystemGuardProps {
 }
 
 export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
+  const { language } = useLanguage();
   const [dismissedNoticeId, setDismissedNoticeId] = useLocalStorage<string | null>(STORAGE_KEYS.DISMISSED_NOTICE, null);
 
   const { data: configs, isLoading } = useQuery<SystemConfig[]>({
@@ -50,7 +54,10 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
       const globalConfig = configs.find((c) => c.key === 'global_settings');
       if (globalConfig) {
         if (globalConfig.maintenance_mode) {
-          maintenance = { active: true, message: globalConfig.maintenance_message || '' };
+          maintenance = {
+            active: true,
+            message: pickLang(language, globalConfig.maintenance_message, globalConfig.maintenance_message_en),
+          };
         }
         if (globalConfig.is_force_update_required) {
           const minVer = globalConfig.min_app_version || '0.0.0';
@@ -67,7 +74,7 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
     }
 
     return { maintenance, forceUpdate, globalNotice };
-  }, [configs]);
+  }, [configs, language]);
 
   const handleUpdate = async () => {
     if ('caches' in window) {

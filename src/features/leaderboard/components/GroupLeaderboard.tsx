@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { GroupLeaderboardResponse, Squad } from '../types/groupLeaderboard';
 import { SquadRow } from './SquadRow';
 import { NoSquadCTA } from './NoSquadCTA';
@@ -10,16 +11,13 @@ interface GroupLeaderboardProps {
   onClose: () => void;
 }
 
-export const GroupLeaderboard: React.FC<GroupLeaderboardProps> = ({ 
-  data, 
-  isLoading, 
-  onClose 
-}) => {
+export const GroupLeaderboard: React.FC<GroupLeaderboardProps> = ({ data, isLoading, onClose }) => {
+  const { t } = useLanguage();
   if (isLoading || !data) {
     return (
       <div className="bg-app flex flex-col h-full p-8 items-center justify-center">
         <div className="bg-surface border border-border-color animate-pulse w-12 h-12 rounded-full mb-4"></div>
-        <div className="text-text-secondary">লিডারবোর্ড লোড হচ্ছে...</div>
+        <div className="text-text-secondary">{t('leaderboard.loading')}</div>
       </div>
     );
   }
@@ -34,10 +32,10 @@ export const GroupLeaderboard: React.FC<GroupLeaderboardProps> = ({
           <Trophy className="text-primary w-5 h-5" />
           <div>
             <h1 className="text-text-primary font-bold text-lg leading-none">
-              সাপ্তাহিক লিডারবোর্ড
+              {t('leaderboard.weeklyTitle')}
             </h1>
             <span className="text-text-secondary text-xs mt-1 block">
-              পরোখের অন্যান্য স্কোয়াডের সাথে পাল্লা দিন
+              {t('leaderboard.weeklySubtitle')}
             </span>
           </div>
         </div>
@@ -54,7 +52,7 @@ export const GroupLeaderboard: React.FC<GroupLeaderboardProps> = ({
         {has_group && my_group && (
           <div className="bg-card-bg border-b border-border-color shadow-sm sticky top-0 z-10">
             <div className="bg-surface text-text-secondary px-4 py-2 text-xs font-bold uppercase tracking-wider">
-              ⭐ আপনার স্কোয়াড ⭐
+              ⭐ {t('leaderboard.yourSquad')} ⭐
             </div>
             <SquadRow squad={my_group} isPinned={true} />
           </div>
@@ -63,7 +61,7 @@ export const GroupLeaderboard: React.FC<GroupLeaderboardProps> = ({
         {/* Top Squads List */}
         <div className="bg-card-bg">
           <div className="bg-surface text-text-secondary border-y border-border-color px-4 py-3 text-xs font-bold uppercase tracking-wider">
-            👑 শীর্ষ স্কোয়াডগুলো 👑
+            👑 {t('leaderboard.topSquads')} 👑
           </div>
           <div>
             {top_groups.map((squad: Squad) => (

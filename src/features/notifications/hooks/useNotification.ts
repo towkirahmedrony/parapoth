@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { requestNotificationPermission, saveDeviceTokenToAPI, getOrCreateDeviceId } from '../services/notificationService';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 export const useNotification = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showDeniedModal, setShowDeniedModal] = useState(false);
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if ('Notification' in window) {
@@ -15,12 +17,12 @@ export const useNotification = () => {
 
   const toggleNotifications = async () => {
     if (!('Notification' in window)) {
-      alert('আপনার ব্রাউজার নোটিফিকেশন সাপোর্ট করে না।');
+      alert(t('notification.browserUnsupported'));
       return;
     }
 
     if (notificationsEnabled) {
-      const confirmDisable = window.confirm('আপনি কি নিশ্চিত যে নোটিফিকেশন বন্ধ করতে চান? আপনি গুরুত্বপূর্ণ আপডেট মিস করতে পারেন।');
+      const confirmDisable = window.confirm(t('notification.disableConfirm'));
       if (confirmDisable) {
         setNotificationsEnabled(false);
         
@@ -39,7 +41,7 @@ export const useNotification = () => {
 
       try {
         if (!user) {
-          console.warn("User must be logged in to enable notifications.");
+          console.warn(t('notification.loginRequired'));
           return;
         }
 

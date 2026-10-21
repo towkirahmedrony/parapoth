@@ -10,6 +10,7 @@ export interface AppUser extends SupabaseUser {
   full_name?: string | null;
   username?: string | null;
   avatar_url?: string | null;
+  language_preference?: 'bn' | 'en' | string | null;
 }
 
 export interface AuthContextType {

@@ -3,12 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { FileText, Building2 } from 'lucide-react';
 import ModelTestTab from '../components/ModelTestTab';
 import BoardExamTab from '../components/BoardExamTab';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 type TabType = 'model' | 'board';
 
 const MIN_SWIPE_DISTANCE = 50;
 
 const Selection: React.FC = () => {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('type') as TabType) || 'model';
 
@@ -59,7 +61,7 @@ const Selection: React.FC = () => {
               }`}
             >
               <FileText size={18} strokeWidth={activeTab === 'model' ? 2.5 : 2} />
-              মডেল টেস্ট
+              {t('exam.modelTest')}
               <div 
                 className={`absolute bottom-0 left-0 w-full h-0.5 transition-opacity duration-300 bg-primary ${
                   activeTab === 'model' ? 'opacity-100' : 'opacity-0'
@@ -74,7 +76,7 @@ const Selection: React.FC = () => {
               }`}
             >
               <Building2 size={18} strokeWidth={activeTab === 'board' ? 2.5 : 2} />
-              বোর্ড পরীক্ষা
+              {t('exam.boardExam')}
               <div 
                 className={`absolute bottom-0 left-0 w-full h-0.5 transition-opacity duration-300 bg-primary ${
                   activeTab === 'board' ? 'opacity-100' : 'opacity-0'

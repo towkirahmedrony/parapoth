@@ -2,6 +2,8 @@ import React, { memo } from 'react';
 import { Question } from '../types/exam';
 import MathDisplay from '@/shared/components/content/MathDisplay';
 import { CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
 
 interface QuestionCardProps {
   question: Question;
@@ -17,12 +19,13 @@ const QuestionCard: React.FC<QuestionCardProps> = memo(({
   onOptionSelect,
   imageAlt = 'Question',
 }) => {
+  const { language } = useLanguage();
   
-  let questionText = question.text_bn || question.text || "";
+  let questionText = pickLang(language, question.text_bn, question.text_en) || question.text || "";
   let bodyImageUrl: string | null = null;
 
   if (typeof question.body === 'object' && question.body !== null) {
-    questionText = question.body.text_bn || question.body.text || questionText;
+    questionText = pickLang(language, question.body.text_bn, question.body.text_en) || question.body.text || questionText;
     bodyImageUrl =
       (question.body as { image_url?: string | null }).image_url ?? null;
   } else if (typeof question.body === 'string' && question.body.trim() !== '') {
@@ -90,7 +93,7 @@ const QuestionCard: React.FC<QuestionCardProps> = memo(({
                     )}
                   </div>
                   <span className={`text-[15px] md:text-[16px] font-['Hind_Siliguri'] leading-snug ${isSelected ? 'text-text-primary font-semibold' : 'text-text-secondary font-normal'}`}>
-                    <MathDisplay content={option.text_bn || option.text} />
+                    <MathDisplay content={pickLang(language, option.text_bn, option.text_en) || option.text} />
                     {option.image_url && (
                       <img
                         src={option.image_url}

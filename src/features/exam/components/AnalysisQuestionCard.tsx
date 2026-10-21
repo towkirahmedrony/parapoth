@@ -4,7 +4,9 @@ import { Question } from '../types/exam';
 import { formatBoardRef } from '../../leaderboard/utils/xpCalculator';
 import MathDisplay from '@/shared/components/content/MathDisplay';
 import QuestionText from '@/shared/components/content/QuestionText';
-import { localize } from '@/shared/utils/questionFormat';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { getLocalized, pickLang } from '@/shared/i18n/localize';
+import { parseQuestion } from '@/shared/utils/questionFormat';
 
 export interface AnalysisQuestionCardProps {
   question: Question;
@@ -26,8 +28,6 @@ const isCorrectFlag = (option: Question['options'][number]): boolean =>
   String(option.isCorrect).toLowerCase() === 'true' ||
   String(option.is_correct).toLowerCase() === 'true';
 
-const FALLBACK_EXPLANATION = "এই প্রশ্নের জন্য কোনো ব্যাখ্যা উপলব্ধ নেই।";
-
 const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   question,
   index,
@@ -38,6 +38,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   onReport,
   onBookmark
 }) => {
+  const { language, t } = useLanguage();
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(initialBookmarked);
 
@@ -70,56 +71,65 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
       bgClass: 'bg-surface-elevated',
       borderClass: 'border-border-color',
       icon: <MinusCircle size={16} />, 
-      label: 'স্কিপড' 
+      label: t('analysis.skipped')
     };
     if (resolvedStatus === 'correct') return { 
       textClass: 'text-emerald-600',
       bgClass: 'bg-emerald-500/10',
       borderClass: 'border-emerald-500/30',
       icon: <CheckCircle2 size={16} />, 
-      label: 'সঠিক' 
+      label: t('analysis.correct')
     };
     if (resolvedStatus === 'wrong') return { 
       textClass: 'text-red-600',
       bgClass: 'bg-red-500/10',
       borderClass: 'border-red-500/30',
       icon: <XCircle size={16} />, 
-      label: 'ভুল' 
+      label: t('analysis.wrong')
     };
     if (resolvedStatus === 'question_not_found') return {
       textClass: 'text-text-secondary',
       bgClass: 'bg-surface-elevated',
       borderClass: 'border-border-color',
       icon: <AlertCircle size={16} />,
-      label: 'প্রশ্ন পাওয়া যায়নি'
+      label: t('analysis.questionNotFound')
     };
     return { 
       textClass: 'text-text-secondary',
       bgClass: 'bg-surface-elevated',
       borderClass: 'border-border-color',
       icon: <MinusCircle size={16} />, 
-      label: 'জমা হয়েছে' 
+      label: t('analysis.submitted')
     };
-  }, [resolvedStatus]);
+  }, [resolvedStatus, t]);
   
   const rawExamRef = question.exam_references ? JSON.stringify(question.exam_references) : question.board_ref;
   const boardTag = formatBoardRef(rawExamRef || '');
 
   const questionText = useMemo(() => {
-    let text = localize(question.text_bn || question.text || '', 'bn');
+    let text = pickLang(language, question.text_bn, question.text_en) || question.text || '';
     const body = question.body;
     if (body && typeof body === 'object') {
       const b = body as Record<string, unknown>;
-      text = localize(b.text_bn || b.text || body, 'bn') || text;
+      text = pickLang(language, String(b.text_bn ?? ''), String(b.text_en ?? '')) || String(b.text ?? '') || text;
     } else if (typeof body === 'string' && body.trim() !== '') {
-      text = localize(body, 'bn') || text;
+      text = body || text;
     }
     return text;
-  }, [question.text_bn, question.text, question.body]);
+  }, [language, question.text_bn, question.text_en, question.text, question.body]);
+
+  const parsedQuestion = useMemo(() => parseQuestion(questionText), [questionText]);
 
   const explanationText = useMemo(
-    () => localize(question.explanation, 'bn').trim() || FALLBACK_EXPLANATION,
-    [question.explanation]
+    () => {
+      if (question.explanation && typeof question.explanation === 'object') {
+        return getLocalized(question.explanation, language).trim() || t('analysis.explanationFallback');
+      }
+      return typeof question.explanation === 'string' && question.explanation.trim()
+        ? question.explanation.trim()
+        : t('analysis.explanationFallback');
+    },
+    [language, question.explanation, t]
   );
 
   const imageUrl = question.image_url || question.media_library?.file_url;
@@ -153,14 +163,14 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
                   ? 'bg-accent text-text-primary' 
                   : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
               }`}
-              title="সেভ করুন"
+              title={t('analysis.bookmark')}
             >
               <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} strokeWidth={2} />
             </button>
             <button 
               onClick={() => onReport?.(question.id)} 
               className="p-1.5 rounded-full transition-all active:scale-95 text-text-secondary hover:bg-surface-elevated hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-focus-ring" 
-              title="রিপোর্ট করুন"
+              title={t('analysis.report')}
             >
               <Flag size={16} strokeWidth={2} />
             </button>
@@ -173,7 +183,22 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
 
       <div className="p-4 sm:p-5 bg-surface">
         <div className="font-['Hind_Siliguri'] text-[15px] sm:text-base mb-5 leading-relaxed text-text-primary">
-          <QuestionText text={questionText} />
+          {parsedQuestion.statements.length > 0 ? (
+            <>
+              <QuestionText text={parsedQuestion.stem} />
+              <div className="mt-2 space-y-1">
+                {parsedQuestion.statements.map((statement) => (
+                  <div key={statement.label} className="whitespace-pre-line">
+                    <span className="font-semibold">{statement.label}.</span>{' '}
+                    <QuestionText text={statement.text} />
+                  </div>
+                ))}
+              </div>
+              {parsedQuestion.tail && <div className="mt-2"><QuestionText text={parsedQuestion.tail} /></div>}
+            </>
+          ) : (
+            <QuestionText text={questionText} />
+          )}
           {imageUrl && (
             <img 
               src={imageUrl} 
@@ -208,7 +233,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
                 className={`p-3.5 sm:p-4 rounded-xl border text-sm sm:text-base flex justify-between items-start gap-3 transition-colors ${containerClasses}`}
               >
                 <div className={`font-['Hind_Siliguri'] flex-1 ${textClasses}`}>
-                  <MathDisplay content={localize(opt.text_bn || opt.text || opt.text_en || '', 'bn')} />
+                  <MathDisplay content={pickLang(language, opt.text_bn, opt.text_en) || opt.text || ''} />
                 </div>
                 {isAns && <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-emerald-500" />}
                 {isSelected && showCorrectAnswers && !isAns && <XCircle size={18} className="shrink-0 mt-0.5 text-red-500" />}
@@ -225,7 +250,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
             className="flex items-center justify-center sm:justify-start gap-2 text-sm font-bold transition-all w-full py-2 rounded-lg text-text-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-focus-ring"
           >
             {showExplanation ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            {showExplanation ? 'ব্যাখ্যা লুকান' : 'ব্যাখ্যা ও সমাধান দেখুন'}
+            {showExplanation ? t('analysis.hideExplanation') : t('analysis.showExplanation')}
           </button>
 
           {showExplanation && (
@@ -233,7 +258,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
               <div className="flex items-center gap-2 mb-3">
                  <AlertCircle size={16} className="text-text-primary" />
                  <span className="text-xs sm:text-sm uppercase font-bold tracking-wider opacity-80 text-text-primary">
-                    ব্যাখ্যা
+                    {t('analysis.explanation')}
                  </span>
               </div>
               <div className="text-sm sm:text-base font-['Hind_Siliguri'] leading-relaxed opacity-90 text-text-secondary">

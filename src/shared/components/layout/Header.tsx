@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import LanguageSwitcher from '@/shared/components/ui/LanguageSwitcher';
 import { supabase } from '../../lib/supabase';
 
 const Header: React.FC = () => {
@@ -101,8 +102,9 @@ const Header: React.FC = () => {
 
         <nav
           aria-label={t('header.shortcutsLabel')}
-          className="flex items-center gap-3"
+          className="flex items-center gap-2 sm:gap-3"
         >
+          <LanguageSwitcher />
           <button
             type="button"
             onClick={() => navigate('/dashboard/leaderboard')}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Lock, Pentagon } from 'lucide-react';
 import { League } from '../types/leaderboard';
@@ -43,10 +44,11 @@ const getLeagueGradientColors = (index: number) => {
 };
 
 export const LeagueHeader: React.FC<Props> = ({
-  selectedLeagueIndex, prevLeague, selectedLeague, nextLeague, 
+  selectedLeagueIndex, prevLeague, selectedLeague, nextLeague,
   isLocked, direction, progressPercentage, pointsNeeded, isCurrentLeague,
   onPrev, onNext, onDragEnd
 }) => {
+  const { t } = useLanguage();
   const gradientColors = getLeagueGradientColors(selectedLeagueIndex);
 
   return (
@@ -56,7 +58,7 @@ export const LeagueHeader: React.FC<Props> = ({
           
           <button 
             onClick={onPrev}
-            aria-label="Previous League"
+            aria-label={t('leaderboard.previousLeague')}
             disabled={!prevLeague}
             className={`
               relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 outline-none
@@ -71,7 +73,7 @@ export const LeagueHeader: React.FC<Props> = ({
                         <img 
                             src={prevLeague.badge_url} 
                             className="w-10 h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] filter brightness-110 object-contain" 
-                            alt="prev" 
+                            alt={t('leaderboard.previousLeague')}
                         />
                       )}
                       <ChevronLeft className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3] text-text-primary" />
@@ -131,7 +133,7 @@ export const LeagueHeader: React.FC<Props> = ({
 
           <button 
             onClick={onNext}
-            aria-label="Next League"
+            aria-label={t('leaderboard.nextLeague')}
             disabled={!nextLeague}
             className={`
               relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 outline-none
@@ -146,7 +148,7 @@ export const LeagueHeader: React.FC<Props> = ({
                         <img 
                             src={nextLeague.badge_url} 
                             className="w-10 h-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] filter brightness-110 object-contain" 
-                            alt="next" 
+                            alt={t('leaderboard.nextLeague')}
                         />
                       )}
                       <ChevronRight className="w-6 h-6 -mt-1 drop-shadow-md stroke-[3] text-text-primary" />
@@ -168,7 +170,7 @@ export const LeagueHeader: React.FC<Props> = ({
               </div>
               {!isLocked && isCurrentLeague && (
                   <p className="text-center text-[10px] mt-1 text-text-secondary">
-                      পরের ধাপে যেতে <span className="font-bold text-primary">{pointsNeeded} XP</span> প্রয়োজন
+                      {t('leaderboard.nextProgress', { points: pointsNeeded })}
                   </p>
               )}
           </div>

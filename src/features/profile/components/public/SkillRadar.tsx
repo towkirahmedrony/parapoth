@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 import { motion } from 'framer-motion';
 
@@ -31,6 +32,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 };
 
 const SkillRadar: React.FC<SkillRadarProps> = ({ data }) => {
+  const { t } = useLanguage();
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -56,7 +58,7 @@ const SkillRadar: React.FC<SkillRadarProps> = ({ data }) => {
             />
             <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
             <Radar
-              name="স্কোর"
+              name={t('profile.score')}
               dataKey="score"
               stroke="var(--primary, #3b82f6)"
               strokeWidth={2}

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, memo } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { ArrowRight, ChevronLeft, Clock, FileQuestion, AlertCircle } from 'lucide-react';
 
 export interface ExamConfig {
@@ -49,6 +50,7 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
     }
   };
 
+  const { t } = useLanguage();
   return (
     <div className="p-4 animate-in slide-in-from-right duration-300 pb-24 bg-app">
       {/* Header */}
@@ -61,8 +63,8 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
           <ChevronLeft size={22} strokeWidth={2.5} />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-text-primary">পরীক্ষার সেটিংস</h2>
-          <p className="text-xs text-text-secondary">{topicCount} টি টপিক সিলেক্ট করা হয়েছে</p>
+          <h2 className="text-lg font-bold text-text-primary">{t('exam.settings')}</h2>
+          <p className="text-xs text-text-secondary">{t('exam.topicsSelected', { count: topicCount })}</p>
         </div>
       </div>
 
@@ -105,8 +107,8 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
         {/* Negative Marking Toggle */}
         <div className="flex items-center justify-between p-3 rounded-lg bg-surface border border-border-color">
           <div className="flex flex-col">
-            <span id="negative-marking-label" className="font-medium text-sm text-text-primary">নেগেটিভ মার্কিং (0.25)</span>
-            <span id="negative-marking-desc" className="text-xs text-text-secondary">ভুল উত্তরের জন্য নম্বর কাটা হবে</span>
+            <span id="negative-marking-label" className="font-medium text-sm text-text-primary">{t('exam.negativeMarking')}</span>
+            <span id="negative-marking-desc" className="text-xs text-text-secondary">{t('exam.negativeMarkingHint')}</span>
           </div>
           <button
             role="switch"
@@ -141,7 +143,7 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
           onClick={handleStart}
           className="w-full font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-lg focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2 bg-primary text-primary-foreground"
         >
-          পরীক্ষা শুরু করুন
+          {t('exam.start')}
           <ArrowRight size={20} strokeWidth={2.5} />
         </button>
       </div>
