@@ -12,15 +12,29 @@ interface PaywallSheetProps {
   onClose: () => void;
 }
 
-const formatCountdown = (ms: number): string => {
+/**
+ * Countdown label in the active language. The remaining time always comes from
+ * the server-provided `reset_at`; only the formatting is local.
+ */
+const formatCountdown = (
+  ms: number,
+  t: (key: 'premium.duration_minutes' | 'premium.duration_hours' | 'premium.duration_hours_minutes', values: Record<string, string | number>) => string,
+  localize: (value: string | number) => string
+): string => {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000));
 
-  if (totalMinutes < 1) return '1m';
-  if (totalMinutes < 60) return `${totalMinutes}m`;
+  if (totalMinutes < 1) {
+    return t('premium.duration_minutes', { n: localize(1) });
+  }
+  if (totalMinutes < 60) {
+    return t('premium.duration_minutes', { n: localize(totalMinutes) });
+  }
 
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  return minutes > 0
+    ? t('premium.duration_hours_minutes', { h: localize(hours), m: localize(minutes) })
+    : t('premium.duration_hours', { n: localize(hours) });
 };
 
 export const PaywallSheet = ({ state, onClose }: PaywallSheetProps) => {
@@ -63,8 +77,10 @@ export const PaywallSheet = ({ state, onClose }: PaywallSheetProps) => {
     if (Number.isNaN(target)) return null;
     const remaining = target - now;
     if (remaining <= 0) return t('premium.resets_now');
-    return t('premium.resets_in', { time: formatCountdown(remaining) });
-  }, [resetAt, now, t]);
+    return t('premium.resets_in', {
+      time: formatCountdown(remaining, t, (value) => localizeDigits(value, language)),
+    });
+  }, [resetAt, now, t, language]);
 
   const handleUpgrade = useCallback(() => {
     onClose();
@@ -110,7 +126,9 @@ export const PaywallSheet = ({ state, onClose }: PaywallSheetProps) => {
 
         <p className="mt-2 text-center text-sm leading-relaxed text-text-secondary">
           {isFreeLimit
-            ? t('premium.limit_msg', { limit: limit ?? '-' })
+            ? t('premium.limit_msg', {
+                limit: limit !== null ? localizeDigits(limit, language) : '-',
+              })
             : t('premium.premium_required_msg')}
         </p>
 

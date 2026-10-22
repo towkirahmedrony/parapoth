@@ -56,7 +56,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, onSelect, isSelected = false 
       {isDiscounted && discountPercent > 0 && (
         <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-accent px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-sm">
           <Star size={12} fill="currentColor" />
-          SAVE {localizeDigits(discountPercent, language)}%
+          {t('premium.save_badge', { percent: localizeDigits(discountPercent, language) })}
         </div>
       )}
 
