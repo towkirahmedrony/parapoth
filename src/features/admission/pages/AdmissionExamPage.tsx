@@ -21,6 +21,55 @@ import { AdmissionExamSkeleton } from '../components/AdmissionSkeleton';
 import { AdmissionQuestionNavigator } from '../components/AdmissionQuestionNavigator';
 import { AdmissionState } from '../components/AdmissionState';
 
+type SessionErrorShape = {
+  response?: {
+    status?: number;
+    data?: {
+      code?: string;
+      message?: string;
+      details?: { exam_history_id?: string | null } | null;
+    };
+  };
+};
+
+type SessionErrorInfo = {
+  kind: 'already_attempted' | 'free_limit' | 'not_started' | 'window_closed' | 'generic';
+  historyId: string | null;
+  message: string | null;
+};
+
+/**
+ * Classifies a failed attempt start so the page can show the right state
+ * instead of a single generic "exam unavailable" message.
+ */
+const getSessionErrorInfo = (error: unknown): SessionErrorInfo => {
+  const shape = (error ?? {}) as SessionErrorShape;
+  const status = shape.response?.status;
+  const code = shape.response?.data?.code;
+  const rawMessage = shape.response?.data?.message;
+  const historyId = shape.response?.data?.details?.exam_history_id ?? null;
+
+  if (status === 409 && code === 'ALREADY_ATTEMPTED') {
+    return { kind: 'already_attempted', historyId, message: rawMessage ?? null };
+  }
+
+  if (status === 403 && code === 'FREE_LIMIT_REACHED') {
+    return { kind: 'free_limit', historyId: null, message: rawMessage ?? null };
+  }
+
+  if (status === 403 && typeof rawMessage === 'string') {
+    if (/not started/i.test(rawMessage)) {
+      return { kind: 'not_started', historyId: null, message: rawMessage };
+    }
+
+    if (/window is closed|window closed/i.test(rawMessage)) {
+      return { kind: 'window_closed', historyId: null, message: rawMessage };
+    }
+  }
+
+  return { kind: 'generic', historyId: null, message: rawMessage ?? null };
+};
+
 const AdmissionExamPage: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
@@ -37,12 +86,17 @@ const AdmissionExamPage: React.FC = () => {
   );
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [autosaveInvalidated, setAutosaveInvalidated] = useState<{
+    historyId: string | null;
+  } | null>(null);
 
   const submittedRef = useRef(false);
   const timeLeftRef = useRef(0);
   const endTimeRef = useRef<number | null>(null);
   const initialSecondsRef = useRef(0);
   const lastSavedRef = useRef('');
+  const serverDeadlineRef = useRef<number | null>(null);
+  const autosaveStoppedRef = useRef(false);
 
   const submissionStorageKey = useMemo(
     () => buildSubmissionStorageKey(`admission-${examId ?? 'unknown'}`),
@@ -83,25 +137,44 @@ const AdmissionExamPage: React.FC = () => {
   useEffect(() => {
     if (!attempt) return;
 
-    const parsedDeadline = attempt.deadline_at
-      ? Date.parse(attempt.deadline_at)
-      : NaN;
-    const fallbackSeconds = Number.isFinite(parsedDeadline)
-      ? Math.max(0, Math.ceil((parsedDeadline - Date.now()) / 1000))
-      : attempt.seconds_remaining ?? 0;
+    // One server/client clock-offset correction, taken from the server's own
+    // `server_time` in the attempt response. The absolute deadline is then
+    // anchored in local wall-clock time, so a wrong device clock (or a refresh)
+    // cannot restart or extend the countdown.
+    const serverTimeRaw = (attempt as { server_time?: string }).server_time;
+    const serverTime = typeof serverTimeRaw === 'string' ? Date.parse(serverTimeRaw) : NaN;
+    const clientNow = Date.now();
+    const clockOffsetMs = Number.isFinite(serverTime) ? serverTime - clientNow : 0;
 
-    const seconds =
-      typeof attempt.seconds_remaining === 'number'
-        ? attempt.seconds_remaining
-        : fallbackSeconds;
+    const parsedDeadline = attempt.deadline_at ? Date.parse(attempt.deadline_at) : NaN;
+    const fallbackSeconds =
+      typeof attempt.seconds_remaining === 'number' ? attempt.seconds_remaining : 0;
 
-    endTimeRef.current = Date.now() + Math.max(0, seconds) * 1000;
-    setTimeLeft(Math.max(0, seconds));
-    timeLeftRef.current = Math.max(0, seconds);
+    const deadlineMs = Number.isFinite(parsedDeadline)
+      ? parsedDeadline - clockOffsetMs
+      : clientNow + Math.max(0, fallbackSeconds) * 1000;
+
+    serverDeadlineRef.current = deadlineMs;
+    endTimeRef.current = deadlineMs;
+
+    const remainingAtStart = Math.max(
+      0,
+      Math.ceil((deadlineMs - Date.now()) / 1000)
+    );
+
+    setTimeLeft(remainingAtStart);
+    timeLeftRef.current = remainingAtStart;
+
+    if (remainingAtStart > 0) {
+      initialSecondsRef.current = Math.max(
+        initialSecondsRef.current,
+        remainingAtStart
+      );
+    }
 
     const interval = window.setInterval(() => {
-      const end = endTimeRef.current ?? Date.now();
-      const remaining = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      const deadline = serverDeadlineRef.current ?? Date.now();
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setTimeLeft(remaining);
       timeLeftRef.current = remaining;
 
@@ -124,9 +197,34 @@ const AdmissionExamPage: React.FC = () => {
     const snapshot = JSON.stringify({ answers, currentIndex });
     if (snapshot === lastSavedRef.current) return;
 
+    if (autosaveStoppedRef.current) return;
+
     const timeout = window.setTimeout(() => {
       lastSavedRef.current = snapshot;
-      saveDraft({ answers, currentIndex });
+
+      saveDraft(
+        { answers, currentIndex },
+        {
+          onError: (error: unknown) => {
+            const shape = (error ?? {}) as SessionErrorShape;
+            const status = shape.response?.status;
+
+            // Once the attempt is no longer in progress, further autosaves are
+            // pointless and could overwrite a submitted draft. Stop, tell the
+            // student and keep the local answers for a result link.
+            if (status === 409) {
+              autosaveStoppedRef.current = true;
+              setAutosaveInvalidated({
+                historyId: shape.response?.data?.details?.exam_history_id ?? null,
+              });
+              toast.error('এই এক্সামটি আর চলমান নেই। উত্তর আর সেভ হবে না।');
+              return;
+            }
+
+            toast.error('খসড়া উত্তর সেভ করা যায়নি।');
+          },
+        }
+      );
     }, 1200);
 
     return () => window.clearTimeout(timeout);
@@ -236,12 +334,72 @@ const AdmissionExamPage: React.FC = () => {
   }
 
   if (session.error) {
+    const info = getSessionErrorInfo(session.error);
+
+    if (info.kind === 'already_attempted') {
+      const resultPath = info.historyId ? `/exam/analysis/${info.historyId}` : null;
+
+      return (
+        <div className="mx-auto min-h-screen w-full max-w-4xl bg-app px-4 py-10">
+          <AdmissionState
+            variant="error"
+            title="আপনি এই এক্সাম আগেই দিয়েছেন"
+            message="প্রতিটি এক্সাম একজন শিক্ষার্থী একবারই দিতে পারবে।"
+            actionLabel={resultPath ? 'রেজাল্ট দেখুন' : t('admission.backToAdmission')}
+            onAction={() => navigate(resultPath ?? '/admission')}
+            secondaryLabel={t('admission.back')}
+            onSecondary={() => navigate(-1)}
+          />
+        </div>
+      );
+    }
+
+    if (info.kind === 'free_limit') {
+      // apiClient also dispatches `access:error`, which opens the paywall. This
+      // state explains the limit instead of claiming the exam is unavailable.
+      return (
+        <div className="mx-auto min-h-screen w-full max-w-4xl bg-app px-4 py-10">
+          <AdmissionState
+            variant="error"
+            title="আজকের ফ্রি এক্সাম লিমিট শেষ"
+            message="প্রিমিয়াম প্ল্যান নিলে সীমা ছাড়াই এক্সাম দিতে পারবেন।"
+            actionLabel="প্রিমিয়াম প্ল্যান দেখুন"
+            onAction={() => navigate('/premium')}
+            secondaryLabel={t('admission.backToAdmission')}
+            onSecondary={() => navigate('/admission')}
+          />
+        </div>
+      );
+    }
+
+    if (info.kind === 'not_started' || info.kind === 'window_closed') {
+      return (
+        <div className="mx-auto min-h-screen w-full max-w-4xl bg-app px-4 py-10">
+          <AdmissionState
+            variant="not-found"
+            title={
+              info.kind === 'not_started'
+                ? 'এক্সাম এখনো শুরু হয়নি'
+                : 'এক্সামের সময় শেষ হয়েছে'
+            }
+            message={
+              info.kind === 'not_started'
+                ? 'নির্ধারিত সময়ে আবার চেষ্টা করুন।'
+                : 'এই এক্সামের সময়সীমা পার হয়ে গেছে।'
+            }
+            actionLabel={t('admission.backToAdmission')}
+            onAction={() => navigate('/admission')}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="mx-auto min-h-screen w-full max-w-4xl bg-app px-4 py-10">
         <AdmissionState
           variant="error"
           title={t('admission.examUnavailableTitle')}
-          message={t('admission.examUnavailableMessage')}
+          message={info.message || t('admission.examUnavailableMessage')}
           actionLabel={t('admission.backToAdmission')}
           onAction={() => navigate('/admission')}
           secondaryLabel={t('admission.back')}
@@ -328,6 +486,23 @@ const AdmissionExamPage: React.FC = () => {
             {t('admission.answered')}: {answeredNumber} / {totalNumber}
           </span>
         </div>
+
+        {autosaveInvalidated && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/40 bg-surface px-4 py-3 text-xs font-semibold text-accent sm:text-sm">
+            <span>এই এক্সামটি আর চলমান নেই — উত্তর সেভ হচ্ছে না।</span>
+            {autosaveInvalidated.historyId && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(`/exam/analysis/${autosaveInvalidated.historyId}`, { replace: true })
+                }
+                className="rounded-lg bg-primary px-3 py-1.5 font-bold text-primary-foreground"
+              >
+                রেজাল্ট দেখুন
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-w-0">

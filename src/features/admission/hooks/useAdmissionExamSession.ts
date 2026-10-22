@@ -17,9 +17,13 @@ export const useAdmissionExamSession = (examId: string | undefined) => {
     queryFn: () => admissionExamService.startAttempt(examId ?? ''),
     enabled: Boolean(examId),
     retry: 0,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    // Starting/resuming an attempt is a one-shot POST. The backend resume is
+    // idempotent, but re-issuing the start on every mount or focus is wasteful
+    // and can consume quota bookkeeping, so it is fetched once per exam and then
+    // treated as fresh until explicitly refetched.
+    staleTime: Infinity,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });

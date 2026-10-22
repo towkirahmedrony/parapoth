@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Trash2, Bookmark } from 'lucide-react';
 import { BookmarkItem } from '../types/history';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { sanitizeQuestionHtml } from '@/shared/utils/sanitize';
 
 interface Props {
   item: BookmarkItem;
@@ -28,7 +29,7 @@ export const BookmarkCard: React.FC<Props> = memo(({ item, onDelete }) => {
       <div className="flex-1 overflow-hidden">
         <div 
           className="text-text-primary mb-2 prose prose-sm dark:prose-invert max-w-none" 
-          dangerouslySetInnerHTML={{ __html: renderBody(qData?.body) }}
+          dangerouslySetInnerHTML={{ __html: sanitizeQuestionHtml(renderBody(qData?.body)) }}
         />
         {item.note && (
           <div className="bg-surface border border-border-color text-text-secondary text-sm flex items-center p-2 rounded w-fit mt-2">

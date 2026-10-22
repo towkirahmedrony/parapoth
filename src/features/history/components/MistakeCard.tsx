@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Trash2, XCircle, CheckCircle } from 'lucide-react';
 import { MistakeItem } from '../types/history';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { sanitizeQuestionHtml } from '@/shared/utils/sanitize';
 
 interface Props {
   item: MistakeItem;
@@ -92,7 +93,7 @@ export const MistakeCard: React.FC<Props> = memo(({ item, onDelete }) => {
       
       <div 
         className="text-text-primary mb-4 font-medium prose prose-sm dark:prose-invert max-w-none" 
-        dangerouslySetInnerHTML={{ __html: bodyHtml }}
+        dangerouslySetInnerHTML={{ __html: sanitizeQuestionHtml(bodyHtml) }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
