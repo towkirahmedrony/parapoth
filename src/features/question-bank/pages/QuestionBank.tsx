@@ -6,9 +6,11 @@ import {
   BookmarkCheck,
   BookOpen,
   Filter,
+  Lock,
   Search,
   ChevronLeft,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Loader } from '@/shared/components/feedback/Loader';
@@ -26,6 +28,10 @@ function InfoBadge(props: { children: React.ReactNode }) {
 }
 
 function getQuestionPreview(question: QuestionBankQuestion): string {
+  if (question.isLocked) {
+    return 'এই প্রশ্নটি প্রিমিয়াম কন্টেন্টের অংশ।';
+  }
+
   return question.body.text_bn || question.body.text_en || 'প্রশ্নের প্রিভিউ পাওয়া যাচ্ছে না';
 }
 
@@ -40,6 +46,7 @@ function QuestionCard(props: {
   isBookmarkUpdating: boolean;
 }) {
   const { question, onBookmarkToggle, isBookmarkUpdating } = props;
+  const navigate = useNavigate();
   const preview = getQuestionPreview(question);
   const accuracy = getAccuracy(question);
 
@@ -78,14 +85,37 @@ function QuestionCard(props: {
         </div>
 
         <div>
-          <h3 className="line-clamp-3 text-[15px] font-semibold leading-relaxed text-text-primary">
-            {preview}
-          </h3>
+          {question.isLocked ? (
+            // The server returns premium rows redacted; render an explicit
+            // locked state instead of an apparently empty question.
+            <div className="rounded-2xl border border-dashed border-border-color bg-surface p-4">
+              <p className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                <Lock className="h-4 w-4 text-accent" aria-hidden="true" />
+                {preview}
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-text-secondary">
+                প্রিমিয়াম প্ল্যান নিলে প্রশ্ন, অপশন ও ব্যাখ্যা দেখা যাবে।
+              </p>
+              <Button
+                className="mt-3 h-9 rounded-xl px-3 text-xs font-bold"
+                onClick={() => navigate('/premium')}
+              >
+                প্রিমিয়াম প্ল্যান দেখুন
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <h3 className="line-clamp-3 text-[15px] font-semibold leading-relaxed text-text-primary">
+                {preview}
+              </h3>
 
-          {question.options.length > 0 && (
-            <p className="mt-1.5 text-xs text-text-secondary font-medium">
-              {question.options.length} টি অপশন আছে
-            </p>
+              {question.options.length > 0 && (
+                <p className="mt-1.5 text-xs text-text-secondary font-medium">
+                  {question.options.length} টি অপশন আছে
+                </p>
+              )}
+            </>
           )}
         </div>
 
@@ -121,15 +151,17 @@ function QuestionCard(props: {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-1">
-          <Button className="h-10 rounded-xl text-xs px-4 font-bold">
-            প্র্যাকটিস
-            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" className="h-10 rounded-xl text-xs px-4 font-bold">
-            বিস্তারিত
-          </Button>
-        </div>
+        {!question.isLocked && (
+          <div className="flex flex-wrap gap-2 mt-1">
+            <Button className="h-10 rounded-xl text-xs px-4 font-bold">
+              প্র্যাকটিস
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" className="h-10 rounded-xl text-xs px-4 font-bold">
+              বিস্তারিত
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );

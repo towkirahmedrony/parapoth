@@ -1,5 +1,4 @@
 import { supabase } from '@/shared/lib/supabase';
-import type { Database } from '@/shared/types/supabase';
 import type {
   QuestionBankChapter,
   QuestionBankFilterState,
@@ -13,62 +12,65 @@ import type {
 } from '../types/questionBank';
 import { isQuestionBody, isQuestionOptions } from '../types/questionBank';
 
-type QuestionRow = Database['public']['Tables']['questions']['Row'];
-type SubjectRow = Database['public']['Tables']['subjects']['Row'];
-type ChapterRow = Database['public']['Tables']['chapters']['Row'];
-type TopicRow = Database['public']['Tables']['topics']['Row'];
-
-type QuestionRowWithRelations = QuestionRow & {
-  subjects: SubjectRow | null;
-  chapters: ChapterRow | null;
-  topics: TopicRow | null;
+/**
+ * Minimal typed view of the Supabase client for the one RPC this feature needs.
+ *
+ * The generated `Database` type has no entry for `get_student_question_bank`,
+ * so the response is described here and validated before use instead of being
+ * cast to `any`.
+ */
+type QuestionBankRpcClient = {
+  rpc(
+    fn: 'get_student_question_bank',
+    args: {
+      p_subject_id: string | null;
+      p_chapter_id: string | null;
+      p_topic_id: string | null;
+      p_sort: string;
+    }
+  ): Promise<{ data: unknown; error: Error | null }>;
 };
 
-// Added exam_references to the select query
-const QUESTION_SELECT = `
-  id,
-  type,
-  body,
-  options,
-  explanation,
-  difficulty_level,
-  source_type,
-  tags,
-  exam_references,
-  subject_id,
-  chapter_id,
-  topic_id,
-  total_attempts,
-  correct_attempts,
-  created_at,
-  subjects:subject_id (
-    id,
-    name_bn,
-    name_en,
-    slug,
-    is_premium,
-    sequence
-  ),
-  chapters:chapter_id (
-    id,
-    subject_id,
-    name_bn,
-    name_en,
-    slug,
-    is_premium,
-    sequence
-  ),
-  topics:topic_id (
-    id,
-    chapter_id,
-    name_bn,
-    name_en,
-    slug,
-    is_premium,
-    sequence,
-    total_questions
-  )
-`;
+type QuestionBankRpcRow = {
+  id: string;
+  type: string | null;
+  difficulty_level: string | null;
+  source_type: string | null;
+  tags: unknown;
+  exam_references: unknown;
+  subject_id: string | null;
+  chapter_id: string | null;
+  topic_id: string | null;
+  total_attempts: number | null;
+  correct_attempts: number | null;
+  created_at: string | null;
+  body: unknown;
+  options: unknown;
+  explanation: unknown;
+  subjects: unknown;
+  chapters: unknown;
+  topics: unknown;
+};
+
+const questionBankRpc = supabase as unknown as QuestionBankRpcClient;
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const asStringOrNull = (value: unknown): string | null =>
+  typeof value === 'string' ? value : null;
+
+const asNumberOr = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+
+const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+const isRpcRow = (value: unknown): value is QuestionBankRpcRow => {
+  const row = asRecord(value);
+  return Boolean(row) && typeof row?.id === 'string';
+};
 
 async function getCurrentUserId(): Promise<string | null> {
   const { data, error } = await supabase.auth.getUser();
@@ -76,39 +78,52 @@ async function getCurrentUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
-function mapQuestion(row: QuestionRowWithRelations, bookmarkedIds: Set<string>, wrongIds: Set<string>): QuestionBankQuestion {
+function mapQuestion(row: QuestionBankRpcRow, bookmarkedIds: Set<string>, wrongIds: Set<string>): QuestionBankQuestion {
   const body = isQuestionBody(row.body) ? row.body : {};
   const options = isQuestionOptions(row.options) ? row.options : [];
 
+  const subject = asRecord(row.subjects);
+  const chapter = asRecord(row.chapters);
+  const topic = asRecord(row.topics);
+
   const isPremium =
-    Boolean(row.subjects?.is_premium) ||
-    Boolean(row.chapters?.is_premium) ||
-    Boolean(row.topics?.is_premium);
+    subject?.is_premium === true ||
+    chapter?.is_premium === true ||
+    topic?.is_premium === true;
+
+  // The RPC redacts premium rows the caller cannot read: empty body, no options
+  // and no explanation. Such a row is a locked question, not a broken one.
+  const hasVisibleContent =
+    Boolean(body.text_bn || body.text_en || body.image_url) || options.length > 0;
+  const isLocked = isPremium && !hasVisibleContent;
 
   return {
     id: row.id,
-    type: row.type,
+    type: row.type ?? 'MCQ',
     difficultyLevel: row.difficulty_level,
     sourceType: row.source_type,
-    explanation: row.explanation,
-    tags: Array.isArray(row.tags) ? row.tags : [],
-    examReferences: Array.isArray(row.exam_references) ? row.exam_references : [], // Added
+    explanation: asStringOrNull(row.explanation),
+    tags: asArray(row.tags).filter((tag): tag is string => typeof tag === 'string'),
+    examReferences: asArray(row.exam_references).filter(
+      (reference): reference is Record<string, unknown> => Boolean(asRecord(reference))
+    ),
     body,
     options,
     subjectId: row.subject_id,
-    subjectNameBn: row.subjects?.name_bn ?? null,
-    subjectNameEn: row.subjects?.name_en ?? null,
+    subjectNameBn: asStringOrNull(subject?.name_bn),
+    subjectNameEn: asStringOrNull(subject?.name_en),
     chapterId: row.chapter_id,
-    chapterNameBn: row.chapters?.name_bn ?? null,
-    chapterNameEn: row.chapters?.name_en ?? null,
+    chapterNameBn: asStringOrNull(chapter?.name_bn),
+    chapterNameEn: asStringOrNull(chapter?.name_en),
     topicId: row.topic_id,
-    topicNameBn: row.topics?.name_bn ?? null,
-    topicNameEn: row.topics?.name_en ?? null,
+    topicNameBn: asStringOrNull(topic?.name_bn),
+    topicNameEn: asStringOrNull(topic?.name_en),
     isPremium,
+    isLocked,
     isBookmarked: bookmarkedIds.has(row.id),
     isWrongAnswered: wrongIds.has(row.id),
-    totalAttempts: row.total_attempts ?? 0,
-    correctAttempts: row.correct_attempts ?? 0,
+    totalAttempts: asNumberOr(row.total_attempts, 0),
+    correctAttempts: asNumberOr(row.correct_attempts, 0),
     createdAt: row.created_at,
   };
 }
@@ -253,26 +268,19 @@ export async function getQuestionBankFilters(): Promise<QuestionBankFiltersData>
 }
 
 export async function getQuestionBankQuestions(filters: QuestionBankFilterState): Promise<QuestionBankResponse> {
-  let query = supabase.from('questions').select(QUESTION_SELECT).eq('is_active', true).eq('status', 'published').is('deleted_at', null);
+  // `questions` has an admin-only RLS policy, so students read it through the
+  // approved RPC. Empty filter strings become null, which the function treats
+  // as "no filter", and the RPC never returns answer-key fields.
+  const { data, error } = await questionBankRpc.rpc('get_student_question_bank', {
+    p_subject_id: filters.subjectId || null,
+    p_chapter_id: filters.chapterId || null,
+    p_topic_id: filters.topicId || null,
+    p_sort: filters.sortBy,
+  });
 
-  if (filters.subjectId) query = query.eq('subject_id', filters.subjectId);
-  if (filters.chapterId) query = query.eq('chapter_id', filters.chapterId);
-  if (filters.topicId) query = query.eq('topic_id', filters.topicId);
-
-  if (filters.sortBy === 'oldest') {
-    query = query.order('created_at', { ascending: true }).limit(100);
-  } else if (filters.sortBy === 'most_attempted') {
-    query = query.order('total_attempts', { ascending: false }).limit(100);
-  } else if (filters.sortBy === 'least_attempted') {
-    query = query.order('total_attempts', { ascending: true }).limit(100);
-  } else {
-    query = query.order('created_at', { ascending: false }).limit(100);
-  }
-
-  const { data, error } = await query;
   if (error) throw error;
 
-  const rows = (data ?? []) as QuestionRowWithRelations[];
+  const rows = asArray(data).filter(isRpcRow);
   const questionIds = rows.map((item) => item.id);
   const { bookmarkedIds, wrongIds } = await getUserMeta(questionIds);
 

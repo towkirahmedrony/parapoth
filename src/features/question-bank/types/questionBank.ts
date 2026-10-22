@@ -46,6 +46,8 @@ export interface QuestionBankQuestion {
   topicNameBn: string | null;
   topicNameEn: string | null;
   isPremium: boolean;
+  /** Premium row the caller cannot read: the server returned it redacted. */
+  isLocked: boolean;
   isBookmarked: boolean;
   isWrongAnswered: boolean;
   totalAttempts: number;
