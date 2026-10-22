@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/features/exam/utils/examSubmission.test.ts src/features/admission/lib/admissionAdapter.test.ts",
+    "test": "node --test src/features/exam/utils/examSubmission.test.ts src/features/admission/lib/admissionAdapter.test.ts src/features/progress/services/analyticsGuard.test.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "bump:patch": "npm version patch",
