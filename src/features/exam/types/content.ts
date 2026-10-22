@@ -37,31 +37,64 @@ export interface BoardExamPaper extends Omit<ExamPaperRow, 'meta_data'> {
 
 // --- Challenge Types ---
 
+/**
+ * Public challenge option. The backend never sends `isCorrect` (or any other
+ * answer-key field); grading happens server-side only.
+ */
 export interface ChallengeOption {
   readonly id: string;
   readonly text: string;
-  readonly isCorrect: boolean;
+  readonly image_url?: string | null;
 }
 
 export interface ChallengeQuestion {
   readonly id: string;
   readonly text: string;
+  readonly type?: string | null;
+  readonly difficulty_level?: string | null;
+  readonly image_url?: string | null;
   readonly options: readonly ChallengeOption[];
 }
 
 export interface OpponentData {
+  readonly id?: string | null;
   readonly name: string;
   readonly score: number;
   readonly time_taken: number;
 }
 
-export interface ChallengeData {
-  readonly questions: readonly ChallengeQuestion[];
-  readonly opponent: OpponentData;
+export interface ChallengeSelfData {
+  readonly score: number;
+  readonly time_taken: number;
 }
 
+/** Authoritative result returned by the submission endpoint. */
+export interface ChallengeResult {
+  readonly score: number;
+  readonly total: number;
+  readonly time_taken: number;
+  readonly correct_count?: number;
+  readonly wrong_count?: number;
+  readonly submitted_at?: string | null;
+  readonly status?: string | null;
+  readonly winner_id?: string | null;
+  readonly duplicate?: boolean;
+}
+
+export interface ChallengeData {
+  readonly id?: string;
+  readonly questions: readonly ChallengeQuestion[];
+  readonly opponent: OpponentData;
+  readonly you?: ChallengeSelfData;
+  readonly status?: string;
+  readonly submitted?: boolean;
+  readonly result?: ChallengeResult | null;
+  readonly start_time?: string | null;
+  readonly end_time?: string | null;
+  readonly server_time?: string | null;
+}
+
+/** Submission accepts selected option ids only — never a score or duration. */
 export interface ChallengeSubmitPayload {
-  readonly challenger_score: number;
-  readonly challenger_time_taken: number;
-  readonly status: 'completed';
+  readonly answers: Record<string, string>;
 }

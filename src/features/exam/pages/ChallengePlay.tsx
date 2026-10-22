@@ -5,28 +5,35 @@ import { Clock, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiClient from '@/shared/lib/apiClient';
 import Loader from '@/shared/components/feedback/Loader';
-import { ChallengeData, ChallengeSubmitPayload } from '../types/content';
+import { sanitizeQuestionHtml } from '@/shared/utils/sanitize';
+import {
+  ChallengeData,
+  ChallengeResult,
+  ChallengeSubmitPayload,
+} from '../types/content';
 
 const SECONDS_PER_QUESTION = 15;
 
-interface ChallengerState {
-  score: number;
-  time_taken: number;
-}
+type SubmitResponse = {
+  success?: boolean;
+  message?: string;
+  data?: ChallengeResult;
+};
 
 export const ChallengePlay: React.FC = () => {
   const navigate = useNavigate();
-  const { challengeId } = useParams<{ challengeId: string }>(); 
-  
+  const { challengeId } = useParams<{ challengeId: string }>();
+
   const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null); 
-  const [timeLeft, setTimeLeft] = useState(SECONDS_PER_QUESTION); 
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [timeLeft, setTimeLeft] = useState(SECONDS_PER_QUESTION);
   const [isFinished, setIsFinished] = useState(false);
+  const [result, setResult] = useState<ChallengeResult | null>(null);
 
-  const [challengerData, setChallengerData] = useState<ChallengerState>({ score: 0, time_taken: 0 });
-
-  // 1. Fetch Challenge Data using React Query
-  const { data: challenge, isLoading, isError } = useQuery<ChallengeData>({
+  // 1. Fetch the challenge. Questions arrive without answer keys: the server
+  // grades every submission, so nothing here can be scored locally.
+  const { data: challenge, isLoading, isError, error } = useQuery<ChallengeData>({
     queryKey: ['challenge', challengeId],
     queryFn: async () => {
       if (!challengeId) throw new Error('Challenge ID is missing');
@@ -37,97 +44,110 @@ export const ChallengePlay: React.FC = () => {
       return res.data.data;
     },
     enabled: !!challengeId,
-    staleTime: Infinity, // Ensure it doesn't refetch while playing
+    staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 
-  const questions = useMemo(() => challenge?.questions || [], [challenge?.questions]);
-  const opponentData = useMemo(() => challenge?.opponent || { name: 'প্রতিপক্ষ', score: 0, time_taken: 0 }, [challenge?.opponent]);
+  const questions = useMemo(() => challenge?.questions ?? [], [challenge?.questions]);
+  const opponentData = useMemo(
+    () => challenge?.opponent ?? { name: 'প্রতিপক্ষ', score: 0, time_taken: 0 },
+    [challenge?.opponent]
+  );
 
-  // 2. Submit Challenge Mutation
+  // An already-submitted challenge shows the stored authoritative result
+  // instead of replaying it.
+  useEffect(() => {
+    if (challenge?.result) setResult(challenge.result);
+  }, [challenge?.result]);
+
+  // 2. Submission sends selected answers only.
   const submitChallengeMutation = useMutation({
-    mutationFn: async (payload: ChallengeSubmitPayload) => {
+    mutationFn: async (payload: ChallengeSubmitPayload): Promise<ChallengeResult> => {
       if (!challengeId) throw new Error('Challenge ID is missing');
-      const res = await apiClient.post(`/community/user/challenges/${challengeId}/submit`, payload);
-      return res.data;
+      const res = await apiClient.post<SubmitResponse>(
+        `/community/user/challenges/${challengeId}/submit`,
+        payload
+      );
+
+      if (!res.data?.success || !res.data.data) {
+        throw new Error(res.data?.message || 'Failed to submit challenge');
+      }
+
+      return res.data.data;
     },
-    onSuccess: () => {
-      toast.success("রেজাল্ট সফলভাবে সেভ হয়েছে!");
-      navigate('/dashboard/home', { replace: true });
+    onSuccess: (data) => {
+      setResult(data);
+      toast.success('রেজাল্ট সফলভাবে সেভ হয়েছে!');
     },
-    onError: (error) => {
-      console.error("Failed to save challenge result", error);
-      toast.error("রেজাল্ট সেভ করতে সমস্যা হয়েছে!");
-    }
+    onError: (mutationError: unknown) => {
+      const message =
+        typeof mutationError === 'object' &&
+        mutationError !== null &&
+        'response' in mutationError
+          ? (mutationError as { response?: { data?: { message?: string } } }).response?.data
+              ?.message
+          : undefined;
+
+      toast.error(message || 'রেজাল্ট সেভ করতে সমস্যা হয়েছে!');
+    },
   });
 
-  // 3. Handle Question Progress
+  const submitAnswers = useCallback(
+    (finalAnswers: Record<string, string>) => {
+      if (submitChallengeMutation.isPending) return;
+      submitChallengeMutation.mutate({ answers: finalAnswers });
+    },
+    [submitChallengeMutation]
+  );
+
+  // 3. Advance: record the selection, never a score.
   const handleNext = useCallback(() => {
     const currentQ = questions[currentQIndex];
     if (!currentQ) return;
 
-    const isCorrect = currentQ.options.find((opt) => opt.id === selectedOption)?.isCorrect;
-    
-    setChallengerData(prev => ({
-      score: prev.score + (isCorrect ? 1 : 0),
-      time_taken: prev.time_taken + (SECONDS_PER_QUESTION - timeLeft)
-    }));
+    const nextAnswers =
+      selectedOption !== null
+        ? { ...answers, [currentQ.id]: selectedOption }
+        : { ...answers };
+
+    setAnswers(nextAnswers);
 
     if (currentQIndex < questions.length - 1) {
       setCurrentQIndex((prev) => prev + 1);
       setSelectedOption(null);
-      setTimeLeft(SECONDS_PER_QUESTION); 
-    } else {
-      setIsFinished(true);
+      setTimeLeft(SECONDS_PER_QUESTION);
+      return;
     }
-  }, [currentQIndex, questions, selectedOption, timeLeft]);
 
-  // 4. Auto-Next on Timeout
+    setIsFinished(true);
+    submitAnswers(nextAnswers);
+  }, [answers, currentQIndex, questions, selectedOption, submitAnswers]);
+
+  // 4. Auto-advance when a question's timer expires.
   useEffect(() => {
-    if (timeLeft === 0 && !isFinished) {
-      handleNext();
-    }
+    if (timeLeft === 0 && !isFinished) handleNext();
   }, [timeLeft, isFinished, handleNext]);
 
-  // 5. Timer Effect (Stable Interval)
+  // 5. Per-question countdown.
   useEffect(() => {
     if (isLoading || isError || isFinished || questions.length === 0) return;
-    
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [isLoading, isError, isFinished, questions.length]);
 
-  // Submit Handler
-  const handleSubmitResult = useCallback(() => {
-    submitChallengeMutation.mutate({
-      challenger_score: challengerData.score,
-      challenger_time_taken: challengerData.time_taken,
-      status: 'completed'
-    });
-  }, [challengerData, submitChallengeMutation]);
-
-  // Render Loading State
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-app text-text-primary">
-        <Loader />
-      </div>
-    );
-  }
-
-  // Render Error State
-  if (isError || questions.length === 0) {
+  if (!challengeId) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 text-center bg-app text-text-primary">
         <div className="p-6 rounded-xl max-w-sm w-full bg-card-bg border border-card-border shadow-sm">
-          <p className="font-bold text-lg mb-4 text-accent">চ্যালেঞ্জ লোড করা সম্ভব হয়নি।</p>
-          <button 
+          <p className="font-bold text-lg mb-4 text-accent">চ্যালেঞ্জ আইডি পাওয়া যায়নি।</p>
+          <button
             type="button"
-            onClick={() => navigate('/dashboard/home')} 
-            className="px-6 py-2 rounded-lg font-bold transition-opacity w-full bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            onClick={() => navigate('/dashboard/home')}
+            className="px-6 py-2 rounded-lg font-bold w-full bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             হোমে ফিরে যান
           </button>
@@ -136,64 +156,138 @@ export const ChallengePlay: React.FC = () => {
     );
   }
 
-  // Render Finished State
-  if (isFinished) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-app text-text-primary">
-        <div className="p-8 rounded-2xl text-center shadow-lg w-full max-w-sm bg-card-bg border border-card-border">
-          <h2 className="text-2xl font-bold mb-4">চ্যালেঞ্জ সমাপ্ত! 🏆</h2>
-          <div className="flex justify-between my-6 px-4">
-            <div>
-              <p className="text-sm font-bold text-text-secondary">আপনার স্কোর</p>
-              <p className="text-4xl font-black mt-2 text-primary">{challengerData.score}</p>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-text-secondary">{opponentData.name}</p>
-              <p className="text-4xl font-black mt-2 text-accent">{opponentData.score}</p>
-            </div>
-          </div>
-          <button 
+      <div className="min-h-screen flex items-center justify-center bg-app text-text-primary">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (isError || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 text-center bg-app text-text-primary">
+        <div className="p-6 rounded-xl max-w-sm w-full bg-card-bg border border-card-border shadow-sm">
+          <p className="font-bold text-lg mb-4 text-accent">
+            {error instanceof Error && error.message
+              ? error.message
+              : 'চ্যালেঞ্জ লোড করা সম্ভব হয়নি।'}
+          </p>
+          <button
             type="button"
-            onClick={handleSubmitResult} 
-            disabled={submitChallengeMutation.isPending}
-            className="px-6 py-4 rounded-xl font-bold w-full disabled:opacity-50 transition-all mt-4 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" 
+            onClick={() => navigate('/dashboard/home')}
+            className="px-6 py-2 rounded-lg font-bold w-full bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            {submitChallengeMutation.isPending ? 'সেভ হচ্ছে...' : 'রেজাল্ট সেভ করুন'}
+            হোমে ফিরে যান
           </button>
         </div>
       </div>
     );
   }
 
-  // Render Active Question State
+  // 6. Finished: show the server's authoritative result.
+  if (isFinished) {
+    const score = result?.score ?? 0;
+    const total = result?.total ?? questions.length;
+    const isSaving = submitChallengeMutation.isPending;
+
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-app text-text-primary">
+        <div className="p-8 rounded-2xl text-center shadow-lg w-full max-w-sm bg-card-bg border border-card-border">
+          <h2 className="text-2xl font-bold mb-4">চ্যালেঞ্জ সমাপ্ত! 🏆</h2>
+
+          {isSaving ? (
+            <div className="py-6">
+              <Loader />
+              <p className="mt-3 text-sm font-bold text-text-secondary">স্কোর যাচাই হচ্ছে...</p>
+            </div>
+          ) : result ? (
+            <div className="flex justify-between my-6 px-4">
+              <div>
+                <p className="text-sm font-bold text-text-secondary">আপনার স্কোর</p>
+                <p className="text-4xl font-black mt-2 text-primary">
+                  {score}/{total}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-text-secondary">{opponentData.name}</p>
+                <p className="text-4xl font-black mt-2 text-accent">{opponentData.score}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="my-6 text-sm font-bold text-accent">
+              রেজাল্ট সেভ করা যায়নি। আবার চেষ্টা করুন।
+            </p>
+          )}
+
+          {!result && !isSaving && (
+            <button
+              type="button"
+              onClick={() => submitAnswers(answers)}
+              className="px-6 py-4 rounded-xl font-bold w-full transition-all bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              আবার জমা দিন
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/home', { replace: true })}
+            className="px-6 py-3 rounded-xl font-bold w-full mt-3 bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            হোমে ফিরে যান
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentQIndex];
 
   return (
     <div className="min-h-screen flex flex-col relative pb-32 bg-app text-text-primary">
-      {/* Header */}
       <div className="sticky top-0 z-30 shadow-sm transition-colors duration-300 bg-surface border-b border-border-color">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="font-bold text-primary">আপনি: {challengerData.score}</div>
-          <div className={`flex items-center gap-1 font-mono font-bold text-lg ${timeLeft <= 5 ? 'text-accent animate-pulse' : 'text-primary'}`}>
+          <div className="font-bold text-primary">
+            প্রশ্ন {currentQIndex + 1}/{questions.length}
+          </div>
+          <div
+            className={`flex items-center gap-1 font-mono font-bold text-lg ${
+              timeLeft <= 5 ? 'text-accent animate-pulse' : 'text-primary'
+            }`}
+          >
             <Clock size={20} />
             <span>{String(timeLeft).padStart(2, '0')}s</span>
           </div>
-          <div className="font-bold text-accent">{opponentData.name}: {opponentData.score}</div>
+          <div className="font-bold text-accent">{opponentData.name}</div>
         </div>
       </div>
-      
-      {/* Question Content */}
+
       <div className="flex-1 p-4 w-full max-w-3xl mx-auto mt-4">
-        <h2 className="text-xl font-bold mb-8 leading-relaxed text-text-primary">{currentQuestion?.text}</h2>
+        {currentQuestion?.image_url && (
+          <img
+            src={currentQuestion.image_url}
+            alt=""
+            className="mb-4 max-h-60 rounded-xl object-contain"
+          />
+        )}
+
+        <h2
+          className="text-xl font-bold mb-8 leading-relaxed text-text-primary"
+          dangerouslySetInnerHTML={{
+            __html: sanitizeQuestionHtml(currentQuestion?.text ?? ''),
+          }}
+        />
+
         <div className="space-y-4">
-          {currentQuestion?.options.map((opt) => (
-            <button 
-              key={opt.id} 
+          {(currentQuestion?.options ?? []).map((opt) => (
+            <button
+              key={opt.id}
               type="button"
               onClick={() => setSelectedOption(opt.id)}
               className={`w-full p-5 rounded-xl text-left font-medium transition-all duration-200 border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                selectedOption === opt.id 
-                  ? 'bg-surface-elevated border-border-color ring-2 ring-focus-ring text-text-primary' 
+                selectedOption === opt.id
+                  ? 'bg-surface-elevated border-border-color ring-2 ring-focus-ring text-text-primary'
                   : 'bg-card-bg border-card-border text-text-primary hover:bg-surface-elevated'
               }`}
             >
@@ -203,13 +297,13 @@ export const ChallengePlay: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer Action */}
       <div className="fixed bottom-0 left-0 w-full p-4 z-30 bg-surface border-t border-border-color">
         <div className="max-w-3xl mx-auto flex justify-end">
-          <button 
+          <button
             type="button"
-            onClick={handleNext} 
-            className="px-8 py-4 font-bold rounded-xl flex gap-2 items-center transition-all active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" 
+            onClick={handleNext}
+            disabled={selectedOption === null || submitChallengeMutation.isPending}
+            className="px-8 py-4 font-bold rounded-xl flex gap-2 items-center transition-all active:scale-95 bg-primary text-primary-foreground disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             পরবর্তী <ChevronRight size={20} />
           </button>

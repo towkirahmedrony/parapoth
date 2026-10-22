@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
+import apiClient from '@/shared/lib/apiClient';
 import { X, Swords } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import toast from 'react-hot-toast';
@@ -18,14 +19,32 @@ interface ChallengeModalProps {
   groupId?: string;
 }
 
-export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  opponentId, 
-  opponentName, 
-  groupId 
+type AxiosLikeError = {
+  response?: { status?: number; data?: { message?: unknown } };
+  message?: string;
+};
+
+const CHALLENGE_QUESTION_COUNT = 10;
+
+/**
+ * Group battle setup.
+ *
+ * Exam papers and `group_battles` rows are protected tables: the browser cannot
+ * write them. Creation therefore goes through the backend endpoint, which
+ * validates both participants and authors the paper server-side.
+ */
+export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
+  isOpen,
+  onClose,
+  opponentId,
+  opponentName,
+  groupId,
 }) => {
   const { user } = useAuth();
+  // Hooks must run unconditionally, before the `!isOpen` early return below.
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
+
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedChapter, setSelectedChapter] = useState<string>('all');
 
@@ -42,7 +61,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
         .from('subjects')
         .select('id, name_bn')
         .eq('is_active', true);
-        
+
       if (error) throw error;
       return data as Pick<Subject, 'id' | 'name_bn'>[];
     },
@@ -59,7 +78,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
         .select('id, name_bn')
         .eq('subject_id', selectedSubject)
         .eq('is_active', true);
-        
+
       if (error) throw error;
       return data as Pick<Chapter, 'id' | 'name_bn'>[];
     },
@@ -67,7 +86,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
     staleTime: 5 * 60 * 1000,
   });
 
-  // 3. Handle Challenge Submission using React Query Mutation
+  // 3. Create the battle through the protected backend endpoint
   const challengeMutation = useMutation({
     mutationFn: async () => {
       if (!selectedSubject) {
@@ -78,69 +97,58 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
         throw new Error(t('exam.userMissing'));
       }
 
-      const examId = `battle_${Date.now()}`;
-      const now = new Date();
-      const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
-      
-      // Step 1: Create Exam Paper
-      const { error: examError } = await supabase.from('exam_papers').insert({
-        id: examId,
-        title: `${opponentName}-এর সাথে যুদ্ধ ⚔️`,
+      const response = await apiClient.post('/exams/user/group-battle', {
+        opponentId,
+        group_id: groupId || undefined,
         subject_id: selectedSubject,
-        category: 'group_battle',
-        is_premium: false,
-        total_marks: 50, 
-        pass_mark: 0,
-        duration_min: 15,
-        is_published: true,
-        start_time: now.toISOString(),
-        end_time: endTime.toISOString(),
+        chapter_id: selectedChapter !== 'all' ? selectedChapter : undefined,
+        question_count: CHALLENGE_QUESTION_COUNT,
       });
 
-      if (examError) throw examError;
-
-      const validGroupId = groupId || null; 
-
-      // Step 2: Create Group Battle Entry
-      const { error: battleError } = await supabase.from('group_battles').insert({
-        group_id: validGroupId,
-        exam_id: examId,
-        initiated_by: user.id,
-        status: 'pending',
-        scores_snapshot: {
-          [user.id]: 0,
-          [opponentId]: 0
-        },
-        start_time: now.toISOString(),
-        end_time: endTime.toISOString(), 
-      });
-
-      // Manual Rollback if Battle creation fails
-      if (battleError) {
-        await supabase.from('exam_papers').delete().eq('id', examId);
-        throw battleError;
-      }
-
-      return true;
+      return response.data?.data ?? null;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(t('exam.challengeSuccess'));
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['challenge'] }),
+        queryClient.invalidateQueries({ queryKey: ['lobby'] }),
+      ]);
       onClose();
     },
-    onError: (error: Error) => {
-      console.error("Battle Creation Error:", error);
-      toast.error(error.message || t('exam.challengeError'));
-    }
+    onError: (error: AxiosLikeError) => {
+      const status = error?.response?.status;
+      const serverMessage = error?.response?.data?.message;
+
+      if (status === 401) {
+        toast.error('আপনার সেশন শেষ হয়ে গেছে। আবার লগইন করুন।');
+        return;
+      }
+
+      if (status === 403) {
+        toast.error(
+          typeof serverMessage === 'string' && serverMessage.trim()
+            ? serverMessage
+            : 'এই চ্যালেঞ্জ তৈরি করার অনুমতি নেই।'
+        );
+        return;
+      }
+
+      toast.error(
+        typeof serverMessage === 'string' && serverMessage.trim()
+          ? serverMessage
+          : error?.message || t('exam.challengeError')
+      );
+    },
   });
 
   const handleChallengeSubmit = useCallback(() => {
+    // One creation per click: the backend would create another paper otherwise.
+    if (challengeMutation.isPending) return;
     challengeMutation.mutate();
   }, [challengeMutation]);
 
-  // Hook rules strictly followed: early return comes AFTER all hooks
   if (!isOpen) return null;
 
-  const { t } = useLanguage();
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm bg-black/50">
       <div className="w-full sm:w-96 rounded-t-3xl sm:rounded-3xl p-6 transform transition-all animate-slide-up bg-surface-elevated border border-border-color">
@@ -148,8 +156,8 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
           <h2 className="text-xl font-bold flex items-center gap-2 text-text-primary">
             <Swords className="text-accent" /> চ্যালেঞ্জ সেটআপ
           </h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="p-2 rounded-full transition-colors bg-surface hover:bg-surface-elevated"
             aria-label="Close modal"
           >
@@ -161,36 +169,36 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
           আপনি <strong className="text-accent">{opponentName}</strong>-কে চ্যালেঞ্জ করছেন।
         </p>
 
-        <SubjectSelector 
-          isLoading={isSubjectsLoading} 
-          subjects={subjects} 
-          selectedSubject={selectedSubject} 
-          onSelect={setSelectedSubject} 
+        <SubjectSelector
+          isLoading={isSubjectsLoading}
+          subjects={subjects}
+          selectedSubject={selectedSubject}
+          onSelect={setSelectedSubject}
         />
 
-        <ChapterSelector 
-          isLoading={isChaptersLoading} 
-          chapters={chapters} 
-          selectedChapter={selectedChapter} 
-          selectedSubject={selectedSubject} 
-          onSelect={setSelectedChapter} 
+        <ChapterSelector
+          isLoading={isChaptersLoading}
+          chapters={chapters}
+          selectedChapter={selectedChapter}
+          selectedSubject={selectedSubject}
+          onSelect={setSelectedChapter}
         />
 
         <div className="p-4 rounded-xl border mb-6 bg-badge-bg border-border-color">
           <p className="text-sm text-center font-medium text-badge-text">
-            🏆 বিজয়ী প্রতিটি সঠিক উত্তরের জন্য গ্রুপ XP অর্জন করবেন।
+            🏆 বিজয়ী প্রতিটি সঠিক উত্তরের জন্য গ্রুপ XP অর্জন করবেন।
           </p>
         </div>
 
         {challengeMutation.isPending ? (
-           <Skeleton className="w-full h-[52px] rounded-xl" />
+          <Skeleton className="w-full h-[52px] rounded-xl" />
         ) : (
-          <button 
+          <button
             onClick={handleChallengeSubmit}
             disabled={challengeMutation.isPending}
             className="w-full py-3.5 font-bold rounded-xl transition-all active:scale-95 flex justify-center items-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-primary-foreground"
           >
-            চ্যালেঞ্জ ছুঁড়ে দিন 🚀
+            চ্যালেঞ্জ ছুঁড়ে দিন 🚀
           </button>
         )}
       </div>

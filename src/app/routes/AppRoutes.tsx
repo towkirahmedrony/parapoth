@@ -180,8 +180,10 @@ const AppRoutes: React.FC = () => {
           }
         />
 
+        {/* ChallengePlay reads the challenge id from the route, so the id is
+            part of the path (deep links and refresh both work). */}
         <Route
-          path="/exam/challenge-play"
+          path="/exam/challenge-play/:challengeId"
           element={
             <PermissionGuard>
               <ChallengePlay />
