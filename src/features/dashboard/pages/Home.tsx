@@ -11,6 +11,11 @@ import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { FreeUsageIndicator } from '@/features/access/components/FreeUsageIndicator';
 import { PromoBanner } from '@/features/access/components/PromoBanner';
 import type { AppMessageKey } from '@/shared/i18n/messages';
+import {
+  normalizeDisplayName,
+  resolveNamecardName,
+  shouldShowNameSkeleton,
+} from '../utils/namecard';
 
 interface ThemeConfigRow {
   value?: unknown;
@@ -54,10 +59,6 @@ const sanitizeThemeConfig = (input: unknown): ThemeConfig | undefined => {
   };
 };
 
-const normalizeName = (value: unknown): string | null => {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-};
-
 const getGreetingKey = (hour: number): AppMessageKey => {
   if (hour < 5) return 'home.greetingLateNight';
   if (hour < 12) return 'home.greetingMorning';
@@ -91,8 +92,8 @@ const Home: React.FC = memo(() => {
     language === 'bn' ? "font-['Hind_Siliguri']" : 'font-sans';
 
   const metadataName =
-    normalizeName(user?.user_metadata?.full_name) ||
-    normalizeName(user?.user_metadata?.name);
+    normalizeDisplayName(user?.user_metadata?.full_name) ||
+    normalizeDisplayName(user?.user_metadata?.name);
 
   const { data: themeData } = useQuery({
     queryKey: ['app_configs', 'theme_config'],
@@ -135,11 +136,19 @@ const Home: React.FC = memo(() => {
     });
   }, [activeBanners, isLiveExamActive]);
 
-  const resolvedProfileName =
-    normalizeName(user?.full_name) ||
-    normalizeName(user?.username) ||
-    metadataName;
+  const resolvedProfileName = resolveNamecardName({
+    fullName: user?.full_name,
+    username: user?.username,
+    metadataName,
+  });
   const isNameLoading = authLoading || profileLoading;
+  // Never swap a known name back to a skeleton. Profile enrichment is
+  // background work; only the very first paint (no name at all) may show it.
+  const showNameSkeleton = shouldShowNameSkeleton(
+    resolvedProfileName,
+    isNameLoading
+  );
+  const displayName = resolvedProfileName ?? t('home.studentFallback');
 
   const themeConfig = sanitizeThemeConfig(themeData);
   const greetingKey = getGreetingKey(new Date().getHours());
@@ -149,27 +158,30 @@ const Home: React.FC = memo(() => {
       <main className="mx-auto w-full max-w-6xl px-3 pt-3">
         <section className="relative overflow-hidden rounded-[20px] border border-card-border bg-card-bg px-4 py-3">
           <div className="relative z-10 flex items-center justify-between">
-            <div className="min-w-0 flex-1 pr-3">
-              {isNameLoading ? (
-                <div
-                  role="status"
-                  aria-label={t('home.loadingProfile')}
-                  className="h-6 w-32 animate-pulse rounded-lg bg-secondary"
-                />
-              ) : (
-                <>
+            <div className="min-w-0 flex-1 pr-3" aria-busy={isNameLoading}>
+              {/* Fixed height keeps the card's footprint identical whether the
+                  name is loading or already known. The subtitle is always
+                  rendered so the card never grows/shrinks during data loads. */}
+              <div className="flex min-h-[28px] items-center">
+                {showNameSkeleton ? (
+                  <div
+                    role="status"
+                    aria-label={t('home.loadingProfile')}
+                    className="h-7 w-32 animate-pulse rounded-lg bg-secondary"
+                  />
+                ) : (
                   <h1
                     className={`truncate text-lg font-bold text-text-primary ${textFontClass}`}
                   >
-                    {resolvedProfileName ?? t('home.studentFallback')}
+                    {displayName}
                   </h1>
-                  <p
-                    className={`mt-0.5 truncate text-xs text-text-secondary ${textFontClass}`}
-                  >
-                    {t('home.startLearning')}
-                  </p>
-                </>
-              )}
+                )}
+              </div>
+              <p
+                className={`mt-0.5 truncate text-xs text-text-secondary ${textFontClass}`}
+              >
+                {t('home.startLearning')}
+              </p>
             </div>
 
             <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-badge-bg px-2.5 py-1.5 text-badge-text">
@@ -190,7 +202,6 @@ const Home: React.FC = memo(() => {
         <PromoBanner className="mt-2" />
 
         <DynamicBanner
-          key={visibleBanners.length}
           banners={visibleBanners.length > 0 ? visibleBanners : null}
           isLoading={false}
         />

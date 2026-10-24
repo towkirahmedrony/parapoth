@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  RECOVERY_MARKER_FRESHNESS_MS,
   clearPasswordRecoverySession,
   hasPasswordRecoverySession,
+  hasRecentPasswordRecoverySession,
   rememberPasswordRecoverySession,
 } from './passwordRecoverySession';
 
@@ -55,6 +57,53 @@ test('expired recovery markers are rejected', () => {
     const session = makeSession('user-1', 'session-1', Math.floor(Date.now() / 1000) - 10);
     rememberPasswordRecoverySession(session);
     assert.equal(hasPasswordRecoverySession(session), false);
+  } finally {
+    restore();
+  }
+});
+
+test('the redirect marker is only fresh right after the link was verified', () => {
+  const restore = installStorage();
+  try {
+    const session = makeSession('user-1', 'session-1');
+    rememberPasswordRecoverySession(session);
+
+    assert.equal(hasRecentPasswordRecoverySession(session), true);
+
+    // Simulate a marker created longer ago than the freshness window.
+    const staleGrant = {
+      userId: 'user-1',
+      sessionId: 'session-1',
+      expiresAt: session.expires_at * 1000,
+      createdAt: Date.now() - RECOVERY_MARKER_FRESHNESS_MS - 1000,
+    };
+    window.sessionStorage.setItem(
+      'parapoth:password-recovery-session',
+      JSON.stringify(staleGrant)
+    );
+
+    assert.equal(hasPasswordRecoverySession(session), true);
+    assert.equal(hasRecentPasswordRecoverySession(session), false);
+  } finally {
+    restore();
+  }
+});
+
+test('markers written before the freshness field existed are not treated as fresh', () => {
+  const restore = installStorage();
+  try {
+    const session = makeSession('user-1', 'session-1');
+    window.sessionStorage.setItem(
+      'parapoth:password-recovery-session',
+      JSON.stringify({
+        userId: 'user-1',
+        sessionId: 'session-1',
+        expiresAt: session.expires_at * 1000,
+      })
+    );
+
+    assert.equal(hasPasswordRecoverySession(session), true);
+    assert.equal(hasRecentPasswordRecoverySession(session), false);
   } finally {
     restore();
   }

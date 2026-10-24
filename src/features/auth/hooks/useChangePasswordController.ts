@@ -7,6 +7,11 @@ import {
   hasPasswordRecoverySession,
 } from "../utils/passwordRecoverySession";
 import {
+  PASSWORD_RECOVERY_ERROR_MESSAGES,
+  normalizeRecoveryReason,
+  readPasswordRecoveryErrorFromUrl,
+} from "../utils/passwordRecovery";
+import {
   clearRecoveryUrlTokens,
   DASHBOARD_HOME_PATH,
   getRecoveryParams,
@@ -49,9 +54,15 @@ export function useChangePasswordController() {
 
     const initializeRecoverySession = async () => {
       const recoveryParams = getRecoveryParams(searchParams);
+      const urlError =
+        readPasswordRecoveryErrorFromUrl({
+          search: window.location.search,
+          hash: window.location.hash,
+        }) ?? normalizeRecoveryReason(searchParams.get("reason"));
 
       try {
         let recoverySessionCreated = false;
+
         const {
           data: { session: initialSession },
           error: initialSessionError,
@@ -59,9 +70,12 @@ export function useChangePasswordController() {
 
         if (initialSessionError) throw initialSessionError;
 
+        // The SDK exchanges PKCE codes during client initialization and removes
+        // `code` from the URL; a missing code with a recorded code means the SDK
+        // already completed the exchange.
         const sdkConsumedCode = Boolean(
           recoveryParams.code &&
-          !new URLSearchParams(window.location.search).has("code")
+            !new URLSearchParams(window.location.search).has("code")
         );
         const alreadyValidated =
           hasPasswordRecoverySession(initialSession) || sdkConsumedCode;
@@ -102,28 +116,50 @@ export function useChangePasswordController() {
           throw sessionError;
         }
 
-        if (recoveryParams.isRecovery && session) {
-          // The SDK emits PASSWORD_RECOVERY after processing an implicit link.
-          // Yield once so its verified-session marker is available here.
+        // Supabase redirects failed links with an error instead of a session.
+        if (urlError) {
+          setIsRecoveryMode(true);
+          setError(PASSWORD_RECOVERY_ERROR_MESSAGES[urlError]);
+          clearRecoveryUrlTokens();
+          return;
+        }
+
+        let recoveryAuthorized =
+          recoverySessionCreated ||
+          sdkConsumedCode ||
+          hasPasswordRecoverySession(session);
+
+        if (recoveryParams.isRecovery && session && !recoveryAuthorized) {
+          // An implicit link is verified by the SDK asynchronously; the marker is
+          // written from its PASSWORD_RECOVERY event. Give that event one turn.
           await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+
           const {
             data: { session: latestSession },
           } = await supabase.auth.getSession();
-          const recoveryAuthorized =
-            recoverySessionCreated ||
-            sdkConsumedCode ||
-            hasPasswordRecoverySession(latestSession ?? session);
 
-          if (recoveryAuthorized) {
-            setIsRecoveryMode(true);
-            clearErrorOnInput();
-          } else {
-            setIsRecoveryMode(false);
-            setError("পাসওয়ার্ড রিসেট লিংকটি কাজ করছে না বা মেয়াদ শেষ হয়েছে। নতুন করে রিসেট লিংক পাঠান।");
-          }
+          if (!isMounted) return;
+
+          recoveryAuthorized = hasPasswordRecoverySession(latestSession ?? session);
         }
 
-        if (!session && !recoveryParams.isRecovery) {
+        if (session && recoveryAuthorized) {
+          setIsRecoveryMode(true);
+          setError(null);
+          // The recovery session is established; keep tokens out of the address
+          // bar so they cannot leak through history, screenshots or logs.
+          clearRecoveryUrlTokens();
+          return;
+        }
+
+        if (!session && recoveryParams.isRecovery) {
+          setIsRecoveryMode(true);
+          setError(PASSWORD_RECOVERY_ERROR_MESSAGES.expired);
+          clearRecoveryUrlTokens();
+          return;
+        }
+
+        if (!session) {
           navigate(LOGIN_PATH, {
             replace: true,
             state: {
@@ -136,15 +172,12 @@ export function useChangePasswordController() {
           return;
         }
 
-        if (!session && recoveryParams.isRecovery) {
-          setError(
-            "পাসওয়ার্ড রিসেট লিংকটি কাজ করছে না বা মেয়াদ শেষ হয়েছে। নতুন করে রিসেট লিংক পাঠান।"
-          );
-        }
+        // Signed-in visitor on the normal change-password screen.
+        setIsRecoveryMode(false);
       } catch (sessionInitError: unknown) {
         if (!isMounted) return;
 
-        setIsRecoveryMode(false);
+        setIsRecoveryMode(recoveryParams.isRecovery || urlError !== null);
         setError(getUpdatePasswordErrorMessage(sessionInitError));
       } finally {
         if (isMounted) {
@@ -280,7 +313,9 @@ export function useChangePasswordController() {
 
   const handleSuccessNavigate = async () => {
     if (isRecoveryMode) {
-      await supabase.auth.signOut();
+      // Only this browser needs to sign in again; a global sign-out would also
+      // revoke the user's other active sessions for no security benefit.
+      await supabase.auth.signOut({ scope: "local" });
       navigate(LOGIN_PATH, { replace: true });
       return;
     }

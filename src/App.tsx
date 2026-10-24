@@ -9,6 +9,7 @@ import { requestNotificationPermission, listenForForegroundMessages } from '@/fe
 import { SystemGuard } from '@/shared/components/layout/SystemGuard';
 import { LanguageProvider } from '@/shared/i18n/LanguageProvider';
 import { PaywallProvider } from '@/features/access/context/PaywallProvider';
+import { PasswordRecoveryRedirect } from '@/features/auth/components/PasswordRecoveryRedirect';
 
 // Routes
 import AppRoutes from '@/app/routes/AppRoutes';
@@ -47,6 +48,9 @@ const App: React.FC = () => {
       />
       <LanguageProvider>
         <PaywallProvider>
+          {/* Runs above the guard so a recovery link is honoured even while the
+              maintenance check is still resolving. */}
+          <PasswordRecoveryRedirect />
           <SystemGuard>
             <AppRoutes />
           </SystemGuard>

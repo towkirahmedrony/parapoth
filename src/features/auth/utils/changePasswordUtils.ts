@@ -48,11 +48,9 @@ export function getRecoveryParams(searchParams: URLSearchParams): RecoveryParams
   };
 }
 
-export function getErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
+export function getErrorMessage(_error?: unknown) {
+  // Raw Auth/network messages can contain request internals, so the UI only
+  // ever shows a stable user-facing string for unrecognised failures.
   return "পাসওয়ার্ড পরিবর্তন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
 }
 
@@ -61,6 +59,14 @@ export function getUpdatePasswordErrorMessage(error: unknown) {
 
   if (message.includes("same password") || message.includes("different")) {
     return "নতুন পাসওয়ার্ডটি আগের পাসওয়ার্ডের থেকে আলাদা হতে হবে।";
+  }
+
+  if (message.includes("rate limit") || message.includes("too many")) {
+    return "অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।";
+  }
+
+  if (message.includes("network") || message.includes("fetch")) {
+    return "ইন্টারনেট সংযোগে সমস্যা হয়েছে। সংযোগ চেক করে আবার চেষ্টা করুন।";
   }
 
   if (message.includes("weak") || message.includes("password")) {

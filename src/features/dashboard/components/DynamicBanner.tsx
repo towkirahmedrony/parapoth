@@ -42,6 +42,13 @@ const DynamicBanner: React.FC<DynamicBannerProps> = ({ banners, isLoading }) => 
     return () => clearInterval(interval);
   }, [banners]);
 
+  // Keep the active slide in range when banners load late or disappear, so the
+  // parent can mount this component once instead of remounting it per list size.
+  useEffect(() => {
+    const total = banners?.length ?? 0;
+    setCurrentIndex((prev) => (prev < total ? prev : 0));
+  }, [banners]);
+
   if (isLoading) {
     return (
       <section className="mt-3 overflow-hidden">

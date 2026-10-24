@@ -3,6 +3,12 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/shared/lib/supabase';
 import { authService } from '../services/authService';
 import type { AppUser, AuthContextType } from '../types/auth';
+import {
+  isSameAppUser,
+  isSameSession,
+  mergeSessionUser,
+  needsProfileEnrichment,
+} from '../utils/authSessionSync';
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const SUSPENDED_SESSION_KEY = 'parapoth:suspended-session-id';
@@ -50,6 +56,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const mountedRef = useRef(true);
   const roleFetchRef = useRef(false);
   const activeUserIdRef = useRef<string | null>(null);
+  const sessionRef = useRef<Session | null>(null);
+  const roleRef = useRef<string>('student');
+  // The user whose profile row has already been merged into state. Enrichment is
+  // keyed to a user id, never to an auth event, so token refreshes cannot reset
+  // the name/avatar back to "loading".
+  const enrichedUserIdRef = useRef<string | null>(null);
+  const roleUserIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
 
   const enrichUserWithProfile = useCallback(async (authUser: AppUser | null) => {
     if (!authUser?.id || !mountedRef.current) return;
@@ -61,7 +78,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .eq('id', authUser.id)
         .single();
 
-      if (error || !profile || !mountedRef.current) return;
+      if (error || !profile) {
+        // Allow a later auth event to retry, but never on every render.
+        if (activeUserIdRef.current === authUser.id) {
+          enrichedUserIdRef.current = null;
+        }
+        return;
+      }
+
+      if (!mountedRef.current) return;
 
       setUser(prev => {
         if (!prev || prev.id !== authUser.id) return prev;
@@ -116,13 +141,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const currentSessionId = getSessionId(currentSession.access_token);
       const suspendedSessionId = readSuspendedSessionId();
       if (currentSessionId && currentSessionId === suspendedSessionId) {
+        sessionRef.current = null;
+        activeUserIdRef.current = null;
+        enrichedUserIdRef.current = null;
+        roleUserIdRef.current = null;
         setSession(null);
         setUser(null);
         setProfileLoading(false);
         setRole('student');
         setPermissions([]);
         setLoading(false);
-        activeUserIdRef.current = null;
         return;
       }
       if (suspendedSessionId && currentSessionId !== suspendedSessionId) {
@@ -132,10 +160,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearSuspendedSessionId();
     }
 
-    setSession(currentSession);
-    activeUserIdRef.current = currentSession?.user.id ?? null;
+    sessionRef.current = currentSession;
 
-    if (!currentSession?.user) {
+    // Supabase builds a new session object for every getSession() call and every
+    // auth event. Commit it only when its values changed, otherwise each
+    // notification would schedule another render.
+    setSession((previous) =>
+      isSameSession(previous, currentSession) ? previous : currentSession
+    );
+
+    const nextUserId = currentSession?.user.id ?? null;
+
+    if (!nextUserId) {
+      activeUserIdRef.current = null;
+      enrichedUserIdRef.current = null;
+      roleUserIdRef.current = null;
       setUser(null);
       setProfileLoading(false);
       setRole('student');
@@ -145,28 +184,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const baseUser = {
-      ...(currentSession.user as AppUser),
-      total_xp: (currentSession.user as any)?.total_xp ?? 0,
-      total_score: (currentSession.user as any)?.total_score ?? 0
+      ...(currentSession!.user as AppUser),
+      total_xp: (currentSession!.user as any)?.total_xp ?? 0,
+      total_score: (currentSession!.user as any)?.total_score ?? 0
     } as AppUser;
 
-    setUser(baseUser);
-    setProfileLoading(true);
+    activeUserIdRef.current = nextUserId;
+
+    setUser((previous) => {
+      const merged = mergeSessionUser(baseUser, previous);
+      return isSameAppUser(previous, merged) ? previous : merged;
+    });
+
     setLoading(false);
 
-    void fetchRoleData();
-    void enrichUserWithProfile(baseUser);
+    if (needsProfileEnrichment(enrichedUserIdRef.current, nextUserId)) {
+      enrichedUserIdRef.current = nextUserId;
+      setProfileLoading(true);
+      void enrichUserWithProfile(baseUser);
+    }
+
+    if (roleUserIdRef.current !== nextUserId) {
+      roleUserIdRef.current = nextUserId;
+      void fetchRoleData();
+    }
   }, [enrichUserWithProfile, fetchRoleData]);
 
   const signOut = useCallback(async () => {
     try {
       setLoading(true);
-      if (session?.access_token && (role === 'admin' || role === 'super_admin')) {
+      const currentSession = sessionRef.current;
+      if (currentSession?.access_token && (roleRef.current === 'admin' || roleRef.current === 'super_admin')) {
         const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://parapoth-backend.onrender.com/api/v1';
         try {
           await fetch(`${apiBase}/auth/logout`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${session.access_token}` },
+            headers: { Authorization: `Bearer ${currentSession.access_token}` },
           });
         } catch {
           // Best effort: Supabase sign-out still runs if the API is unavailable.
@@ -175,9 +228,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
+      sessionRef.current = null;
       setSession(null);
       setUser(null);
       activeUserIdRef.current = null;
+      enrichedUserIdRef.current = null;
+      roleUserIdRef.current = null;
       setProfileLoading(false);
       setRole('student');
       setPermissions([]);
@@ -188,7 +244,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(false);
       }
     }
-  }, [role, session]);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -201,7 +257,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const handleSuspended = () => {
       // Hide this session in the app without calling Supabase signOut, which
       // may revoke a provider session. The backend remains authoritative.
-      const sessionId = getSessionId(session?.access_token);
+      const sessionId = getSessionId(sessionRef.current?.access_token);
       if (sessionId) {
         try {
           window.sessionStorage.setItem(SUSPENDED_SESSION_KEY, sessionId);
@@ -209,6 +265,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // State enforcement remains in the backend if storage is unavailable.
         }
       }
+      sessionRef.current = null;
       setSession(null);
       setUser(null);
       setProfileLoading(false);
@@ -216,6 +273,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setPermissions([]);
       setLoading(false);
       activeUserIdRef.current = null;
+      enrichedUserIdRef.current = null;
+      roleUserIdRef.current = null;
     };
 
     window.addEventListener('auth:unauthorized', handleUnauthorized);
@@ -255,7 +314,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
       window.removeEventListener('auth:suspended', handleSuspended);
     };
-  }, [applySession, signOut, session]);
+    // `applySession` and `signOut` are stable (refs instead of session state),
+    // so this lifecycle effect runs once per mount. Depending on `session` here
+    // made every getSession() result re-run init() -> applySession() ->
+    // setSession(new object) -> effect again, which flickered the whole app.
+  }, [applySession, signOut]);
 
   const value = useMemo<AuthContextType>(() => ({
     session,

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabase';
+import { PASSWORD_RECOVERY_REDIRECT_PATH } from '../utils/passwordRecovery';
+import { hasRecentPasswordRecoverySession } from '../utils/passwordRecoverySession';
 
 function getProviderError(): string | null {
   const query = new URLSearchParams(window.location.search);
@@ -26,10 +28,18 @@ export default function AuthCallback() {
         const { data, error } = await supabase.auth.getSession();
         if (error || !data.session) throw new Error('No authenticated session');
 
-        if (active) {
+        if (!active) return;
+
+        // A recovery link pointed at the callback route: send it to the reset
+        // screen instead of the dashboard so the user can set a password.
+        if (hasRecentPasswordRecoverySession(data.session)) {
           window.history.replaceState(null, '', window.location.pathname);
-          navigate('/dashboard/home', { replace: true });
+          navigate(PASSWORD_RECOVERY_REDIRECT_PATH, { replace: true });
+          return;
         }
+
+        window.history.replaceState(null, '', window.location.pathname);
+        navigate('/dashboard/home', { replace: true });
       } catch {
         if (active) {
           window.history.replaceState(null, '', window.location.pathname);
