@@ -87,6 +87,7 @@ export function PermissionGuard({
   const safePermissions = Array.isArray(permissions) ? permissions : [];
   const hasPermission =
     role === "admin" ||
+    role === "super_admin" ||
     !requiredPermission ||
     safePermissions.includes(requiredPermission);
 

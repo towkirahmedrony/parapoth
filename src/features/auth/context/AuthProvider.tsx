@@ -112,6 +112,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = useCallback(async () => {
     try {
       setLoading(true);
+      if (session?.access_token && (role === 'admin' || role === 'super_admin')) {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://parapoth-backend.onrender.com/api/v1';
+        try {
+          await fetch(`${apiBase}/auth/logout`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+        } catch {
+          // Best effort: Supabase sign-out still runs if the API is unavailable.
+        }
+      }
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
@@ -128,7 +139,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(false);
       }
     }
-  }, []);
+  }, [role, session]);
 
   useEffect(() => {
     mountedRef.current = true;
