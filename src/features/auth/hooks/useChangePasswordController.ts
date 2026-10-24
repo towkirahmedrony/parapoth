@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { supabase } from "@/shared/lib/supabase";
+import {
+  clearPasswordRecoverySession,
+  hasPasswordRecoverySession,
+} from "../utils/passwordRecoverySession";
 import {
   clearRecoveryUrlTokens,
   DASHBOARD_HOME_PATH,
@@ -23,14 +27,7 @@ export function useChangePasswordController() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const initialRecoveryParams = useMemo(
-    () => getRecoveryParams(searchParams),
-    [searchParams]
-  );
-
-  const [isRecoveryMode, setIsRecoveryMode] = useState(
-    initialRecoveryParams.isRecovery
-  );
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -53,12 +50,23 @@ export function useChangePasswordController() {
     const initializeRecoverySession = async () => {
       const recoveryParams = getRecoveryParams(searchParams);
 
-      if (recoveryParams.isRecovery && isMounted) {
-        setIsRecoveryMode(true);
-      }
-
       try {
-        if (recoveryParams.code) {
+        let recoverySessionCreated = false;
+        const {
+          data: { session: initialSession },
+          error: initialSessionError,
+        } = await supabase.auth.getSession();
+
+        if (initialSessionError) throw initialSessionError;
+
+        const sdkConsumedCode = Boolean(
+          recoveryParams.code &&
+          !new URLSearchParams(window.location.search).has("code")
+        );
+        const alreadyValidated =
+          hasPasswordRecoverySession(initialSession) || sdkConsumedCode;
+
+        if (recoveryParams.code && !alreadyValidated) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
             recoveryParams.code
           );
@@ -66,7 +74,12 @@ export function useChangePasswordController() {
           if (exchangeError) {
             throw exchangeError;
           }
-        } else if (recoveryParams.accessToken && recoveryParams.refreshToken) {
+          recoverySessionCreated = true;
+        } else if (
+          recoveryParams.accessToken &&
+          recoveryParams.refreshToken &&
+          !alreadyValidated
+        ) {
           const { error: setSessionError } = await supabase.auth.setSession({
             access_token: recoveryParams.accessToken,
             refresh_token: recoveryParams.refreshToken,
@@ -75,6 +88,7 @@ export function useChangePasswordController() {
           if (setSessionError) {
             throw setSessionError;
           }
+          recoverySessionCreated = true;
         }
 
         const {
@@ -86,6 +100,27 @@ export function useChangePasswordController() {
 
         if (sessionError) {
           throw sessionError;
+        }
+
+        if (recoveryParams.isRecovery && session) {
+          // The SDK emits PASSWORD_RECOVERY after processing an implicit link.
+          // Yield once so its verified-session marker is available here.
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+          const {
+            data: { session: latestSession },
+          } = await supabase.auth.getSession();
+          const recoveryAuthorized =
+            recoverySessionCreated ||
+            sdkConsumedCode ||
+            hasPasswordRecoverySession(latestSession ?? session);
+
+          if (recoveryAuthorized) {
+            setIsRecoveryMode(true);
+            clearErrorOnInput();
+          } else {
+            setIsRecoveryMode(false);
+            setError("পাসওয়ার্ড রিসেট লিংকটি কাজ করছে না বা মেয়াদ শেষ হয়েছে। নতুন করে রিসেট লিংক পাঠান।");
+          }
         }
 
         if (!session && !recoveryParams.isRecovery) {
@@ -109,7 +144,7 @@ export function useChangePasswordController() {
       } catch (sessionInitError: unknown) {
         if (!isMounted) return;
 
-        setIsRecoveryMode(true);
+        setIsRecoveryMode(false);
         setError(getUpdatePasswordErrorMessage(sessionInitError));
       } finally {
         if (isMounted) {
@@ -218,6 +253,7 @@ export function useChangePasswordController() {
         throw updateError;
       }
 
+      clearPasswordRecoverySession();
       resetForm();
       clearRecoveryUrlTokens();
 

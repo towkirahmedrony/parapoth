@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { supabase } from "@/shared/lib/supabase";
+import { isValidUsername, normalizeUsername } from "../utils/username";
 
 interface RegisterFormProps {
   onSuccess: (email: string) => void;
@@ -32,7 +33,6 @@ const INITIAL_FORM_DATA: RegisterFormData = {
   confirmPassword: "",
 };
 
-const USERNAME_PATTERN = /^[a-z0-9_]+$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_FULL_NAME_LENGTH = 80;
@@ -42,7 +42,7 @@ const MIN_USERNAME_LENGTH = 3;
 function normalizeRegisterData(userData: RegisterFormData): NormalizedRegisterData {
   return {
     fullName: userData.fullName.trim().replace(/\s+/g, " "),
-    username: userData.username.trim().toLowerCase(),
+    username: normalizeUsername(userData.username),
     email: userData.email.trim().toLowerCase(),
     password: userData.password,
   };
@@ -183,7 +183,7 @@ export default function RegisterForm({
       return `ইউজারনেম ${MAX_USERNAME_LENGTH} অক্ষরের বেশি হতে পারবে না।`;
     }
 
-    if (!USERNAME_PATTERN.test(normalizedData.username)) {
+    if (!isValidUsername(normalizedData.username)) {
       return "ইউজারনেমে শুধু ইংরেজি ছোট হাতের অক্ষর, সংখ্যা এবং আন্ডারস্কোর ব্যবহার করা যাবে।";
     }
 

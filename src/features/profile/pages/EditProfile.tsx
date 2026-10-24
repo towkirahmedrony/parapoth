@@ -64,7 +64,7 @@ const EditProfile: React.FC = () => {
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: name === 'username' ? value.toLowerCase() : value }));
     if (updateProfileMutation.isError) updateProfileMutation.reset();
   }, []);
 
@@ -113,7 +113,7 @@ const EditProfile: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const updatePayload = {
-      username: formData.username,
+      ...(formData.username?.trim() ? { username: formData.username.trim().toLowerCase() } : {}),
       full_name: formData.full_name,
       bio: formData.bio,
       institution: formData.institution,

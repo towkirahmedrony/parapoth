@@ -71,6 +71,10 @@ apiClient.interceptors.response.use(
       );
     }
 
+    if (error.response?.status === 403 && accessCode === 'ACCOUNT_SUSPENDED') {
+      window.dispatchEvent(new CustomEvent('auth:suspended'));
+    }
+
     if (error.response?.status === 401) {
       if (import.meta.env.DEV) {
         console.warn('Unauthorized request. Dispatching logout event.');

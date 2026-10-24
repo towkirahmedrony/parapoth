@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabase';
+import {
+  PASSWORD_RECOVERY_PUBLIC_MESSAGE,
+  requestPasswordRecovery,
+} from '../utils/passwordRecovery';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
@@ -11,63 +15,20 @@ const ForgotPassword: React.FC = () => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setMessage(null);
 
-    const inputStr = email.trim();
-
-    if (!inputStr) {
-      setMessage({ type: 'error', text: 'অনুগ্রহ করে ইমেইল বা ইউজারনেম দিন।' });
+    const inputEmail = email.trim();
+    if (!inputEmail) {
+      setMessage({ type: 'error', text: 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা দিন।' });
       return;
     }
 
     setIsLoading(true);
-
     try {
-      let targetEmail = inputStr;
-      
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputStr);
-
-      if (isEmail) {
-        const { data, error: profileError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('email', inputStr)
-          .maybeSingle();
-
-        if (profileError || !data) {
-          throw new Error('এই ইমেইল দিয়ে কোনো একাউন্ট পাওয়া যায়নি।');
-        }
-      } else {
-        const { data, error: profileError } = await supabase
-          .from('profiles')
-          .select('email')
-          .ilike('username', inputStr)
-          .maybeSingle();
-
-        if (profileError || !data?.email) {
-          throw new Error('এই ইউজারনেম দিয়ে কোনো একাউন্ট পাওয়া যায়নি।');
-        }
-        targetEmail = data.email;
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-        redirectTo: `${window.location.origin}/auth/change-password?mode=recovery`,
-      });
-
-      if (error) throw error;
-
-      setMessage({ 
-        type: 'success', 
-        text: 'আপনার ইমেইলে পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে। ইনবক্স (বা স্প্যাম ফোল্ডার) চেক করুন।' 
-      });
+      await requestPasswordRecovery(inputEmail, supabase.auth, window.location.origin);
+      setMessage({ type: 'success', text: PASSWORD_RECOVERY_PUBLIC_MESSAGE });
       setEmail('');
-
-    } catch (err: any) {
-      console.error('Reset error:', err);
-      setMessage({ 
-        type: 'error', 
-        text: err.message || 'রিসেট লিংক পাঠাতে সমস্যা হয়েছে। ইনপুট চেক করুন।' 
-      });
     } finally {
       setIsLoading(false);
     }
@@ -76,20 +37,19 @@ const ForgotPassword: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-app text-text-primary p-4 justify-center items-center">
       <div className="w-full max-w-sm">
-        
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold mb-3 text-text-primary">পাসওয়ার্ড ভুলে গেছেন?</h1>
           <p className="text-text-secondary text-sm leading-relaxed px-4">
-            পাসওয়ার্ড রিসেট করতে আপনার ইমেইল অথবা ইউজারনেম দিন।
+            পাসওয়ার্ড রিসেট করতে আপনার অ্যাকাউন্টের ইমেইল ঠিকানা দিন।
           </p>
         </div>
 
         {message && (
-          <div className="mb-6 p-4 rounded-xl flex items-start gap-3 text-sm border bg-surface-elevated border-border-color text-text-primary">
+          <div className="mb-6 p-4 rounded-xl flex items-start gap-3 text-sm border bg-surface-elevated border-border-color text-text-primary" role="status" aria-live="polite">
             {message.type === 'success' ? (
-              <CheckCircle size={20} className="shrink-0 mt-0.5 text-text-primary" />
+              <CheckCircle size={20} className="shrink-0 mt-0.5 text-text-primary" aria-hidden="true" />
             ) : (
-              <AlertCircle size={20} className="shrink-0 mt-0.5 text-text-primary" />
+              <AlertCircle size={20} className="shrink-0 mt-0.5 text-text-primary" aria-hidden="true" />
             )}
             <p className="leading-relaxed">{message.text}</p>
           </div>
@@ -98,10 +58,12 @@ const ForgotPassword: React.FC = () => {
         <form onSubmit={handleResetPassword} className="space-y-4">
           <div>
             <input
-              type="text"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ইমেইল বা ইউজারনেম"
+              placeholder="ইমেইল ঠিকানা"
               className="w-full bg-input-bg border border-input-border rounded-xl px-4 py-3.5 text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring transition-colors"
               disabled={isLoading}
               required
@@ -110,11 +72,11 @@ const ForgotPassword: React.FC = () => {
 
           <button
             type="submit"
-            disabled={isLoading || !email}
+            disabled={isLoading || !email.trim()}
             className="w-full bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" aria-label="লোড হচ্ছে" />
             ) : (
               'রিসেট লিংক পাঠান'
             )}
@@ -122,7 +84,8 @@ const ForgotPassword: React.FC = () => {
         </form>
 
         <div className="mt-8 text-center">
-          <button 
+          <button
+            type="button"
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
@@ -130,7 +93,6 @@ const ForgotPassword: React.FC = () => {
             <span>ফিরে যান</span>
           </button>
         </div>
-
       </div>
     </div>
   );

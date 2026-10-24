@@ -62,26 +62,37 @@ export default function LoginForm() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginFormData) => {
       let identifier = credentials.identifier.trim().toLowerCase();
-      let loginEmail = identifier;
-
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
 
-      // 🚀 [FIX] ইউজারনেম দিয়ে ইমেইল বের করার জন্য RPC ফাংশন কল করা হলো
       if (!isEmail) {
-        const { data: userEmail, error: rpcError } = await supabase.rpc('get_email_by_username', {
-          p_username: identifier
+        const backendUrl = (import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1').replace(/\/+$/, '');
+        const response = await fetch(`${backendUrl}/auth/username-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: identifier, password: credentials.password }),
         });
 
-        if (rpcError || !userEmail) {
-          throw new Error("invalid login credentials");
+        if (!response.ok) {
+          throw new Error(response.status === 401 ? 'invalid login credentials' : 'authentication temporarily unavailable');
         }
-        
-        loginEmail = userEmail as string;
+
+        const body = await response.json();
+        const accessToken = body?.session?.access_token;
+        const refreshToken = body?.session?.refresh_token;
+        if (body?.success !== true || !accessToken || !refreshToken) {
+          throw new Error('invalid login credentials');
+        }
+
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error || !data?.session) throw new Error('invalid login credentials');
+        return data;
       }
 
-      // আসল ইমেইলটি দিয়ে Supabase Auth এ লগ-ইন
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
+        email: identifier,
         password: credentials.password,
       });
 

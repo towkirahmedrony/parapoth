@@ -22,6 +22,7 @@ const Streak = lazy(() => import('@/features/dashboard/pages/Streak'));
 const Marketplace = lazy(() => import('@/features/economy/pages/Marketplace'));
 const Login = lazy(() => import('@/features/auth/pages/Login'));
 const Register = lazy(() => import('@/features/auth/pages/Register'));
+const AuthCallback = lazy(() => import('@/features/auth/pages/AuthCallback'));
 const ForgotPassword = lazy(() => import('@/features/auth/pages/ForgotPassword'));
 const ChangePassword = lazy(() => import('@/features/auth/pages/ChangePassword'));
 const Arena = lazy(() => import('@/features/exam/pages/Arena'));
@@ -109,6 +110,7 @@ const AppRoutes: React.FC = () => {
         {/* --- Public auth routes --- */}
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
 
         {/*

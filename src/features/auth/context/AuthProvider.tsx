@@ -5,6 +5,35 @@ import { authService } from '../services/authService';
 import type { AppUser, AuthContextType } from '../types/auth';
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const SUSPENDED_SESSION_KEY = 'parapoth:suspended-session-id';
+
+const getSessionId = (accessToken?: string) => {
+  try {
+    const payload = accessToken?.split('.')[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(normalized)) as { session_id?: unknown };
+    return typeof claims.session_id === 'string' ? claims.session_id : null;
+  } catch {
+    return null;
+  }
+};
+
+const readSuspendedSessionId = () => {
+  try {
+    return window.sessionStorage.getItem(SUSPENDED_SESSION_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const clearSuspendedSessionId = () => {
+  try {
+    window.sessionStorage.removeItem(SUSPENDED_SESSION_KEY);
+  } catch {
+    // State enforcement remains in the backend if storage is unavailable.
+  }
+};
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -83,6 +112,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const applySession = useCallback((currentSession: Session | null) => {
+    if (currentSession) {
+      const currentSessionId = getSessionId(currentSession.access_token);
+      const suspendedSessionId = readSuspendedSessionId();
+      if (currentSessionId && currentSessionId === suspendedSessionId) {
+        setSession(null);
+        setUser(null);
+        setProfileLoading(false);
+        setRole('student');
+        setPermissions([]);
+        setLoading(false);
+        activeUserIdRef.current = null;
+        return;
+      }
+      if (suspendedSessionId && currentSessionId !== suspendedSessionId) {
+        clearSuspendedSessionId();
+      }
+    } else {
+      clearSuspendedSessionId();
+    }
+
     setSession(currentSession);
     activeUserIdRef.current = currentSession?.user.id ?? null;
 
@@ -149,7 +198,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
       void signOut();
     };
 
+    const handleSuspended = () => {
+      // Hide this session in the app without calling Supabase signOut, which
+      // may revoke a provider session. The backend remains authoritative.
+      const sessionId = getSessionId(session?.access_token);
+      if (sessionId) {
+        try {
+          window.sessionStorage.setItem(SUSPENDED_SESSION_KEY, sessionId);
+        } catch {
+          // State enforcement remains in the backend if storage is unavailable.
+        }
+      }
+      setSession(null);
+      setUser(null);
+      setProfileLoading(false);
+      setRole('student');
+      setPermissions([]);
+      setLoading(false);
+      activeUserIdRef.current = null;
+    };
+
     window.addEventListener('auth:unauthorized', handleUnauthorized);
+    window.addEventListener('auth:suspended', handleSuspended);
 
     const init = async () => {
       try {
@@ -183,8 +253,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       mountedRef.current = false;
       subscription.unsubscribe();
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      window.removeEventListener('auth:suspended', handleSuspended);
     };
-  }, [applySession, signOut]);
+  }, [applySession, signOut, session]);
 
   const value = useMemo<AuthContextType>(() => ({
     session,
