@@ -1,14 +1,47 @@
-import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import {
+  fetchQuestionPage,
   getQuestionBankFilters,
-  getQuestionBankQuestions,
   toggleBookmark,
 } from '../services/questionBankService';
+import {
+  dedupeQuestions,
+  buildStats,
+} from '../services/questionBankMapper';
 import {
   DEFAULT_QUESTION_BANK_FILTERS,
   type QuestionBankFilterState,
 } from '../types/questionBank';
+
+/** Delay before a typed search term is sent to the database. */
+export const SEARCH_DEBOUNCE_MS = 350;
+
+const emptyStats = {
+  total: 0,
+  bookmarked: 0,
+  mistakes: 0,
+  mcq: 0,
+  board: 0,
+  premium: 0,
+} as const;
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
 
 export function useQuestionBank() {
   const queryClient = useQueryClient();
@@ -20,17 +53,33 @@ export function useQuestionBank() {
     staleTime: 1000 * 60 * 10,
   });
 
-  const shouldFetchQuestions = Boolean(
-    filters.subjectId || 
-    filters.search || 
-    filters.bookmarkedOnly || 
-    filters.mistakesOnly || 
-    filters.premiumOnly
+  /**
+   * Only the search term is debounced. Dropdown/toggle filters should feel
+   * instant, but every keystroke used to trigger a full RPC round-trip.
+   */
+  const debouncedSearch = useDebouncedValue(filters.search, SEARCH_DEBOUNCE_MS);
+
+  const effectiveFilters = useMemo<QuestionBankFilterState>(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch]
   );
 
-  const questionsQuery = useQuery({
-    queryKey: ['question-bank', 'questions', filters],
-    queryFn: () => getQuestionBankQuestions(filters),
+  const shouldFetchQuestions = Boolean(
+    effectiveFilters.subjectId ||
+      effectiveFilters.search ||
+      effectiveFilters.bookmarkedOnly ||
+      effectiveFilters.mistakesOnly ||
+      effectiveFilters.premiumOnly
+  );
+
+  const questionsQuery = useInfiniteQuery({
+    queryKey: ['question-bank', 'questions', effectiveFilters],
+    queryFn: ({ pageParam }) => fetchQuestionPage(effectiveFilters, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    // Keeps the previous page on screen while a new filter loads instead of
+    // flashing the full-page loader on every change.
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 2,
     enabled: shouldFetchQuestions,
   });
@@ -55,8 +104,8 @@ export function useQuestionBank() {
       ? chapters.filter((item) => item.subject_id === filters.subjectId)
       : chapters;
 
-    const validChapterIds = new Set(filteredChapters.map(c => c.id));
-    const filteredTopics = topics.filter(topic => {
+    const validChapterIds = new Set(filteredChapters.map((c) => c.id));
+    const filteredTopics = topics.filter((topic) => {
       if (filters.chapterId) {
         return topic.chapter_id === filters.chapterId;
       }
@@ -66,6 +115,9 @@ export function useQuestionBank() {
       return true;
     });
 
+    const pages = questionsQuery.data?.pages ?? [];
+    const questions = dedupeQuestions(pages.flatMap((page) => page.questions));
+
     return {
       subjects,
       chapters: filteredChapters,
@@ -73,15 +125,12 @@ export function useQuestionBank() {
       boards,
       colleges,
       admissions,
-      questions: questionsQuery.data?.questions ?? [],
-      stats: questionsQuery.data?.stats ?? {
-        total: 0,
-        bookmarked: 0,
-        mistakes: 0,
-        mcq: 0,
-        board: 0,
-        premium: 0,
-      },
+      questions,
+      // Loaded-row stats; the header reports the authoritative total separately.
+      stats: questions.length > 0 ? buildStats(questions) : emptyStats,
+      total: pages[0]?.total ?? 0,
+      mode: pages[0]?.mode ?? null,
+      capped: pages[0]?.capped ?? false,
     };
   }, [filters, filtersQuery.data, questionsQuery.data]);
 
@@ -106,12 +155,12 @@ export function useQuestionBank() {
           topicId: '',
         };
       }
-      
+
       if (key === 'institutionType') {
         return {
           ...prev,
           institutionType: String(value),
-          institutionEiin: '', // Reset the selected EIIN when type changes
+          institutionEiin: '',
         };
       }
 
@@ -124,6 +173,11 @@ export function useQuestionBank() {
 
   const resetFilters = () => {
     setFilters(DEFAULT_QUESTION_BANK_FILTERS);
+  };
+
+  const loadMore = () => {
+    if (!questionsQuery.hasNextPage || questionsQuery.isFetchingNextPage) return;
+    void questionsQuery.fetchNextPage();
   };
 
   return {
@@ -139,8 +193,14 @@ export function useQuestionBank() {
     admissions: derived.admissions,
     questions: derived.questions,
     stats: derived.stats,
+    total: derived.total,
+    mode: derived.mode,
+    capped: derived.capped,
     isLoading: filtersQuery.isLoading || (shouldFetchQuestions && questionsQuery.isLoading),
     isFetching: questionsQuery.isFetching,
+    isFetchingNextPage: questionsQuery.isFetchingNextPage,
+    hasMore: Boolean(questionsQuery.hasNextPage),
+    loadMore,
     error: filtersQuery.error || questionsQuery.error,
     refetch: questionsQuery.refetch,
     toggleBookmark: toggleBookmarkMutation.mutateAsync,

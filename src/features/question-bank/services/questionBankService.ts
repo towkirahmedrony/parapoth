@@ -4,72 +4,91 @@ import type {
   QuestionBankFilterState,
   QuestionBankFiltersData,
   QuestionBankInstitution,
+  QuestionBankPage,
   QuestionBankQuestion,
-  QuestionBankResponse,
-  QuestionBankStats,
+  QuestionBankRpcRow,
   QuestionBankSubject,
   QuestionBankTopic,
 } from '../types/questionBank';
-import { isQuestionBody, isQuestionOptions } from '../types/questionBank';
+import {
+  applyClientSideFilters,
+  buildStats,
+  dedupeQuestions,
+  isRpcRow,
+  mapQuestion,
+  resolvePagination,
+} from './questionBankMapper';
+import { isMissingRpcError } from './questionBankErrors';
 
 /**
- * Minimal typed view of the Supabase client for the one RPC this feature needs.
+ * Student question bank data access.
  *
- * The generated `Database` type has no entry for `get_student_question_bank`,
- * so the response is described here and validated before use instead of being
- * cast to `any`.
+ * Architecture: the frontend reads questions through the student RPC
+ * (`get_student_question_bank*`). Direct table access is not available to
+ * students — `public.questions` is not readable by the `authenticated` role —
+ * and the RPC is the only path that applies premium redaction, live-exam
+ * exclusion and answer-key suppression inside the database.
+ *
+ * Two RPC versions are supported:
+ *   * v2 (`..._v2`, 13 args) — paginated, server-side search/filter/count.
+ *   * v1 (4 args) — kept as a compatibility fallback for projects where the v2
+ *     migration has not been applied yet. It returns at most 100 rows with no
+ *     offset, so the frontend filters and slices that page locally and labels
+ *     the result as capped.
+ *
+ * The fallback is decided per request from the RPC error, so either deployment
+ * order (frontend first or migration first) keeps working.
  */
-type QuestionBankRpcClient = {
-  rpc(
-    fn: 'get_student_question_bank',
-    args: {
-      p_subject_id: string | null;
-      p_chapter_id: string | null;
-      p_topic_id: string | null;
-      p_sort: string;
-    }
-  ): Promise<{ data: unknown; error: Error | null }>;
+
+/** Rows requested per page in v2 mode. */
+export const QUESTION_BANK_PAGE_SIZE = 20;
+
+/** Hard cap of the v1 RPC (`limit 100` inside the function). */
+export const LEGACY_ROW_CAP = 100;
+
+type V2Args = {
+  p_subject_id: string | null;
+  p_chapter_id: string | null;
+  p_topic_id: string | null;
+  p_sort: string;
+  p_search: string | null;
+  p_bookmarked_only: boolean;
+  p_mistakes_only: boolean;
+  p_premium_only: boolean;
+  p_institution_type: string | null;
+  p_institution_eiin: string | null;
+  p_year: string | null;
+  p_limit: number;
+  p_offset: number;
 };
 
-type QuestionBankRpcRow = {
-  id: string;
-  type: string | null;
-  difficulty_level: string | null;
-  source_type: string | null;
-  tags: unknown;
-  exam_references: unknown;
-  subject_id: string | null;
-  chapter_id: string | null;
-  topic_id: string | null;
-  total_attempts: number | null;
-  correct_attempts: number | null;
-  created_at: string | null;
-  body: unknown;
-  options: unknown;
-  explanation: unknown;
-  subjects: unknown;
-  chapters: unknown;
-  topics: unknown;
+type V1Args = {
+  p_subject_id: string | null;
+  p_chapter_id: string | null;
+  p_topic_id: string | null;
+  p_sort: string;
 };
+
+/**
+ * Minimal typed view of the Supabase client for the two RPCs this feature
+ * needs. The generated `Database` type has no entry for either function, so the
+ * response is described here and validated before use instead of cast to `any`.
+ */
+type QuestionBankRpcClient = {
+  rpc(fn: 'get_student_question_bank_v2', args: V2Args): Promise<RpcResult>;
+  rpc(fn: 'get_student_question_bank', args: V1Args): Promise<RpcResult>;
+};
+
+type RpcError = { code?: string; message?: string; details?: string; hint?: string };
+type RpcResult = { data: unknown; error: RpcError | null };
 
 const questionBankRpc = supabase as unknown as QuestionBankRpcClient;
 
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-  value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-
-const asStringOrNull = (value: unknown): string | null =>
-  typeof value === 'string' ? value : null;
-
-const asNumberOr = (value: unknown, fallback: number): number =>
-  typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
-const isRpcRow = (value: unknown): value is QuestionBankRpcRow => {
-  const row = asRecord(value);
-  return Boolean(row) && typeof row?.id === 'string';
+const orNull = (value: string): string | null => {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 };
 
 async function getCurrentUserId(): Promise<string | null> {
@@ -78,162 +97,142 @@ async function getCurrentUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
-function mapQuestion(row: QuestionBankRpcRow, bookmarkedIds: Set<string>, wrongIds: Set<string>): QuestionBankQuestion {
-  const body = isQuestionBody(row.body) ? row.body : {};
-  const options = isQuestionOptions(row.options) ? row.options : [];
-
-  const subject = asRecord(row.subjects);
-  const chapter = asRecord(row.chapters);
-  const topic = asRecord(row.topics);
-
-  const isPremium =
-    subject?.is_premium === true ||
-    chapter?.is_premium === true ||
-    topic?.is_premium === true;
-
-  // The RPC redacts premium rows the caller cannot read: empty body, no options
-  // and no explanation. Such a row is a locked question, not a broken one.
-  const hasVisibleContent =
-    Boolean(body.text_bn || body.text_en || body.image_url) || options.length > 0;
-  const isLocked = isPremium && !hasVisibleContent;
-
-  return {
-    id: row.id,
-    type: row.type ?? 'MCQ',
-    difficultyLevel: row.difficulty_level,
-    sourceType: row.source_type,
-    explanation: asStringOrNull(row.explanation),
-    tags: asArray(row.tags).filter((tag): tag is string => typeof tag === 'string'),
-    examReferences: asArray(row.exam_references).filter(
-      (reference): reference is Record<string, unknown> => Boolean(asRecord(reference))
-    ),
-    body,
-    options,
-    subjectId: row.subject_id,
-    subjectNameBn: asStringOrNull(subject?.name_bn),
-    subjectNameEn: asStringOrNull(subject?.name_en),
-    chapterId: row.chapter_id,
-    chapterNameBn: asStringOrNull(chapter?.name_bn),
-    chapterNameEn: asStringOrNull(chapter?.name_en),
-    topicId: row.topic_id,
-    topicNameBn: asStringOrNull(topic?.name_bn),
-    topicNameEn: asStringOrNull(topic?.name_en),
-    isPremium,
-    isLocked,
-    isBookmarked: bookmarkedIds.has(row.id),
-    isWrongAnswered: wrongIds.has(row.id),
-    totalAttempts: asNumberOr(row.total_attempts, 0),
-    correctAttempts: asNumberOr(row.correct_attempts, 0),
-    createdAt: row.created_at,
-  };
-}
-
-function buildStats(questions: QuestionBankQuestion[]): QuestionBankStats {
-  return {
-    total: questions.length,
-    bookmarked: questions.filter((item) => item.isBookmarked).length,
-    mistakes: questions.filter((item) => item.isWrongAnswered).length,
-    mcq: questions.filter((item) => item.type?.toUpperCase() === 'MCQ').length,
-    board: questions.filter((item) => item.sourceType === 'board_exam').length,
-    premium: questions.filter((item) => item.isPremium).length,
-  };
-}
-
 async function getUserMeta(questionIds: string[]) {
   const userId = await getCurrentUserId();
   if (!userId || questionIds.length === 0) {
     return { bookmarkedIds: new Set<string>(), wrongIds: new Set<string>() };
   }
 
-  const [{ data: bookmarks, error: bookmarksError }, { data: wrongAnswers, error: wrongAnswersError }] =
-    await Promise.all([
-      supabase.from('bookmarks').select('question_id').eq('user_id', userId).in('question_id', questionIds),
-      supabase.from('wrong_answers').select('question_id').eq('user_id', userId).in('question_id', questionIds),
-    ]);
+  const [
+    { data: bookmarks, error: bookmarksError },
+    { data: wrongAnswers, error: wrongAnswersError },
+  ] = await Promise.all([
+    supabase.from('bookmarks').select('question_id').eq('user_id', userId).in('question_id', questionIds),
+    supabase.from('wrong_answers').select('question_id').eq('user_id', userId).in('question_id', questionIds),
+  ]);
 
   if (bookmarksError) throw bookmarksError;
   if (wrongAnswersError) throw wrongAnswersError;
 
   return {
-    bookmarkedIds: new Set((bookmarks ?? []).map((item) => item.question_id).filter((value): value is string => Boolean(value))),
-    wrongIds: new Set((wrongAnswers ?? []).map((item) => item.question_id).filter((value): value is string => Boolean(value))),
+    bookmarkedIds: new Set(
+      (bookmarks ?? [])
+        .map((item) => item.question_id)
+        .filter((value): value is string => Boolean(value))
+    ),
+    wrongIds: new Set(
+      (wrongAnswers ?? [])
+        .map((item) => item.question_id)
+        .filter((value): value is string => Boolean(value))
+    ),
   };
 }
 
-function applySearch(questions: QuestionBankQuestion[], search: string): QuestionBankQuestion[] {
-  const normalized = search.trim().toLowerCase();
-  if (!normalized) return questions;
+const toV2Args = (
+  filters: QuestionBankFilterState,
+  offset: number,
+  limit: number
+): V2Args => ({
+  p_subject_id: orNull(filters.subjectId),
+  p_chapter_id: orNull(filters.chapterId),
+  p_topic_id: orNull(filters.topicId),
+  p_sort: filters.sortBy,
+  p_search: orNull(filters.search),
+  p_bookmarked_only: filters.bookmarkedOnly,
+  p_mistakes_only: filters.mistakesOnly,
+  p_premium_only: filters.premiumOnly,
+  p_institution_type: orNull(filters.institutionType),
+  p_institution_eiin: orNull(filters.institutionEiin),
+  p_year: orNull(filters.year),
+  p_limit: limit,
+  p_offset: offset,
+});
 
-  return questions.filter((question) => {
-    const haystacks = [
-      question.body.text_bn,
-      question.body.text_en,
-      question.explanation,
-      question.subjectNameBn,
-      question.subjectNameEn,
-      question.chapterNameBn,
-      question.chapterNameEn,
-      question.topicNameBn,
-      question.topicNameEn,
-      ...question.tags,
-      ...question.options.map((option) => option.text_bn ?? ''),
-      ...question.options.map((option) => option.text_en ?? ''),
-    ].filter(Boolean).join(' ').toLowerCase();
-
-    return haystacks.includes(normalized);
-  });
-}
-
-function applyClientSideFilters(questions: QuestionBankQuestion[], filters: QuestionBankFilterState): QuestionBankQuestion[] {
-  let result = [...questions];
-
-  if (filters.bookmarkedOnly) result = result.filter((item) => item.isBookmarked);
-  if (filters.mistakesOnly) result = result.filter((item) => item.isWrongAnswered);
-  if (filters.premiumOnly) result = result.filter((item) => item.isPremium);
-  
-  // Filter by Source Type (Board/College/Admission)
-  if (filters.institutionType) {
-    const expectedSource = filters.institutionType === 'board' ? 'board_exam' : filters.institutionType;
-    result = result.filter((item) => item.sourceType === expectedSource);
+const readTotalCount = (rows: QuestionBankRpcRow[]): number => {
+  for (const row of rows) {
+    if (typeof row.total_count === 'number' && Number.isFinite(row.total_count)) {
+      return row.total_count;
+    }
   }
+  return 0;
+};
 
-  // Exact Match by EIIN from examReferences
-  if (filters.institutionEiin) {
-    result = result.filter(q => 
-      q.examReferences.some(ref => ref.eiin === filters.institutionEiin)
-    );
-  }
-  
-  // Year match (Checks both tags and examReferences for better coverage)
-  if (filters.year) {
-    result = result.filter(q => {
-      const inTags = JSON.stringify(q.tags || []).includes(filters.year);
-      const inRef = q.examReferences.some(ref => String(ref.year) === filters.year);
-      return inTags || inRef;
+/**
+ * Fetches one page of questions.
+ *
+ * `offset` is the number of rows already shown. The returned `nextOffset` is
+ * `null` when the page is the last one.
+ */
+export async function fetchQuestionPage(
+  filters: QuestionBankFilterState,
+  offset = 0
+): Promise<QuestionBankPage> {
+  const limit = QUESTION_BANK_PAGE_SIZE;
+
+  const v2 = await questionBankRpc.rpc('get_student_question_bank_v2', toV2Args(filters, offset, limit));
+
+  if (!v2.error) {
+    const rows = asArray(v2.data).filter(isRpcRow);
+    const meta = await getUserMeta(rows.map((row) => row.id));
+    const questions = rows.map((row) => mapQuestion(row, meta));
+    const { total, nextOffset } = resolvePagination({
+      offset,
+      limit,
+      received: questions.length,
+      total: readTotalCount(rows),
     });
+
+    return {
+      questions,
+      total,
+      nextOffset,
+      mode: 'paged',
+      capped: false,
+      stats: buildStats(questions),
+    };
   }
 
-  if (filters.search.trim()) {
-    result = applySearch(result, filters.search);
+  if (!isMissingRpcError(v2.error)) throw v2.error;
+
+  // ---- v1 compatibility path ---------------------------------------------
+  if (offset > 0) {
+    // v1 cannot page; a "load more" request against it is a no-op.
+    return {
+      questions: [],
+      total: offset,
+      nextOffset: null,
+      mode: 'legacy',
+      capped: true,
+      stats: buildStats([]),
+    };
   }
 
-  switch (filters.sortBy) {
-    case 'oldest':
-      result.sort((a, b) => (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0));
-      break;
-    case 'most_attempted':
-      result.sort((a, b) => b.totalAttempts - a.totalAttempts);
-      break;
-    case 'least_attempted':
-      result.sort((a, b) => a.totalAttempts - b.totalAttempts);
-      break;
-    case 'newest':
-    default:
-      result.sort((a, b) => (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0));
-      break;
-  }
+  const v1 = await questionBankRpc.rpc('get_student_question_bank', {
+    p_subject_id: orNull(filters.subjectId),
+    p_chapter_id: orNull(filters.chapterId),
+    p_topic_id: orNull(filters.topicId),
+    p_sort: filters.sortBy,
+  });
 
-  return result;
+  if (v1.error) throw v1.error;
+
+  const rows = asArray(v1.data).filter(isRpcRow);
+  const meta = await getUserMeta(rows.map((row) => row.id));
+  // v1 applies no filters server-side, so the whole filter pipeline runs here.
+  const questions = dedupeQuestions(
+    applyClientSideFilters(rows.map((row) => mapQuestion(row, meta)), filters)
+  );
+
+  return {
+    questions,
+    total: questions.length,
+    nextOffset: null,
+    mode: 'legacy',
+    // v1 returns at most 100 rows before any filtering; at the cap the result
+    // may be incomplete, so the UI has to say so instead of implying "all".
+    capped: rows.length >= LEGACY_ROW_CAP,
+    stats: buildStats(questions),
+  };
 }
 
 export async function getQuestionBankFilters(): Promise<QuestionBankFiltersData> {
@@ -241,12 +240,11 @@ export async function getQuestionBankFilters(): Promise<QuestionBankFiltersData>
     { data: subjects, error: subjectsError },
     { data: chapters, error: chaptersError },
     { data: topics, error: topicsError },
-    { data: institutions, error: institutionsError }
+    { data: institutions, error: institutionsError },
   ] = await Promise.all([
     supabase.from('subjects').select('id, name_bn, name_en, slug, is_premium, sequence').eq('is_active', true).order('sequence', { ascending: true }),
     supabase.from('chapters').select('id, subject_id, name_bn, name_en, slug, is_premium, sequence').eq('is_active', true).order('sequence', { ascending: true }),
     supabase.from('topics').select('id, chapter_id, name_bn, name_en, slug, is_premium, sequence, total_questions').eq('is_active', true).order('sequence', { ascending: true }),
-    // Selected eiin column here
     supabase.from('institutions').select('id, name_bn, name_en, type, eiin').in('type', ['board', 'college', 'admission']).eq('is_active', true).order('name_bn', { ascending: true }),
   ]);
 
@@ -256,43 +254,20 @@ export async function getQuestionBankFilters(): Promise<QuestionBankFiltersData>
   if (institutionsError) throw institutionsError;
 
   const allInstitutions = (institutions ?? []) as QuestionBankInstitution[];
-  
+
   return {
     subjects: (subjects ?? []) as QuestionBankSubject[],
     chapters: (chapters ?? []) as QuestionBankChapter[],
     topics: (topics ?? []) as QuestionBankTopic[],
-    boards: allInstitutions.filter(inst => inst.type === 'board'),
-    colleges: allInstitutions.filter(inst => inst.type === 'college'),
-    admissions: allInstitutions.filter(inst => inst.type === 'admission'),
+    boards: allInstitutions.filter((inst) => inst.type === 'board'),
+    colleges: allInstitutions.filter((inst) => inst.type === 'college'),
+    admissions: allInstitutions.filter((inst) => inst.type === 'admission'),
   };
-}
-
-export async function getQuestionBankQuestions(filters: QuestionBankFilterState): Promise<QuestionBankResponse> {
-  // `questions` has an admin-only RLS policy, so students read it through the
-  // approved RPC. Empty filter strings become null, which the function treats
-  // as "no filter", and the RPC never returns answer-key fields.
-  const { data, error } = await questionBankRpc.rpc('get_student_question_bank', {
-    p_subject_id: filters.subjectId || null,
-    p_chapter_id: filters.chapterId || null,
-    p_topic_id: filters.topicId || null,
-    p_sort: filters.sortBy,
-  });
-
-  if (error) throw error;
-
-  const rows = asArray(data).filter(isRpcRow);
-  const questionIds = rows.map((item) => item.id);
-  const { bookmarkedIds, wrongIds } = await getUserMeta(questionIds);
-
-  const mapped = rows.map((row) => mapQuestion(row, bookmarkedIds, wrongIds));
-  const filtered = applyClientSideFilters(mapped, filters);
-
-  return { questions: filtered, stats: buildStats(filtered) };
 }
 
 export async function toggleBookmark(questionId: string, isBookmarked: boolean): Promise<void> {
   const userId = await getCurrentUserId();
-  if (!userId) throw new Error('User must be logged in to manage bookmarks.');
+  if (!userId) throw new Error('AUTH_REQUIRED');
 
   if (isBookmarked) {
     const { error } = await supabase.from('bookmarks').delete().eq('user_id', userId).eq('question_id', questionId);
@@ -303,3 +278,6 @@ export async function toggleBookmark(questionId: string, isBookmarked: boolean):
   const { error } = await supabase.from('bookmarks').insert({ user_id: userId, question_id: questionId });
   if (error) throw error;
 }
+
+/** Exposed for tests and callers that need the mapped shape only. */
+export type { QuestionBankQuestion };

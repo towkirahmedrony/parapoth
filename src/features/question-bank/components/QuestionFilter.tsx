@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Filter, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
+import { localizedText } from '../services/questionBankMapper';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Card } from '@/shared/components/ui/Card';
@@ -78,7 +79,7 @@ function ToggleChip(props: {
 export const QuestionFilter: React.FC<QuestionFilterProps> = ({
   filters, chapters, topics, boards, colleges, admissions, onFilterChange, onReset,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const sortOptions: Array<{ value: QuestionBankFilterState['sortBy']; label: string }> = [
     { value: 'newest', label: t('questionBank.newest') },
     { value: 'oldest', label: t('questionBank.oldest') },
@@ -101,7 +102,7 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
           className="h-8 rounded-xl px-2.5 text-xs"
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          রিসেট
+          {t('questionBank.reset')}
         </Button>
       </div>
 
@@ -125,7 +126,7 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
               { value: '', label: t('questionBank.allChapters') },
               ...chapters.map((item) => ({
                 value: item.id,
-                label: item.name_bn,
+                label: localizedText(item.name_bn, item.name_en, language),
               })),
             ]}
           />
@@ -138,7 +139,7 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
               { value: '', label: t('questionBank.allTopics') },
               ...topics.map((item) => ({
                 value: item.id,
-                label: item.name_bn,
+                label: localizedText(item.name_bn, item.name_en, language),
               })),
             ]}
           />
@@ -169,8 +170,8 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
                 ...(filters.institutionType === 'board' ? boards :
                    filters.institutionType === 'college' ? colleges :
                    admissions).map((item) => ({
-                  value: item.eiin || item.id, // Fallback to ID if EIIN is missing
-                  label: item.name_bn,
+                   value: item.eiin || item.id, // Fallback to ID if EIIN is missing
+                   label: localizedText(item.name_bn, item.name_en, language),
                 })),
               ]}
             />
@@ -197,7 +198,7 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
         <div className="space-y-3 border-t border-border-color pt-4">
           <div className="flex items-center gap-2 text-xs font-medium text-text-primary">
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            দ্রুত ফিল্টার
+            {t('questionBank.quickFilter')}
           </div>
 
           <div className="flex flex-wrap gap-1.5">

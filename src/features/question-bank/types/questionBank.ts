@@ -125,8 +125,50 @@ export interface QuestionBankStats {
   premium: number;
 }
 
-export interface QuestionBankResponse {
+/**
+ * One row as returned by `get_student_question_bank*`. Every field is `unknown`
+ * on purpose: the payload is validated field by field in the mapper instead of
+ * being trusted because a cast said so.
+ */
+export interface QuestionBankRpcRow {
+  id: string;
+  type: string | null;
+  difficulty_level: string | null;
+  source_type: string | null;
+  tags: unknown;
+  exam_references: unknown;
+  subject_id: string | null;
+  chapter_id: string | null;
+  topic_id: string | null;
+  total_attempts: number | null;
+  correct_attempts: number | null;
+  created_at: string | null;
+  /** v2 only: full match count for the active filter set. */
+  total_count?: number | null;
+  body: unknown;
+  options: unknown;
+  explanation: unknown;
+  subjects: unknown;
+  chapters: unknown;
+  topics: unknown;
+}
+
+/**
+ * `paged`  — RPC v2 is deployed: filters, counts and paging are server-side.
+ * `legacy` — only RPC v1 is deployed: the page was filtered locally and is
+ *            capped by the function's own `limit 100`.
+ */
+export type QuestionBankDataMode = 'paged' | 'legacy';
+
+export interface QuestionBankPage {
   questions: QuestionBankQuestion[];
+  /** Matching rows for the active filters (server count in `paged` mode). */
+  total: number;
+  /** Offset to request next, or `null` when there is nothing more. */
+  nextOffset: number | null;
+  mode: QuestionBankDataMode;
+  /** True when the response may be missing rows because the server capped it. */
+  capped: boolean;
   stats: QuestionBankStats;
 }
 

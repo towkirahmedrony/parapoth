@@ -54,6 +54,14 @@ const bn = {
 
   'language.groupLabel': 'ভাষা নির্বাচন করুন',
 
+  'common.yes': 'হ্যাঁ',
+  'common.no': 'না',
+  'common.pleaseWait': 'অপেক্ষা করুন...',
+  'common.cancel': 'বাতিল করুন',
+  'common.submit': 'সাবমিট করুন',
+  'common.retry': 'আবার চেষ্টা করুন',
+  'common.loading': 'লোড হচ্ছে...',
+
   'nav.home': 'হোম',
   'nav.modelTest': 'মডেল টেস্ট',
   'nav.admission': 'অ্যাডমিশন',
@@ -477,6 +485,41 @@ const bn = {
   'questionBank.oldest': 'পুরোনো',
   'questionBank.mostAttempted': 'বেশি চেষ্টা',
   'questionBank.leastAttempted': 'কম চেষ্টা',
+  'questionBank.selectSubject': 'বিষয় নির্বাচন করুন',
+  'questionBank.subjectCount': '{count} টি বিষয়',
+  'questionBank.back': 'ফিরে যান',
+  'questionBank.openFilters': 'ফিল্টার খুলুন',
+  'questionBank.closeFilters': 'ফিল্টার বন্ধ করুন',
+  'questionBank.lockedPreview': 'এই প্রশ্নটি প্রিমিয়াম কন্টেন্টের অংশ।',
+  'questionBank.lockedHint': 'প্রিমিয়াম প্ল্যান নিলে প্রশ্ন, অপশন ও ব্যাখ্যা দেখা যাবে।',
+  'questionBank.viewPremium': 'প্রিমিয়াম প্ল্যান দেখুন',
+  'questionBank.noPreview': 'প্রশ্নের প্রিভিউ পাওয়া যাচ্ছে না',
+  'questionBank.optionsCount': '{count} টি অপশন আছে',
+  'questionBank.optionsTitle': 'অপশন',
+  'questionBank.explanation': 'ব্যাখ্যা',
+  'questionBank.save': 'সেভ',
+  'questionBank.savedState': 'সেভড',
+  'questionBank.difficultyEasy': 'সহজ',
+  'questionBank.difficultyMedium': 'মাঝারি',
+  'questionBank.difficultyHard': 'কঠিন',
+  'questionBank.badgePremium': 'প্রিমিয়াম',
+  'questionBank.badgeWrong': 'ভুল উত্তর',
+  'questionBank.unknownSubject': 'অজানা বিষয়',
+  'questionBank.unknownValue': 'অজানা',
+  'questionBank.totalAttemptsLabel': 'মোট চেষ্টা',
+  'questionBank.correctAnswersLabel': 'সঠিক উত্তর',
+  'questionBank.accuracyLabel': 'সঠিকতা',
+  'questionBank.addedOnLabel': 'যোগ করা হয়েছে',
+  'questionBank.showDetails': 'বিস্তারিত',
+  'questionBank.hideDetails': 'বিস্তারিত লুকান',
+  'questionBank.showingCount': '{shown} / {total} টি প্রশ্ন দেখানো হচ্ছে',
+  'questionBank.loadMore': 'আরও প্রশ্ন দেখুন',
+  'questionBank.loadingMore': 'লোড হচ্ছে…',
+  'questionBank.limitedNotice': 'একবারে সর্বোচ্চ {count} টি প্রশ্ন দেখানো যায়। ফিল্টার ব্যবহার করে সার্চ সীমিত করুন।',
+  'questionBank.authRequired': 'প্রশ্ন ব্যাংক দেখতে অনুগ্রহ করে আবার লগইন করুন।',
+  'questionBank.rateLimited': 'অনেকবার অনুরোধ করা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।',
+  'questionBank.networkError': 'সংযোগ পাওয়া যায়নি। ইন্টারনেট চেক করে আবার চেষ্টা করুন।',
+  'questionBank.noAnswerKey': 'উত্তরপত্র শুধু পরীক্ষা জমা দেওয়ার পর দেখানো হয়।',
   'profile.notProvided': 'দেওয়া নেই',
   'profile.verified': 'ভেরিফাইড',
   'profile.accountSettings': 'অ্যাকাউন্ট সেটিংস',
@@ -592,6 +635,14 @@ const en: Record<AppMessageKey, string> = {
   'brand.name': 'Porokh',
 
   'language.groupLabel': 'Select language',
+
+  'common.yes': 'Yes',
+  'common.no': 'No',
+  'common.pleaseWait': 'Please wait...',
+  'common.cancel': 'Cancel',
+  'common.submit': 'Submit',
+  'common.retry': 'Try again',
+  'common.loading': 'Loading...',
 
   'nav.home': 'Home',
   'nav.modelTest': 'Model Test',
@@ -1021,6 +1072,41 @@ const en: Record<AppMessageKey, string> = {
   'questionBank.oldest': 'Oldest',
   'questionBank.mostAttempted': 'Most attempted',
   'questionBank.leastAttempted': 'Least attempted',
+  'questionBank.selectSubject': 'Select a subject',
+  'questionBank.subjectCount': '{count} subjects',
+  'questionBank.back': 'Back',
+  'questionBank.openFilters': 'Open filters',
+  'questionBank.closeFilters': 'Close filters',
+  'questionBank.lockedPreview': 'This question is part of premium content.',
+  'questionBank.lockedHint': 'Upgrade to a premium plan to see the question, options and explanation.',
+  'questionBank.viewPremium': 'View premium plans',
+  'questionBank.noPreview': 'Question preview is unavailable',
+  'questionBank.optionsCount': '{count} options',
+  'questionBank.optionsTitle': 'Options',
+  'questionBank.explanation': 'Explanation',
+  'questionBank.save': 'Save',
+  'questionBank.savedState': 'Saved',
+  'questionBank.difficultyEasy': 'Easy',
+  'questionBank.difficultyMedium': 'Medium',
+  'questionBank.difficultyHard': 'Hard',
+  'questionBank.badgePremium': 'Premium',
+  'questionBank.badgeWrong': 'Wrong answer',
+  'questionBank.unknownSubject': 'Unknown subject',
+  'questionBank.unknownValue': 'Unknown',
+  'questionBank.totalAttemptsLabel': 'Total attempts',
+  'questionBank.correctAnswersLabel': 'Correct answers',
+  'questionBank.accuracyLabel': 'Accuracy',
+  'questionBank.addedOnLabel': 'Added',
+  'questionBank.showDetails': 'Details',
+  'questionBank.hideDetails': 'Hide details',
+  'questionBank.showingCount': 'Showing {shown} of {total} questions',
+  'questionBank.loadMore': 'Load more questions',
+  'questionBank.loadingMore': 'Loading…',
+  'questionBank.limitedNotice': 'Up to {count} questions are shown at a time. Narrow the results with filters.',
+  'questionBank.authRequired': 'Please sign in again to view the question bank.',
+  'questionBank.rateLimited': 'Too many requests. Please try again in a moment.',
+  'questionBank.networkError': 'Connection failed. Check your internet and try again.',
+  'questionBank.noAnswerKey': 'The answer key is only shown after you submit an exam.',
   'profile.notProvided': 'Not provided',
   'profile.verified': 'Verified',
   'profile.accountSettings': 'Account settings',
@@ -1123,6 +1209,19 @@ const en: Record<AppMessageKey, string> = {
 
 export const APP_MESSAGES: Record<AppLanguage, Record<AppMessageKey, string>> =
   { bn, en };
+
+/**
+ * Translation lookup with a defensive fallback chain: active language, then
+ * Bengali, then the raw key. Missing dictionaries or missing keys therefore
+ * degrade to readable text instead of throwing during render.
+ */
+export const lookupMessage = (
+  language: AppLanguage,
+  key: AppMessageKey
+): string =>
+  APP_MESSAGES[language]?.[key] ??
+  APP_MESSAGES[DEFAULT_APP_LANGUAGE]?.[key] ??
+  key;
 
 /** Human label for a language option (used by the switcher + Settings). */
 export const LANGUAGE_OPTION_LABELS: Record<AppLanguage, string> = {

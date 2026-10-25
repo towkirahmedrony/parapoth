@@ -22,5 +22,7 @@ export interface AuthContextType {
   role: string;
   permissions: string[];
   updateUserProfile: (userId: string, profile: Pick<AppUser, 'full_name' | 'username' | 'avatar_url'>) => void;
+  /** Keeps the in-memory profile in sync after the language switch persists it. */
+  setLanguagePreference: (language: 'bn' | 'en') => void;
   signOut: () => Promise<void>;
 }

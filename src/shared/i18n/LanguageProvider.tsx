@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -14,16 +15,21 @@ import { supabase } from '@/shared/lib/supabase';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
   APP_MESSAGES,
-  DEFAULT_APP_LANGUAGE,
-  isAppLanguage,
+  lookupMessage,
   type AppLanguage,
   type AppMessageKey,
 } from './messages';
+import {
+  normalizeLanguage,
+  readStoredLanguage,
+  resolveInitialLanguage,
+  shouldAdoptProfileLanguage,
+} from './languagePreference';
 
 type MessageValues = Record<string, string | number>;
 
 export interface LanguageContextValue {
-  /** Currently stored language preference (single authoritative state). */
+  /** Currently active language (single authoritative state). */
   language: AppLanguage;
   setLanguage: (language: AppLanguage) => void;
   /**
@@ -51,35 +57,6 @@ const formatMessage = (template: string, values?: MessageValues): string => {
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in values ? String(values[name]) : match
   );
-};
-
-const normalizeLanguage = (value: unknown): AppLanguage => {
-  if (typeof value !== 'string') return DEFAULT_APP_LANGUAGE;
-  const normalized = value.trim().toLowerCase();
-  return isAppLanguage(normalized) ? normalized : DEFAULT_APP_LANGUAGE;
-};
-
-/**
- * Reads the stored preference without clearing or rewriting unrelated keys.
- * Handles JSON values (`"en"`), plain strings (`en`) and unreadable storage.
- * This is the same STORAGE_KEYS.LANGUAGE mechanism the homepage switcher
- * used before, so previously saved preferences keep working.
- */
-const readStoredLanguage = (): AppLanguage => {
-  if (typeof window === 'undefined') return DEFAULT_APP_LANGUAGE;
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEYS.LANGUAGE);
-    if (!raw) return DEFAULT_APP_LANGUAGE;
-
-    try {
-      return normalizeLanguage(JSON.parse(raw));
-    } catch {
-      return normalizeLanguage(raw);
-    }
-  } catch {
-    return DEFAULT_APP_LANGUAGE;
-  }
 };
 
 const upsertMetaTag = (
@@ -118,45 +95,87 @@ const applyHomepageMetadata = (language: AppLanguage): void => {
 
 /**
  * Application-level language provider. One state instance lives at the app
- * root and is shared by the Homepage, Settings, Progress and History pages
- * (plus the navigation chrome), so switching once updates every screen
- * immediately and survives refresh via localStorage.
+ * root and is shared by every screen and both navigation variants, so switching
+ * once updates the whole UI immediately, survives refresh via localStorage and
+ * does not remount or reset any route state.
+ *
+ * Precedence is defined in `languagePreference.ts`: a choice persisted by this
+ * browser always wins over the profile value, and the profile only seeds the
+ * language when this browser has never chosen one.
  */
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const { user } = useAuth();
-  const [language, setLanguageState] =
-    useState<AppLanguage>(readStoredLanguage);
+  const { user, setLanguagePreference } = useAuth();
+
+  // True once this browser holds a language choice the user made (restored
+  // from storage on first render, or set in this session). While it is false
+  // the signed-in profile may seed the language; once true it never may.
+  const hasPersistedChoiceRef = useRef<boolean>(false);
+  const [language, setLanguageState] = useState<AppLanguage>(() => {
+    const stored = readStoredLanguage();
+    hasPersistedChoiceRef.current = stored !== null;
+    return resolveInitialLanguage(stored);
+  });
 
   const isHomepage = isHomepagePath(location.pathname);
 
-  const setLanguage = useCallback((nextLanguage: AppLanguage) => {
-    if (!isAppLanguage(nextLanguage)) return;
+  const setLanguage = useCallback(
+    (nextLanguage: AppLanguage) => {
+      if (normalizeLanguage(nextLanguage) === null) return;
+      // Clicking the already-active language must not write storage or the
+      // profile again (and must not re-render every consumer).
+      if (nextLanguage === language) return;
 
-    setLanguageState(nextLanguage);
-    StorageUtils.set(STORAGE_KEYS.LANGUAGE, nextLanguage);
-    if (user?.id) {
-      void supabase
-        .from('profiles')
-        .update({ language_preference: nextLanguage })
-        .eq('id', user.id);
-    }
-  }, [user?.id]);
+      hasPersistedChoiceRef.current = true;
+      setLanguageState(nextLanguage);
+      StorageUtils.set(STORAGE_KEYS.LANGUAGE, nextLanguage);
+      // Keep the cached profile value aligned so no later reconciliation can
+      // revert the switch to the previous server value.
+      setLanguagePreference(nextLanguage);
 
-  // A signed-in profile is authoritative; localStorage remains the offline/logged-out mirror.
+      if (user?.id) {
+        void supabase
+          .from('profiles')
+          .update({ language_preference: nextLanguage })
+          .eq('id', user.id)
+          .then(({ error }) => {
+            if (error) {
+              // The local preference is authoritative for this browser; a
+              // failed profile write must not undo the switch.
+              console.warn('Language preference sync failed:', error.message);
+            }
+          });
+      }
+    },
+    [language, setLanguagePreference, user?.id]
+  );
+
+  // Seed from the signed-in profile only when this browser has no choice yet.
   useEffect(() => {
-    if (!user?.language_preference || !isAppLanguage(user.language_preference)) return;
-    if (user.language_preference !== language) {
-      setLanguageState(user.language_preference);
-      StorageUtils.set(STORAGE_KEYS.LANGUAGE, user.language_preference);
+    if (hasPersistedChoiceRef.current) return;
+    if (!shouldAdoptProfileLanguage(readStoredLanguage(), user?.language_preference)) {
+      return;
     }
+
+    const profileLanguage = normalizeLanguage(user?.language_preference);
+    if (!profileLanguage || profileLanguage === language) return;
+
+    hasPersistedChoiceRef.current = true;
+    setLanguageState(profileLanguage);
+    StorageUtils.set(STORAGE_KEYS.LANGUAGE, profileLanguage);
   }, [language, user?.language_preference]);
 
   // Keep tabs in sync when the preference changes elsewhere.
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key && event.key !== STORAGE_KEYS.LANGUAGE) return;
-      setLanguageState(readStoredLanguage());
+      if (event.key !== null && event.key !== STORAGE_KEYS.LANGUAGE) return;
+      const stored = readStoredLanguage();
+      if (stored === null) return;
+
+      hasPersistedChoiceRef.current = true;
+      setLanguageState(stored);
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -165,12 +184,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: AppMessageKey, values?: MessageValues): string => {
-      const template =
-        APP_MESSAGES[language][key] ??
-        APP_MESSAGES[DEFAULT_APP_LANGUAGE][key] ??
-        key;
-
-      return formatMessage(template, values);
+      return formatMessage(lookupMessage(language, key), values);
     },
     [language]
   );

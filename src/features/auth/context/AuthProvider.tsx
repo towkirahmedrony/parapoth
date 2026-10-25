@@ -136,6 +136,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser((current) => current?.id === userId ? { ...current, ...profile } : current);
   }, []);
 
+  /**
+   * Mirrors a language change into the cached auth user. Without this the
+   * profile still carried the previous value after the switch, so any later
+   * profile reconciliation would silently revert the UI language.
+   */
+  const setLanguagePreference = useCallback((language: 'bn' | 'en') => {
+    setUser((current) =>
+      current
+        ? { ...current, language_preference: language }
+        : current
+    );
+  }, []);
+
   const applySession = useCallback((currentSession: Session | null) => {
     if (currentSession) {
       const currentSessionId = getSessionId(currentSession.access_token);
@@ -328,8 +341,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     profileLoading,
     updateUserProfile,
+    setLanguagePreference,
     signOut
-  }), [session, user, role, permissions, loading, profileLoading, updateUserProfile, signOut]);
+  }), [session, user, role, permissions, loading, profileLoading, updateUserProfile, setLanguagePreference, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

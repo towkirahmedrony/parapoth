@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 export interface ConfirmModalProps {
   isOpen: boolean;
@@ -18,12 +19,20 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   message,
   onConfirm,
   onCancel,
-  confirmText = 'হ্যাঁ',
-  cancelText = 'না',
-  loadingText = 'অপেক্ষা করুন...',
+  confirmText,
+  cancelText,
+  loadingText,
   isLoading = false
 }) => {
+  // Defaults follow the active UI language; explicit props still win so callers
+  // that already pass localised text are unaffected.
+  const { t } = useLanguage();
+
   if (!isOpen) return null;
+
+  const confirmLabel = confirmText ?? t('common.yes');
+  const cancelLabel = cancelText ?? t('common.no');
+  const loadingLabel = loadingText ?? t('common.pleaseWait');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity bg-black/60">
@@ -40,7 +49,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             disabled={isLoading}
             className="flex-1 py-3 font-bold rounded-xl transition-colors disabled:opacity-50 bg-secondary text-text-primary hover:opacity-90" 
           >
-            {cancelText}
+            {cancelLabel}
           </button>
           <button 
             type="button"
@@ -48,7 +57,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             disabled={isLoading}
             className="flex-1 py-3 font-bold rounded-xl transition-colors disabled:opacity-50 bg-primary text-primary-foreground hover:opacity-90" 
           >
-            {isLoading ? loadingText : confirmText}
+            {isLoading ? loadingLabel : confirmLabel}
           </button>
         </div>
       </div>
