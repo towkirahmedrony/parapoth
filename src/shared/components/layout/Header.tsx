@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Flame, Star } from 'lucide-react';
+import { Bell, Flame, Star, Users } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -105,6 +105,16 @@ const Header: React.FC = () => {
         >
           {/* Language selection lives in Settings; the header keeps only
               progress, streak and notifications. */}
+          <button
+            type="button"
+            onClick={() => navigate('/groups')}
+            aria-label={t('nav.groups')}
+            title={t('nav.groups')}
+            className="flex items-center justify-center rounded-full border border-border-color bg-surface-elevated p-2 text-text-primary transition-all hover:scale-105"
+          >
+            <Users size={20} />
+          </button>
+
           <button
             type="button"
             onClick={() => navigate('/dashboard/leaderboard')}
