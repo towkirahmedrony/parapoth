@@ -11,6 +11,7 @@ import { localizeDigits } from '@/shared/i18n/messages';
 import { useGroupsConfig, GROUP_QUERY_KEYS } from '../hooks/useGroupQueries';
 import { groupsService } from '../services/groupsService';
 import { resolveGroupErrorMessage } from '../utils/errorMessages';
+import { isValidGroupSlug, suggestGroupSlug } from '../utils/groupSlug';
 import type { GroupVisibility } from '../types';
 
 const ICONS = ['🛡️', '📚', '🔥', '🎯', '🌟', '🦁', '🧠', '💡', '🚀', '⚡'];
@@ -25,6 +26,7 @@ const CreateSquad: React.FC = () => {
   const defaultMax = config?.squadDefaultMembers ?? 30;
 
   const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
   const [icon, setIcon] = useState(ICONS[0]);
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<GroupVisibility>('code');
@@ -43,11 +45,12 @@ const CreateSquad: React.FC = () => {
         groupType: 'squad',
         maxMembers,
         visibility,
+        ...(slug.trim() ? { slug: slug.trim().toLowerCase() } : {}),
       }),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: GROUP_QUERY_KEYS.all });
       toast.success(t('groups.createSuccess'));
-      navigate(`/groups/${result.id}`, { replace: true });
+      navigate(`/groups/${result.group?.slug ?? result.id}?created=1`, { replace: true });
     },
     onError: (error) => toast.error(resolveGroupErrorMessage(error, language)),
   });
@@ -78,6 +81,7 @@ const CreateSquad: React.FC = () => {
         onSubmit={(event) => {
           event.preventDefault();
           if (name.trim().length < 2 || createMutation.isPending) return;
+          if (slug.trim() && !isValidGroupSlug(slug)) return;
           createMutation.mutate();
         }}
       >
@@ -92,6 +96,32 @@ const CreateSquad: React.FC = () => {
             required
           />
           <span className="mt-1 block text-right text-xs">{name.length}/50</span>
+        </label>
+
+        <label className="block text-sm font-medium text-text-secondary">
+          {t('groups.slug')}
+          <Input
+            value={slug}
+            onChange={(event) => setSlug(event.target.value.toLowerCase().slice(0, 40))}
+            className="mt-1"
+            placeholder={t('groups.slugPlaceholder')}
+            maxLength={40}
+          />
+          <span className="mt-1 block text-xs">{t('groups.slugHint')}</span>
+          <span className="mt-1 flex items-center justify-between gap-2 text-xs">
+            <span className={slug && !isValidGroupSlug(slug) ? 'text-red-500' : 'text-text-secondary'}>
+              {slug && !isValidGroupSlug(slug) ? t('groups.slugInvalid') : t('groups.slugHelp')}
+            </span>
+            {suggestGroupSlug(name) && (
+              <button
+                type="button"
+                onClick={() => setSlug(suggestGroupSlug(name))}
+                className="font-semibold text-primary"
+              >
+                {t('groups.slugSuggestion')}
+              </button>
+            )}
+          </span>
         </label>
 
         <div>

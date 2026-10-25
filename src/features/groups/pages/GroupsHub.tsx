@@ -140,7 +140,7 @@ const GroupsHub: React.FC = () => {
           ) : squad ? (
             <button
               type="button"
-              onClick={() => navigate(`/groups/${squad.group_id}`)}
+              onClick={() => navigate(`/groups/${squad.group?.slug ?? squad.group_id}`)}
               className="w-full rounded-2xl border border-card-border bg-card-bg p-4 text-left shadow-sm"
             >
               <div className="flex items-center gap-3">
@@ -176,6 +176,7 @@ const GroupsHub: React.FC = () => {
                 group={
                   membership.group ?? {
                     id: membership.group_id,
+                    slug: membership.group_id,
                     name: membership.group_id,
                     icon: null,
                     description: null,
@@ -196,7 +197,7 @@ const GroupsHub: React.FC = () => {
                 pending
                 onOpen={
                   membership.group
-                    ? () => navigate(`/groups/${membership.group_id}`)
+                    ? () => navigate(`/groups/${membership.group?.slug ?? membership.group_id}`)
                     : undefined
                 }
               />
@@ -217,7 +218,7 @@ const GroupsHub: React.FC = () => {
                   key={membership.id}
                   group={membership.group}
                   pending={membership.status !== 'active'}
-                  onOpen={() => navigate(`/groups/${membership.group_id}`)}
+                  onOpen={() => navigate(`/groups/${membership.group?.slug ?? membership.group_id}`)}
                 />
               ) : null
             )
@@ -280,7 +281,7 @@ const GroupsHub: React.FC = () => {
               <GroupCard
                 key={group.id}
                 group={group}
-                onOpen={() => navigate(`/groups/${group.id}`)}
+                onOpen={() => navigate(`/groups/${group.slug ?? group.id}`)}
                 actionLabel={
                   group.visibility === 'approval'
                     ? t('groups.requestAction')

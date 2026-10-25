@@ -16,6 +16,7 @@ export interface SafeProfile {
 
 export interface Group {
   id: string;
+  slug: string;
   name: string;
   icon: string | null;
   description: string | null;
@@ -60,6 +61,28 @@ export interface MyGroupsData {
   communities: GroupMembership[];
   pending: GroupMembership[];
   memberships: GroupMembership[];
+}
+
+export interface GroupPreview {
+  id: string;
+  slug: string;
+  name: string;
+  icon: string | null;
+  description: string | null;
+  group_type: GroupType;
+  visibility: GroupVisibility;
+  member_count: number;
+  max_members: number;
+  is_full: boolean;
+  total_xp: number;
+  group_level: number;
+  my_status: MembershipStatus | null;
+}
+
+export interface GroupReplyMeta {
+  id: string;
+  sender_name: string;
+  snippet: string;
 }
 
 export interface GroupDetailData {

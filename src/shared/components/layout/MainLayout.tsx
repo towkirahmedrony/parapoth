@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, type ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -88,7 +88,7 @@ const updateSeoMeta = (
   );
 };
 
-export const MainLayout: React.FC = () => {
+export const MainLayout: React.FC<{ children?: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
   const { language, t } = useLanguage();
@@ -115,9 +115,7 @@ export const MainLayout: React.FC = () => {
           aria-label={t('layout.mainAria')}
         >
           <div className="mx-auto min-h-[calc(100vh-100px)] w-full max-w-7xl">
-            <Suspense fallback={null}>
-              <Outlet />
-            </Suspense>
+            <Suspense fallback={null}>{children ?? <Outlet />}</Suspense>
           </div>
         </main>
 
