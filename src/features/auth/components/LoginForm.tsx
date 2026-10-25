@@ -4,6 +4,8 @@ import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { supabase } from "@/shared/lib/supabase";
+import { useLanguage } from "@/shared/i18n/LanguageProvider";
+import type { AppMessageKey } from "@/shared/i18n/messages";
 
 type LoginFormData = {
   identifier: string;
@@ -22,7 +24,7 @@ const INITIAL_FORM_DATA: LoginFormData = {
   password: "",
 };
 
-function getLoginErrorMessage(error: unknown): string {
+function getLoginErrorMessage(error: unknown): AppMessageKey {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
 
   if (
@@ -31,14 +33,14 @@ function getLoginErrorMessage(error: unknown): string {
     message.includes("unauthorized") ||
     message.includes("401")
   ) {
-    return "ভুল ইমেইল/ইউজারনেম বা পাসওয়ার্ড।";
+    return "auth.login.invalidCredentials";
   }
 
   if (message.includes("email not confirmed")) {
-    return "আপনার ইমেইল এখনো ভেরিফাই করা হয়নি। ইনবক্স চেক করুন।";
+    return "auth.login.emailNotVerified";
   }
 
-  return "লগইন করতে সমস্যা হচ্ছে। একটু পর আবার চেষ্টা করুন।";
+  return "auth.login.failed";
 }
 
 function getRedirectPath(state: LocationState | null): string {
@@ -54,9 +56,10 @@ function getRedirectPath(state: LocationState | null): string {
 export default function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [customError, setCustomError] = useState<string | null>(null);
+  const [customError, setCustomError] = useState<AppMessageKey | null>(null);
   const [formData, setFormData] = useState<LoginFormData>(INITIAL_FORM_DATA);
 
   const loginMutation = useMutation({
@@ -146,16 +149,16 @@ export default function LoginForm() {
     }
   };
 
-  const validateForm = (): string | null => {
+  const validateForm = (): AppMessageKey | null => {
     const identifier = formData.identifier.trim();
     const password = formData.password;
 
     if (!identifier) {
-      return "ইমেইল বা ইউজারনেম লিখুন।";
+      return "auth.login.identifierRequired";
     }
 
     if (!password) {
-      return "পাসওয়ার্ড লিখুন।";
+      return "auth.login.passwordRequired";
     }
 
     return null;
@@ -185,7 +188,7 @@ export default function LoginForm() {
           className="mb-4 flex items-start gap-2 rounded-lg border border-accent bg-surface-elevated p-3 text-sm text-accent"
         >
           <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
-          <p className="font-medium">{customError}</p>
+          <p className="font-medium">{t(customError)}</p>
         </div>
       )}
 
@@ -197,7 +200,7 @@ export default function LoginForm() {
             required
             autoComplete="username"
             className="w-full rounded-xl border border-input-border bg-input-bg px-4 py-3.5 text-base text-text-primary transition-colors placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-70"
-            placeholder="ইমেইল বা ইউজারনেম"
+            placeholder={t('auth.field.emailOrUsername')}
             value={formData.identifier}
             onChange={(event) => updateField("identifier", event.target.value)}
             disabled={isPending}
@@ -214,7 +217,7 @@ export default function LoginForm() {
               required
               autoComplete="current-password"
               className="w-full rounded-xl border border-input-border bg-input-bg py-3.5 pl-4 pr-12 text-base text-text-primary transition-colors placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-70"
-              placeholder="পাসওয়ার্ড"
+              placeholder={t('auth.field.password')}
               value={formData.password}
               onChange={(event) => updateField("password", event.target.value)}
               disabled={isPending}
@@ -226,7 +229,7 @@ export default function LoginForm() {
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-text-secondary transition-colors hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed"
-              aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখুন"}
+              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
               aria-pressed={showPassword}
               disabled={isPending}
             >
@@ -243,7 +246,7 @@ export default function LoginForm() {
               to="/auth/forgot-password"
               className="text-sm font-medium text-primary transition-colors hover:underline"
             >
-              পাসওয়ার্ড ভুলে গেছেন?
+              {t('auth.forgotPassword')}
             </Link>
           </div>
         </div>
@@ -256,10 +259,10 @@ export default function LoginForm() {
           {isPending ? (
             <>
               <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
-              <span>লগ ইন হচ্ছে...</span>
+              <span>{t('auth.loggingIn')}</span>
             </>
           ) : (
-            "লগ ইন"
+            t('auth.login')
           )}
         </button>
       </form>

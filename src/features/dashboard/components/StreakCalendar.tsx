@@ -1,6 +1,8 @@
 // src/features/dashboard/components/StreakCalendar.tsx
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Flame, Snowflake } from 'lucide-react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { localizeDigits, LOCALE_BY_LANGUAGE } from '@/shared/i18n/messages';
 
 export interface DailyActivity {
   activity_date: string;
@@ -12,16 +14,38 @@ interface StreakCalendarProps {
   activities: DailyActivity[];
 }
 
-const MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-const DAYS = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
+// Fallback names (Bangla) used if the runtime locale data is unavailable.
+const MONTHS_BN = [
+  'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+  'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর',
+];
+const DAYS_BN = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
 
-// Utility to convert numbers to Bengali numerals safely
-const toBn = (num: number | string | undefined | null) => {
-  if (num === undefined || num === null) return '০';
-  return num.toString().replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)] || d);
+const monthNames = (locale: string): string[] => {
+  try {
+    return Array.from({ length: 12 }, (_, i) =>
+      new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(2024, i, 1))
+    );
+  } catch {
+    return MONTHS_BN;
+  }
+};
+
+// Index 0 is Sunday so it lines up with `Date#getDay()`.
+const dayNames = (locale: string): string[] => {
+  try {
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 5, 16 + i)));
+  } catch {
+    return DAYS_BN;
+  }
 };
 
 export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) => {
+  const { language, t } = useLanguage();
+  const locale = LOCALE_BY_LANGUAGE[language];
+  const months = useMemo(() => monthNames(locale), [locale]);
+  const weekdayLabels = useMemo(() => dayNames(locale), [locale]);
   // Use current local time for accurate comparisons
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(
@@ -92,9 +116,9 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
       {/* Header Controls */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold flex items-center gap-2 py-1 leading-normal text-text-primary">
-          {MONTHS[month]}{' '}
+          {months[month]}{' '}
           <span className="font-medium text-text-secondary">
-            {toBn(year)}
+            {localizeDigits(year, language)}
           </span>
         </h3>
 
@@ -102,7 +126,7 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
           <button
             onClick={handlePrevMonth}
             className="p-2 rounded-full transition-colors text-text-secondary hover:bg-surface-elevated hover:text-text-primary"
-            aria-label="Previous Month"
+            aria-label={t('calendar.prevMonth')}
           >
             <ChevronLeft size={20} />
           </button>
@@ -115,7 +139,7 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
                 ? 'cursor-not-allowed opacity-50 text-text-secondary'
                 : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
             }`}
-            aria-label="Next Month"
+            aria-label={t('calendar.nextMonth')}
           >
             <ChevronRight size={20} />
           </button>
@@ -124,7 +148,7 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
 
       {/* Weekday Names */}
       <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
-        {DAYS.map((day) => (
+        {weekdayLabels.map((day) => (
           <div
             key={day}
             className="text-center text-[10px] sm:text-xs font-semibold py-2 leading-normal whitespace-nowrap text-text-secondary"
@@ -167,10 +191,10 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
                   ? undefined
                   : `${dateStr}: ${
                       hasTakenExam
-                        ? 'পরীক্ষা দিয়েছেন'
+                        ? t('streak.dayTaken')
                         : hasUsedFreeze
-                          ? 'ফ্রিজ ব্যবহার করেছেন'
-                          : 'পরীক্ষা দেননি'
+                          ? t('streak.dayFreeze')
+                          : t('streak.dayMissed')
                     }`
               }
               className={`
@@ -201,7 +225,7 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
                       fontFamily: 'inherit',
                     }}
                   >
-                    {toBn(day)}
+                    {localizeDigits(day, language)}
                   </text>
                 </svg>
               </div>
@@ -236,17 +260,17 @@ export const StreakCalendar: React.FC<StreakCalendarProps> = ({ activities }) =>
       <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-8 pt-4 border-t border-border-color text-sm leading-normal text-text-secondary">
         <div className="flex items-center gap-2 py-1">
           <Flame size={16} className="grayscale opacity-50 text-text-secondary" />
-          <span>মিস করেছেন</span>
+          <span>{t('streak.legendMissed')}</span>
         </div>
 
         <div className="flex items-center gap-2 py-1">
           <Snowflake size={16} className="text-primary fill-primary drop-shadow-sm" />
-          <span>ফ্রিজ ব্যবহার</span>
+          <span>{t('streak.legendFreeze')}</span>
         </div>
 
         <div className="flex items-center gap-2 py-1">
           <Flame size={16} className="text-[#FF6B00] fill-[#FF6B00] drop-shadow-sm" />
-          <span>পরীক্ষা দিয়েছেন</span>
+          <span>{t('streak.legendTaken')}</span>
         </div>
       </div>
     </div>

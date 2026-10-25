@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Swords } from 'lucide-react';
 import { PROFILE_DEFAULTS } from '../../utils/profileConstants';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 export interface PublicProfile {
   id: string;
@@ -22,6 +23,7 @@ interface ProfileHeroProps {
 }
 
 const ProfileHero: React.FC<ProfileHeroProps> = ({ profile, onChallenge, isOwnProfile = false }) => {
+  const { t } = useLanguage();
   return (
     <div className="relative pb-8 pt-6 px-4 overflow-hidden rounded-b-[2rem] border-b bg-app border-border-color">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-[80px] pointer-events-none bg-primary/15"></div>
@@ -68,7 +70,7 @@ const ProfileHero: React.FC<ProfileHeroProps> = ({ profile, onChallenge, isOwnPr
             className="flex items-center gap-2 px-8 py-2.5 rounded-full font-bold shadow-lg transition-all font-['Hind_Siliguri'] bg-primary text-primary-foreground shadow-primary/40"
           >
             <Swords className="w-5 h-5" />
-            ব্যাটল করুন ⚔️
+{t('profile.battle')}
           </motion.button>
         )}
       </motion.div>

@@ -1,7 +1,10 @@
 import { memo } from 'react';
 import { GraduationCap, BookOpen, Trophy } from 'lucide-react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 const AuthSideBanner = memo(() => {
+  const { t } = useLanguage();
+
   return (
     <div className="hidden lg:flex lg:w-1/2 bg-surface border-r border-border-color relative overflow-hidden flex-col justify-between p-12 xl:p-16">
       
@@ -17,16 +20,16 @@ const AuthSideBanner = memo(() => {
             <GraduationCap className="w-7 h-7" />
           </div>
           <span className="font-bold text-2xl tracking-tight text-text-primary">
-            Porokh
+            {t('brand.name')}
           </span>
         </div>
 
         <div className="max-w-md space-y-6">
           <h2 className="text-4xl xl:text-5xl font-bold tracking-tight text-text-primary leading-[1.15]">
-            Master your exams with confidence.
+            {t('auth.banner.title')}
           </h2>
           <p className="text-lg text-text-secondary leading-relaxed">
-            Join thousands of students testing their knowledge, tracking progress, and achieving their academic goals.
+            {t('auth.banner.body')}
           </p>
         </div>
       </div>
@@ -38,8 +41,8 @@ const AuthSideBanner = memo(() => {
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <p className="font-semibold text-sm text-text-primary">Comprehensive Q-Bank</p>
-            <p className="text-xs text-text-secondary">Subject-wise mock tests</p>
+            <p className="font-semibold text-sm text-text-primary">{t('auth.banner.qbankTitle')}</p>
+            <p className="text-xs text-text-secondary">{t('auth.banner.qbankDesc')}</p>
           </div>
         </div>
 
@@ -48,8 +51,8 @@ const AuthSideBanner = memo(() => {
             <Trophy className="w-5 h-5" />
           </div>
           <div>
-            <p className="font-semibold text-sm text-text-primary">National Leaderboard</p>
-            <p className="text-xs text-text-secondary">Compete with peers</p>
+            <p className="font-semibold text-sm text-text-primary">{t('auth.banner.leaderboardTitle')}</p>
+            <p className="text-xs text-text-secondary">{t('auth.banner.leaderboardDesc')}</p>
           </div>
         </div>
       </div>

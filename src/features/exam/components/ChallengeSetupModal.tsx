@@ -120,7 +120,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
       const serverMessage = error?.response?.data?.message;
 
       if (status === 401) {
-        toast.error('আপনার সেশন শেষ হয়ে গেছে। আবার লগইন করুন।');
+        toast.error(t('exam.sessionExpired'));
         return;
       }
 
@@ -128,7 +128,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
         toast.error(
           typeof serverMessage === 'string' && serverMessage.trim()
             ? serverMessage
-            : 'এই চ্যালেঞ্জ তৈরি করার অনুমতি নেই।'
+            : t('exam.noChallengePermission')
         );
         return;
       }
@@ -154,19 +154,19 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
       <div className="w-full sm:w-96 rounded-t-3xl sm:rounded-3xl p-6 transform transition-all animate-slide-up bg-surface-elevated border border-border-color">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold flex items-center gap-2 text-text-primary">
-            <Swords className="text-accent" /> চ্যালেঞ্জ সেটআপ
+            <Swords className="text-accent" /> {t('exam.challengeSetup')}
           </h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full transition-colors bg-surface hover:bg-surface-elevated"
-            aria-label="Close modal"
+            aria-label={t('common.closeAria')}
           >
             <X size={20} className="text-text-secondary" />
           </button>
         </div>
 
         <p className="text-sm mb-6 text-text-secondary">
-          আপনি <strong className="text-accent">{opponentName}</strong>-কে চ্যালেঞ্জ করছেন।
+          {t('exam.challengeIntro', { name: opponentName })}
         </p>
 
         <SubjectSelector
@@ -186,7 +186,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
 
         <div className="p-4 rounded-xl border mb-6 bg-badge-bg border-border-color">
           <p className="text-sm text-center font-medium text-badge-text">
-            🏆 বিজয়ী প্রতিটি সঠিক উত্তরের জন্য গ্রুপ XP অর্জন করবেন।
+            🏆 {t('exam.winnerXpNote')}
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
             disabled={challengeMutation.isPending}
             className="w-full py-3.5 font-bold rounded-xl transition-all active:scale-95 flex justify-center items-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-primary-foreground"
           >
-            চ্যালেঞ্জ ছুঁড়ে দিন 🚀
+            {t('exam.throwChallenge')}
           </button>
         )}
       </div>

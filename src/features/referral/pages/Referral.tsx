@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { useQuery } from '@tanstack/react-query';
 import { ShieldCheck, Info } from 'lucide-react';
 import { ReferralHero } from '../components/ReferralHero';
@@ -23,6 +24,7 @@ const fetchXPRules = async () => {
 };
 
 const ReferralPage: React.FC = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
@@ -50,9 +52,9 @@ const ReferralPage: React.FC = () => {
       
       {/* Page Header */}
       <header className="max-w-2xl mb-2">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">রেফার ও আয় করুন</h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-1">{t('referral.pageTitle')}</h1>
         <p className="text-text-secondary text-sm">
-          বন্ধুদের আমন্ত্রণ জানান, তাদের অ্যাকাউন্টে বোনাস দিন এবং নিজেও জিতে নিন প্রিমিয়াম লার্নিং কয়েন।
+          {t('referral.pageSubtitle')}
         </p>
       </header>
 
@@ -88,20 +90,20 @@ const ReferralPage: React.FC = () => {
           <div className="p-4 rounded-xl bg-card-bg border border-card-border shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck className="w-4 h-4 text-accent" />
-              <h4 className="text-sm font-semibold text-text-primary">সাধারণ নিয়মাবলী</h4>
+              <h4 className="text-sm font-semibold text-text-primary">{t('referral.rulesTitle')}</h4>
             </div>
             <ul className="space-y-2 text-xs text-text-secondary">
               <li className="flex items-start gap-2">
                 <span className="w-1 h-1 rounded-full bg-accent mt-1.5 shrink-0" />
-                <span>রিওয়ার্ড পেতে বন্ধুদের অবশ্যই অ্যাকাউন্ট ভেরিফাই করতে হবে।</span>
+<span>{t('referral.ruleVerify')}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1 h-1 rounded-full bg-accent mt-1.5 shrink-0" />
-                <span>প্রতিদিন সর্বোচ্চ ১০ জনকে রেফার করা যাবে।</span>
+<span>{t('referral.ruleDailyLimit')}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1 h-1 rounded-full bg-accent mt-1.5 shrink-0" />
-                <span>ফেক অ্যাকাউন্ট খুললে আপনাকে প্ল্যাটফর্ম থেকে ব্যান করা হতে পারে।</span>
+<span>{t('referral.ruleFake')}</span>
               </li>
             </ul>
           </div>
@@ -109,7 +111,7 @@ const ReferralPage: React.FC = () => {
           {/* Minimal Support Note */}
           <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary text-xs text-text-secondary">
             <Info className="w-4 h-4 shrink-0" />
-            <p>রেফারেল কয়েন যুক্ত না হলে আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।</p>
+<p>{t('referral.supportNote')}</p>
           </div>
         </div>
 

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { supabase } from "@/shared/lib/supabase";
+import { useLanguage } from "@/shared/i18n/LanguageProvider";
+import type { AppMessageKey } from "@/shared/i18n/messages";
 
 const AUTH_CALLBACK_PATH = "/auth/callback";
 
@@ -9,19 +11,20 @@ function getOAuthRedirectUrl() {
   return `${window.location.origin}${AUTH_CALLBACK_PATH}`;
 }
 
-function getOAuthErrorMessage(error: unknown): string {
+function getOAuthErrorMessage(error: unknown): AppMessageKey {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
 
   if (message.includes("popup") || message.includes("cancel")) {
-    return "Google login বাতিল হয়েছে। আবার চেষ্টা করুন।";
+    return "auth.google.cancelled";
   }
 
-  return "Google দিয়ে লগইন করা যাচ্ছে না। একটু পর আবার চেষ্টা করুন।";
+  return "auth.google.failed";
 }
 
 export default function SocialLogin() {
+  const { t } = useLanguage();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<AppMessageKey | null>(null);
 
   const handleGoogleLogin = async () => {
     if (isGoogleLoading) return;
@@ -54,7 +57,7 @@ export default function SocialLogin() {
       <div className="my-6 flex items-center">
         <div className="flex-1 border-t border-border-color" />
         <span className="px-4 text-sm font-medium text-text-secondary">
-          অথবা
+          {t('auth.or')}
         </span>
         <div className="flex-1 border-t border-border-color" />
       </div>
@@ -66,7 +69,7 @@ export default function SocialLogin() {
           className="mb-3 flex items-start gap-2 rounded-lg border border-accent bg-surface-elevated p-3 text-sm text-accent"
         >
           <AlertCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-          <p className="font-medium">{errorMessage}</p>
+          <p className="font-medium">{t(errorMessage)}</p>
         </div>
       )}
 
@@ -80,7 +83,7 @@ export default function SocialLogin() {
           {isGoogleLoading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-              <span>Google এ নেওয়া হচ্ছে...</span>
+              <span>{t('auth.google.redirecting')}</span>
             </>
           ) : (
             <>
@@ -107,7 +110,7 @@ export default function SocialLogin() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              <span>Google দিয়ে চালিয়ে যান</span>
+              <span>{t('auth.google.continue')}</span>
             </>
           )}
         </button>

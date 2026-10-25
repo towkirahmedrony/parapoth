@@ -5,8 +5,10 @@ import { ChangePasswordFeedback } from "../components/ChangePasswordFeedback";
 import { ChangePasswordForm } from "../components/ChangePasswordForm";
 import { ChangePasswordTopBar } from "../components/ChangePasswordTopBar";
 import { useChangePasswordController } from "../hooks/useChangePasswordController";
+import { useLanguage } from "@/shared/i18n/LanguageProvider";
 
 export default function ChangePassword() {
+  const { t } = useLanguage();
   const {
     isRecoveryMode,
     oldPassword,
@@ -35,7 +37,7 @@ export default function ChangePassword() {
       <div className="flex min-h-screen items-center justify-center bg-app p-6">
         <Loader2
           className="h-7 w-7 animate-spin text-primary"
-          aria-label="লোড হচ্ছে"
+          aria-label={t('common.loading')}
         />
       </div>
     );

@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/shared/lib/apiClient';
 import { QUERY_KEYS } from '@/shared/constants/storageKeys';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import type { AppMessageKey } from '@/shared/i18n/messages';
 
 interface GreetingCardProps {
   userName?: string | null;
@@ -23,19 +25,20 @@ interface DailyQuoteResponse {
   };
 }
 
-const DEFAULT_QUOTE = 'আজকের প্রস্তুতি শুরু করা যাক!';
+// No configured quote: the caller renders the localized default instead.
+const NO_QUOTE: string | null = null;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
-const normalizeQuoteConfig = (value: unknown): string => {
+const normalizeQuoteConfig = (value: unknown): string | null => {
   if (typeof value === 'string' && value.trim()) {
     return value.trim();
   }
 
   if (!isRecord(value)) {
-    return DEFAULT_QUOTE;
+    return NO_QUOTE;
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -60,10 +63,10 @@ const normalizeQuoteConfig = (value: unknown): string => {
     return value.defaultText.trim();
   }
 
-  return DEFAULT_QUOTE;
+  return NO_QUOTE;
 };
 
-const fetchDailyQuote = async (): Promise<string> => {
+const fetchDailyQuote = async (): Promise<string | null> => {
   // 👈 এখানে /system থেকে /app-builder আপডেট করা হয়েছে
   const { data } = await apiClient.get<DailyQuoteResponse>('/app-builder/configs/daily_quote');
 
@@ -71,23 +74,24 @@ const fetchDailyQuote = async (): Promise<string> => {
     return normalizeQuoteConfig(data.data?.value);
   }
 
-  return DEFAULT_QUOTE;
+  return NO_QUOTE;
 };
 
 const GreetingCard: React.FC<GreetingCardProps> = memo(
   ({ userName = null, isNameLoading = false, hasBgImage = false }) => {
-    const { greeting, Icon } = useMemo(() => {
+    const { t } = useLanguage();
+    const { greetingKey, Icon } = useMemo(() => {
       const hour = new Date().getHours();
 
       if (hour >= 12 && hour < 17) {
-        return { greeting: 'শুভ দুপুর', Icon: CloudSun };
+        return { greetingKey: 'home.greetingAfternoon' as AppMessageKey, Icon: CloudSun };
       }
 
       if (hour >= 17) {
-        return { greeting: 'শুভ সন্ধ্যা', Icon: Moon };
+        return { greetingKey: 'home.greetingEvening' as AppMessageKey, Icon: Moon };
       }
 
-      return { greeting: 'শুভ সকাল', Icon: Sun };
+      return { greetingKey: 'home.greetingMorning' as AppMessageKey, Icon: Sun };
     }, []);
 
     const { data: dailyQuote } = useQuery({
@@ -98,7 +102,7 @@ const GreetingCard: React.FC<GreetingCardProps> = memo(
     });
 
     const safeUserName =
-      typeof userName === 'string' && userName.trim() ? userName.trim() : 'শিক্ষার্থী';
+      typeof userName === 'string' && userName.trim() ? userName.trim() : t('home.studentFallback');
 
     const greetingTextClass = hasBgImage ? 'text-text-primary' : 'text-text-secondary';
     const nameTextClass = 'text-text-primary';
@@ -109,7 +113,7 @@ const GreetingCard: React.FC<GreetingCardProps> = memo(
         <div className="inline-flex items-center gap-2 rounded-full bg-badge-bg px-3 py-1 text-badge-text">
           <Icon size={14} />
           <span className={`font-['Hind_Siliguri'] text-xs font-medium ${greetingTextClass}`}>
-            {greeting}
+            {t(greetingKey)}
           </span>
         </div>
 
@@ -124,7 +128,7 @@ const GreetingCard: React.FC<GreetingCardProps> = memo(
         </div>
 
         <p className={`mt-1 font-['Hind_Siliguri'] text-sm leading-5 ${quoteTextClass}`}>
-          {dailyQuote || DEFAULT_QUOTE}
+          {dailyQuote ?? t('home.dailyQuote')}
         </p>
       </div>
     );

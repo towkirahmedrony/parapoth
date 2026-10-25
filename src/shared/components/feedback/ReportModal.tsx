@@ -1,26 +1,28 @@
 import React, { useState, useCallback, useEffect, memo } from 'react';
 import { X, AlertTriangle, MessageSquare, CheckCircle, Bug, FileQuestion } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import type { AppMessageKey } from '@/shared/i18n/messages';
 
 export type ReportType = 'app_bug' | 'question_issue';
 
 const APP_ISSUES = [
-  { value: 'ui_bug', label: 'ডিজাইন বা UI সমস্যা' },
-  { value: 'functional_bug', label: 'বাটন বা ফিচার কাজ করছে না' },
-  { value: 'performance', label: 'অ্যাপ স্লো বা ল্যাগ করছে' },
-  { value: 'login_issue', label: 'লগইন বা একাউন্ট সমস্যা' },
-  { value: 'feature_request', label: 'নতুন ফিচারের অনুরোধ' },
-  { value: 'other', label: 'অন্যান্য' }
-] as const;
+  { value: 'ui_bug', labelKey: 'report.appIssue_ui_bug' },
+  { value: 'functional_bug', labelKey: 'report.appIssue_functional_bug' },
+  { value: 'performance', labelKey: 'report.appIssue_performance' },
+  { value: 'login_issue', labelKey: 'report.appIssue_login_issue' },
+  { value: 'feature_request', labelKey: 'report.appIssue_feature_request' },
+  { value: 'other', labelKey: 'report.appIssue_other' },
+] as const satisfies readonly { value: string; labelKey: AppMessageKey }[];
 
 const QUESTION_ISSUES = [
-  { value: 'wrong_answer', label: 'ভুল উত্তর' },
-  { value: 'wrong_stem', label: 'উদ্দীপকে ভুল আছে' },
-  { value: 'spelling_error', label: 'বানান ভুল বা টাইপো' },
-  { value: 'image_issue', label: 'ছবি দেখা যাচ্ছে না বা অস্পষ্ট' },
-  { value: 'out_of_syllabus', label: 'সিলেবাসের বাইরের প্রশ্ন' },
-  { value: 'confusing', label: 'প্রশ্নটি অস্পষ্ট' }
-] as const;
+  { value: 'wrong_answer', labelKey: 'report.question_wrong_answer' },
+  { value: 'wrong_stem', labelKey: 'report.question_wrong_stem' },
+  { value: 'spelling_error', labelKey: 'report.question_spelling_error' },
+  { value: 'image_issue', labelKey: 'report.question_image_issue' },
+  { value: 'out_of_syllabus', labelKey: 'report.question_out_of_syllabus' },
+  { value: 'confusing', labelKey: 'report.question_confusing' },
+] as const satisfies readonly { value: string; labelKey: AppMessageKey }[];
 
 export interface QuestionMetaData {
   questionId: string;
@@ -53,6 +55,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
   questionData, 
   onSubmit 
 }) => {
+  const { t } = useLanguage();
   const [issueCategory, setIssueCategory] = useState<string>('');
   const [descriptionText, setDescriptionText] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,7 +87,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
 
   const handleSubmit = useCallback(async () => {
     if (!issueCategory) {
-      toast.error("অনুগ্রহ করে সমস্যার ধরণ নির্বাচন করুন।");
+      toast.error(t('report.selectTypePrompt'));
       return;
     }
 
@@ -109,16 +112,16 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
       handleClose();
     } catch (error) {
       console.error("Failed to submit report:", error);
-      toast.error("রিপোর্ট সাবমিট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+      toast.error(t('report.submitError'));
       setIsSubmitting(false);
     }
-  }, [issueCategory, descriptionText, type, questionData, onSubmit, handleClose]);
+  }, [issueCategory, descriptionText, type, questionData, onSubmit, handleClose, t]);
 
   if (!isOpen) return null;
 
   const isQuestion = type === 'question_issue';
   const options = isQuestion ? QUESTION_ISSUES : APP_ISSUES;
-  const title = isQuestion ? 'প্রশ্ন রিপোর্ট করুন' : 'সমস্যা বা মতামত জানান';
+  const title = isQuestion ? t('report.titleQuestion') : t('report.titleApp');
   const Icon = isQuestion ? FileQuestion : Bug;
 
   return (
@@ -143,7 +146,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
             onClick={handleClose}
             disabled={isSubmitting}
             className="p-1 rounded-full text-text-primary hover:bg-secondary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Close modal"
+            aria-label={t('report.closeAria')}
           >
             <X size={20} />
           </button>
@@ -157,7 +160,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
             <div className="rounded-lg p-3 flex items-start gap-3 bg-accent/10 border border-accent/20">
               <AlertTriangle className="flex-shrink-0 mt-0.5 text-accent" size={16} aria-hidden="true" />
               <div className="text-xs space-y-1 text-text-primary">
-                <p className="font-semibold">আপনি একটি প্রশ্নে রিপোর্ট করছেন:</p>
+                <p className="font-semibold">{t('report.contextIntro')}</p>
                 {questionData.questionText && (
                   <p className="line-clamp-2 italic opacity-80">"{questionData.questionText}"</p>
                 )}
@@ -173,7 +176,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
               className="text-sm font-medium flex items-center gap-2 text-text-secondary"
             >
               <CheckCircle className="text-primary" size={14} aria-hidden="true" />
-              সমস্যার ধরণ নির্বাচন করুন <span className="text-accent">*</span>
+              {t('report.selectIssueLabel')} <span className="text-accent">*</span>
             </label>
             <select
               id="issueCategory"
@@ -182,10 +185,10 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
               disabled={isSubmitting}
               className="w-full text-sm rounded-lg px-3 py-3 outline-none transition-all appearance-none cursor-pointer bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring disabled:opacity-60"
             >
-              <option value="" disabled className="bg-surface">-- একটি অপশন বেছে নিন --</option>
+              <option value="" disabled className="bg-surface">{t('report.selectPlaceholder')}</option>
               {options.map((opt) => (
                 <option key={opt.value} value={opt.value} className="bg-surface">
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </select>
@@ -198,14 +201,14 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
               className="text-sm font-medium flex items-center gap-2 text-text-secondary"
             >
               <MessageSquare size={14} aria-hidden="true" />
-              বিস্তারিত মতামত (ঐচ্ছিক)
+              {t('report.detailsLabel')}
             </label>
             <textarea
               id="descriptionText"
               value={descriptionText}
               onChange={(e) => setDescriptionText(e.target.value)}
               disabled={isSubmitting}
-              placeholder="আপনার সমস্যাটি বিস্তারিত লিখুন..."
+              placeholder={t('report.detailsPlaceholder')}
               rows={4}
               className="w-full text-sm rounded-lg px-3 py-3 outline-none transition-all resize-none bg-input-bg border border-input-border text-text-primary focus:ring-2 focus:ring-focus-ring disabled:opacity-60"
             />
@@ -220,7 +223,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
             disabled={isSubmitting}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-text-secondary hover:text-text-primary disabled:opacity-50"
           >
-            বাতিল করুন
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -228,7 +231,7 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
             disabled={isSubmitting || !issueCategory}
             className="px-6 py-2 rounded-lg text-sm font-bold shadow-lg transition-all flex items-center gap-2 bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-95"
           >
-            {isSubmitting ? 'সাবমিট হচ্ছে...' : 'সাবমিট করুন'}
+            {isSubmitting ? t('report.submitting') : t('common.submit')}
           </button>
         </div>
       </div>

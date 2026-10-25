@@ -17,6 +17,8 @@ import App from './App';
 import { AuthProvider } from '@/features/auth/context/AuthProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { queryClient, localStoragePersister } from '@/shared/lib/queryClient';
+import { APP_MESSAGES } from '@/shared/i18n/messages';
+import { readStoredLanguage, resolveInitialLanguage } from '@/shared/i18n/languagePreference';
 
 import './index.css';
 
@@ -55,6 +57,9 @@ class ErrorBoundary extends React.Component<
   }
 
   render() {
+    // The error boundary mounts outside the language provider, so it reads the
+    // persisted choice directly from the shared language preference store.
+    const messages = APP_MESSAGES[resolveInitialLanguage(readStoredLanguage())];
     if (this.state.hasError) {
       return (
         <div
@@ -76,11 +81,11 @@ class ErrorBoundary extends React.Component<
                 color: 'var(--dyn-primary, #3b82f6)',
               }}
             >
-              ওপস! একটি ত্রুটি হয়েছে।
+              {messages['error.boundaryTitle']}
             </h1>
 
             <p style={{ opacity: 0.8 }}>
-              অনুগ্রহ করে পেজটি রিলোড করুন।
+              {messages['error.boundaryBody']}
             </p>
 
             <button
@@ -97,7 +102,7 @@ class ErrorBoundary extends React.Component<
                 cursor: 'pointer',
               }}
             >
-              রিলোড করুন
+              {messages['error.reload']}
             </button>
           </div>
         </div>

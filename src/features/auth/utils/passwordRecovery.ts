@@ -1,20 +1,20 @@
+import type { AppMessageKey } from '@/shared/i18n/messages';
+
 export const PASSWORD_RECOVERY_ROUTE_PATH = "/auth/change-password";
 
 export const PASSWORD_RECOVERY_REDIRECT_PATH = `${PASSWORD_RECOVERY_ROUTE_PATH}?mode=recovery`;
 
-export const PASSWORD_RECOVERY_PUBLIC_MESSAGE =
-  "যদি এই ইমেইলটি কোনো অ্যাকাউন্টের সঙ্গে মিলে, তাহলে রিসেটের নির্দেশনা পাঠানো হবে। ইনবক্স বা স্প্যাম ফোল্ডার দেখুন, প্রয়োজনে পরে আবার চেষ্টা করুন।";
+export const PASSWORD_RECOVERY_PUBLIC_MESSAGE_KEY =
+  "auth.recovery.publicMessage" as const;
 
 export type PasswordRecoveryErrorKind = "expired" | "invalid";
 
 export const PASSWORD_RECOVERY_ERROR_MESSAGES: Record<
   PasswordRecoveryErrorKind,
-  string
+  AppMessageKey
 > = {
-  expired:
-    "পাসওয়ার্ড রিসেট লিংকটির মেয়াদ শেষ হয়েছে। নতুন করে রিসেট লিংক পাঠান।",
-  invalid:
-    "পাসওয়ার্ড রিসেট লিংকটি সঠিক নয় বা ইতিমধ্যে ব্যবহার করা হয়েছে। নতুন করে রিসেট লিংক পাঠান।",
+  expired: "auth.recovery.expired",
+  invalid: "auth.recovery.invalid",
 };
 
 /**

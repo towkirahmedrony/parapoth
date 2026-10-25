@@ -16,7 +16,7 @@ export const SubjectSelector: React.FC<SubjectSelectorProps> = memo(({ isLoading
   return (
     <div className="mb-5 w-full group">
       <label className="text-sm md:text-base font-semibold mb-2.5 flex items-center gap-2 text-text-primary">
-        <BookOpen size={18} className="text-text-secondary group-focus-within:text-text-primary transition-colors" /> বিষয় নির্বাচন করুন
+        <BookOpen size={18} className="text-text-secondary group-focus-within:text-text-primary transition-colors" /> {t('exam.selectSubject')}
       </label>
       {isLoading ? (
         <Skeleton className="w-full h-[54px] rounded-xl bg-surface-elevated" />

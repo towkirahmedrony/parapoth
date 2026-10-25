@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { SUPPORT_CONFIG } from '@/shared/constants/supportConfig';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 type Language = 'bn' | 'en';
 
@@ -175,7 +176,8 @@ const submitContactMessage = async (payload: ContactPayload): Promise<unknown> =
 };
 
 export const Contact = () => {
-  const [language, setLanguage] = useState<Language>('bn');
+  // Single authoritative language state shared with the rest of the app.
+  const { language, setLanguage } = useLanguage();
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     email: '',

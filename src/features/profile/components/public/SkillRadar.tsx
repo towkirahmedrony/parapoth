@@ -41,10 +41,10 @@ const SkillRadar: React.FC<SkillRadarProps> = ({ data }) => {
     >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold font-['Hind_Siliguri'] text-text-primary">
-          দক্ষতা গ্রাফ 🕸️
+          {t('profile.skills')} 🕸️
         </h3>
         <span className="text-xs font-medium font-['Hind_Siliguri'] text-primary">
-          সেরা বিষয়সমূহ
+          {t('profile.topSubjects')}
         </span>
       </div>
 

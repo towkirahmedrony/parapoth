@@ -98,6 +98,6 @@ export const useStreak = (targetUserId?: string): UseStreakReturn => {
     freezesLeft: data?.freezesLeft ?? 2,
     activities: data?.activities ?? [],
     loading: isLoading,
-    error: error ? "ডেটা লোড করতে সমস্যা হচ্ছে। ইন্টারনেট কানেকশন চেক করুন।" : null,
+    error: error ? 'streak.dataLoadError' : null,
   };
 };

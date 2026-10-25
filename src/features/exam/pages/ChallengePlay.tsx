@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Clock, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiClient from '@/shared/lib/apiClient';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import Loader from '@/shared/components/feedback/Loader';
 import { sanitizeQuestionHtml } from '@/shared/utils/sanitize';
 import {
@@ -21,6 +22,7 @@ type SubmitResponse = {
 };
 
 export const ChallengePlay: React.FC = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { challengeId } = useParams<{ challengeId: string }>();
 
@@ -33,7 +35,7 @@ export const ChallengePlay: React.FC = () => {
 
   // 1. Fetch the challenge. Questions arrive without answer keys: the server
   // grades every submission, so nothing here can be scored locally.
-  const { data: challenge, isLoading, isError, error } = useQuery<ChallengeData>({
+const { data: challenge, isLoading, isError } = useQuery<ChallengeData>({
     queryKey: ['challenge', challengeId],
     queryFn: async () => {
       if (!challengeId) throw new Error('Challenge ID is missing');
@@ -50,8 +52,8 @@ export const ChallengePlay: React.FC = () => {
 
   const questions = useMemo(() => challenge?.questions ?? [], [challenge?.questions]);
   const opponentData = useMemo(
-    () => challenge?.opponent ?? { name: 'প্রতিপক্ষ', score: 0, time_taken: 0 },
-    [challenge?.opponent]
+    () => challenge?.opponent ?? { name: t('exam.opponent'), score: 0, time_taken: 0 },
+    [challenge?.opponent, t]
   );
 
   // An already-submitted challenge shows the stored authoritative result
@@ -77,7 +79,7 @@ export const ChallengePlay: React.FC = () => {
     },
     onSuccess: (data) => {
       setResult(data);
-      toast.success('রেজাল্ট সফলভাবে সেভ হয়েছে!');
+      toast.success(t('exam.resultSaved'));
     },
     onError: (mutationError: unknown) => {
       const message =
@@ -88,7 +90,7 @@ export const ChallengePlay: React.FC = () => {
               ?.message
           : undefined;
 
-      toast.error(message || 'রেজাল্ট সেভ করতে সমস্যা হয়েছে!');
+      toast.error(message || t('exam.resultSaveError'));
     },
   });
 
@@ -143,13 +145,13 @@ export const ChallengePlay: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 text-center bg-app text-text-primary">
         <div className="p-6 rounded-xl max-w-sm w-full bg-card-bg border border-card-border shadow-sm">
-          <p className="font-bold text-lg mb-4 text-accent">চ্যালেঞ্জ আইডি পাওয়া যায়নি।</p>
+          <p className="font-bold text-lg mb-4 text-accent">{t('exam.challengeIdMissing')}</p>
           <button
             type="button"
             onClick={() => navigate('/dashboard/home')}
             className="px-6 py-2 rounded-lg font-bold w-full bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            হোমে ফিরে যান
+            {t('exam.backHome')}
           </button>
         </div>
       </div>
@@ -169,16 +171,14 @@ export const ChallengePlay: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center p-4 text-center bg-app text-text-primary">
         <div className="p-6 rounded-xl max-w-sm w-full bg-card-bg border border-card-border shadow-sm">
           <p className="font-bold text-lg mb-4 text-accent">
-            {error instanceof Error && error.message
-              ? error.message
-              : 'চ্যালেঞ্জ লোড করা সম্ভব হয়নি।'}
+            {t('exam.challengeLoadFailed')}
           </p>
           <button
             type="button"
             onClick={() => navigate('/dashboard/home')}
             className="px-6 py-2 rounded-lg font-bold w-full bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            হোমে ফিরে যান
+            {t('exam.backHome')}
           </button>
         </div>
       </div>
@@ -194,17 +194,17 @@ export const ChallengePlay: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-app text-text-primary">
         <div className="p-8 rounded-2xl text-center shadow-lg w-full max-w-sm bg-card-bg border border-card-border">
-          <h2 className="text-2xl font-bold mb-4">চ্যালেঞ্জ সমাপ্ত! 🏆</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('exam.challengeFinished')}</h2>
 
           {isSaving ? (
             <div className="py-6">
               <Loader />
-              <p className="mt-3 text-sm font-bold text-text-secondary">স্কোর যাচাই হচ্ছে...</p>
+              <p className="mt-3 text-sm font-bold text-text-secondary">{t('exam.checkingScore')}</p>
             </div>
           ) : result ? (
             <div className="flex justify-between my-6 px-4">
               <div>
-                <p className="text-sm font-bold text-text-secondary">আপনার স্কোর</p>
+                <p className="text-sm font-bold text-text-secondary">{t('exam.yourScore')}</p>
                 <p className="text-4xl font-black mt-2 text-primary">
                   {score}/{total}
                 </p>
@@ -216,7 +216,7 @@ export const ChallengePlay: React.FC = () => {
             </div>
           ) : (
             <p className="my-6 text-sm font-bold text-accent">
-              রেজাল্ট সেভ করা যায়নি। আবার চেষ্টা করুন।
+              {t('exam.resultSaveFailed')}
             </p>
           )}
 
@@ -226,7 +226,7 @@ export const ChallengePlay: React.FC = () => {
               onClick={() => submitAnswers(answers)}
               className="px-6 py-4 rounded-xl font-bold w-full transition-all bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
-              আবার জমা দিন
+              {t('exam.submitAgain')}
             </button>
           )}
 
@@ -235,7 +235,7 @@ export const ChallengePlay: React.FC = () => {
             onClick={() => navigate('/dashboard/home', { replace: true })}
             className="px-6 py-3 rounded-xl font-bold w-full mt-3 bg-secondary text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            হোমে ফিরে যান
+            {t('exam.backHome')}
           </button>
         </div>
       </div>
@@ -249,7 +249,7 @@ export const ChallengePlay: React.FC = () => {
       <div className="sticky top-0 z-30 shadow-sm transition-colors duration-300 bg-surface border-b border-border-color">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="font-bold text-primary">
-            প্রশ্ন {currentQIndex + 1}/{questions.length}
+            {t('exam.questionOf', { current: currentQIndex + 1, total: questions.length })}
           </div>
           <div
             className={`flex items-center gap-1 font-mono font-bold text-lg ${
@@ -305,7 +305,7 @@ export const ChallengePlay: React.FC = () => {
             disabled={selectedOption === null || submitChallengeMutation.isPending}
             className="px-8 py-4 font-bold rounded-xl flex gap-2 items-center transition-all active:scale-95 bg-primary text-primary-foreground disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            পরবর্তী <ChevronRight size={20} />
+            {t('exam.next')} <ChevronRight size={20} />
           </button>
         </div>
       </div>

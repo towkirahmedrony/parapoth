@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { PermissionGuard } from '@/features/auth/components/PermissionGuard';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 // ==========================================
 // ১. মূল ৫টি ট্যাব (সরাসরি ইম্পোর্ট - ইনস্ট্যান্ট নেভিগেশনের জন্য)
@@ -90,20 +91,28 @@ const FullPageLoader = () => (
 );
 
 // Placeholder component
-const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex h-[60vh] flex-col items-center justify-center">
-    <EmptyState message={`${title} - কাজ চলছে, শীঘ্রই আসবে...`} />
-  </div>
-);
+const Placeholder = ({ title }: { title: string }) => {
+  const { t } = useLanguage();
+  return (
+    <div className="flex h-[60vh] flex-col items-center justify-center">
+      <EmptyState message={t('error.comingSoon', { title })} />
+    </div>
+  );
+};
 
 // NotFound Component
-const NotFound = () => (
-  <div className="flex h-[60vh] flex-col items-center justify-center">
-    <EmptyState message="৪o৪ - পৃষ্ঠাটি পাওয়া যায়নি" />
-  </div>
-);
+const NotFound = () => {
+  const { t } = useLanguage();
+  return (
+    <div className="flex h-[60vh] flex-col items-center justify-center">
+      <EmptyState message={t('error.notFoundTitle')} />
+    </div>
+  );
+};
 
 const AppRoutes: React.FC = () => {
+  const { t } = useLanguage();
+
   return (
     <Suspense fallback={<FullPageLoader />}>
       <Routes>
@@ -282,7 +291,7 @@ const AppRoutes: React.FC = () => {
           <Route path="dashboard/marketplace" element={<Marketplace />} />
           <Route path="progress" element={<Progress />} />
 
-          <Route path="quests" element={<Placeholder title="ডেইলি কোয়েস্ট (Missions)" />} />
+          <Route path="quests" element={<Placeholder title={t('placeholder.quests')} />} />
 
           {/* History & Analytics */}
           <Route path="history" element={<History />} />
@@ -296,8 +305,8 @@ const AppRoutes: React.FC = () => {
 
           {/* Group & Social */}
           <Route path="group" element={<Lobby />} />
-          <Route path="group/:groupId/battle" element={<Placeholder title="গ্রুপ ব্যাটেল" />} />
-          <Route path="group/:groupId/focus" element={<Placeholder title="ফোকাস সেশন" />} />
+          <Route path="group/:groupId/battle" element={<Placeholder title={t('placeholder.groupBattle')} />} />
+          <Route path="group/:groupId/focus" element={<Placeholder title={t('placeholder.focusSession')} />} />
 
           {/* Admission */}
           <Route path="admission" element={<AdmissionLandingPage />} />
@@ -316,12 +325,12 @@ const AppRoutes: React.FC = () => {
           />
 
           {/* Academic & Materials */}
-          <Route path="suggestion" element={<Placeholder title="সাজেশন" />} />
+          <Route path="suggestion" element={<Placeholder title={t('placeholder.suggestion')} />} />
           <Route path="bank" element={<QuestionBank />} />
-          <Route path="materials" element={<Placeholder title="স্টাডি ম্যাটেরিয়ালস" />} />
+          <Route path="materials" element={<Placeholder title={t('placeholder.materials')} />} />
 
           {/* Support & Moderation */}
-          <Route path="support" element={<Placeholder title="হেল্প ও সাপোর্ট" />} />
+          <Route path="support" element={<Placeholder title={t('placeholder.support')} />} />
 
           {/* 404 Fallback inside protected layout */}
           <Route path="*" element={<NotFound />} />

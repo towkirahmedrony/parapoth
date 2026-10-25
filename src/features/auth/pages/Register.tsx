@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import RegisterForm from '../components/RegisterForm';
 import RegisterSuccess from '../components/RegisterSuccess';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 export default function Register() {
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const refCode = searchParams.get('ref');
+  const { t } = useLanguage();
 
   if (successEmail) {
     return <RegisterSuccess email={successEmail} />;
@@ -24,16 +26,16 @@ export default function Register() {
             className="h-12 w-auto object-contain drop-shadow-sm mb-2"
           />
           <h1 className="text-2xl font-bold tracking-tight mb-0.5 text-text-primary">
-            পরোখ
+            {t('brand.name')}
           </h1>
           <p className="text-[13px] font-medium tracking-[0.08em] uppercase text-text-secondary">
-            সফলতার পথে, তোমার সাথে
+            {t('auth.brandTagline')}
           </p>
           
           {refCode && (
             <div className="mt-3 px-4 py-1.5 rounded-full bg-badge-bg border border-border-color">
               <p className="text-xs font-bold text-badge-text">
-                রেফারেল কোড অ্যাক্টিভ: {refCode}
+                {t('auth.referralCodeActive', { code: refCode })}
               </p>
             </div>
           )}
@@ -45,13 +47,13 @@ export default function Register() {
         {/* Bottom Login Link (Text Only) */}
         <div className="w-full mt-6 flex justify-center items-center text-[15px]">
           <span className="text-text-secondary">
-            আগে থেকে অ্যাকাউন্ট আছে?
+            {t('auth.hasAccount')}
           </span>
           <Link 
             to="/auth/login" 
             className="font-bold ml-1.5 text-text-primary hover:text-text-secondary hover:underline transition-colors"
           >
-            লগ ইন করুন
+            {t('auth.loginCta')}
           </Link>
         </div>
 

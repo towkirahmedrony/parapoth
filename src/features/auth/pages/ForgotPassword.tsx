@@ -2,16 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabase';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import type { AppMessageKey } from '@/shared/i18n/messages';
 import {
-  PASSWORD_RECOVERY_PUBLIC_MESSAGE,
+  PASSWORD_RECOVERY_PUBLIC_MESSAGE_KEY,
   requestPasswordRecovery,
 } from '../utils/passwordRecovery';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; key: AppMessageKey } | null>(null);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,14 +23,14 @@ const ForgotPassword: React.FC = () => {
 
     const inputEmail = email.trim();
     if (!inputEmail) {
-      setMessage({ type: 'error', text: 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা দিন।' });
+      setMessage({ type: 'error', key: 'auth.forgot.emailRequired' });
       return;
     }
 
     setIsLoading(true);
     try {
       await requestPasswordRecovery(inputEmail, supabase.auth, window.location.origin);
-      setMessage({ type: 'success', text: PASSWORD_RECOVERY_PUBLIC_MESSAGE });
+      setMessage({ type: 'success', key: PASSWORD_RECOVERY_PUBLIC_MESSAGE_KEY });
       setEmail('');
     } finally {
       setIsLoading(false);
@@ -38,9 +41,9 @@ const ForgotPassword: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-app text-text-primary p-4 justify-center items-center">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-3 text-text-primary">পাসওয়ার্ড ভুলে গেছেন?</h1>
+          <h1 className="text-2xl font-bold mb-3 text-text-primary">{t('auth.forgotPassword')}</h1>
           <p className="text-text-secondary text-sm leading-relaxed px-4">
-            পাসওয়ার্ড রিসেট করতে আপনার অ্যাকাউন্টের ইমেইল ঠিকানা দিন।
+            {t('auth.forgot.description')}
           </p>
         </div>
 
@@ -51,7 +54,7 @@ const ForgotPassword: React.FC = () => {
             ) : (
               <AlertCircle size={20} className="shrink-0 mt-0.5 text-text-primary" aria-hidden="true" />
             )}
-            <p className="leading-relaxed">{message.text}</p>
+            <p className="leading-relaxed">{t(message.key)}</p>
           </div>
         )}
 
@@ -63,7 +66,7 @@ const ForgotPassword: React.FC = () => {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ইমেইল ঠিকানা"
+              placeholder={t('auth.field.emailAddress')}
               className="w-full bg-input-bg border border-input-border rounded-xl px-4 py-3.5 text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-focus-ring transition-colors"
               disabled={isLoading}
               required
@@ -76,9 +79,9 @@ const ForgotPassword: React.FC = () => {
             className="w-full bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" aria-label="লোড হচ্ছে" />
+              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" aria-label={t('common.loading')} />
             ) : (
-              'রিসেট লিংক পাঠান'
+              t('auth.forgot.sendResetLink')
             )}
           </button>
         </form>
@@ -90,7 +93,7 @@ const ForgotPassword: React.FC = () => {
             className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
           >
             <ArrowLeft size={18} />
-            <span>ফিরে যান</span>
+            <span>{t('auth.back')}</span>
           </button>
         </div>
       </div>

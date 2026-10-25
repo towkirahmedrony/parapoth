@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../auth/hooks/useAuth';
@@ -9,6 +10,7 @@ import NotificationEmptyState from '../components/NotificationEmptyState';
 import { fetchNotifications, markNotificationAsRead } from '../services/notificationService';
 
 const Notifications: React.FC = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -94,7 +96,7 @@ const Notifications: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {isLoading ? (
           // Skeleton Loading Effect (Using your custom theme colors)
-          <div className="space-y-3" aria-label="Loading Notifications">
+          <div className="space-y-3" aria-label={t('common.loading')}>
             {[1, 2, 3, 4, 5].map((i) => (
               <div 
                 key={i} 

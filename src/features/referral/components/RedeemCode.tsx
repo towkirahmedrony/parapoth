@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Tag, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
@@ -7,6 +8,7 @@ import { referralService } from '../services/referralService';
 import { useAuth } from '../../auth/hooks/useAuth';
 
 export const RedeemCode: React.FC = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [code, setCode] = useState('');
@@ -15,13 +17,13 @@ export const RedeemCode: React.FC = () => {
   const redeemMutation = useMutation({
     mutationFn: (referralCode: string) => referralService.redeemCode(user!.id, referralCode),
     onSuccess: (data) => {
-      setFeedback({ type: 'success', message: data.message || 'সফলভাবে কোড যুক্ত হয়েছে!' });
+      setFeedback({ type: 'success', message: data.message || t('referral.redeemSuccess') });
       setCode('');
       queryClient.invalidateQueries({ queryKey: ['referralStats', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['referralHistory', user?.id] });
     },
     onError: (error: Error) => {
-      setFeedback({ type: 'error', message: error.message || 'ভুল অথবা মেয়াদোত্তীর্ণ কোড।' });
+      setFeedback({ type: 'error', message: error.message || t('referral.redeemError') });
     }
   });
 
@@ -39,14 +41,14 @@ export const RedeemCode: React.FC = () => {
           <Tag size={16} />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-[var(--dyn-text)]">ইনভাইট কোড ব্যবহার করুন</h3>
+          <h3 className="text-sm font-semibold text-[var(--dyn-text)]">{t('referral.redeemTitle')}</h3>
         </div>
       </div>
 
       <form onSubmit={handleRedeem} className="flex flex-col gap-2">
         <div className="relative flex items-center">
-          <Input 
-            placeholder="কোড লিখুন..." 
+          <Input
+            placeholder={t('referral.codePlaceholder')}
             value={code}
             onChange={(e) => {
               setCode(e.target.value.toUpperCase());
@@ -55,8 +57,8 @@ export const RedeemCode: React.FC = () => {
             className="w-full pr-10 text-sm font-mono uppercase bg-[color-mix(in_srgb,var(--dyn-text)_2%,transparent)] py-2"
             disabled={redeemMutation.isPending}
           />
-          <Button 
-            disabled={!code.trim() || redeemMutation.isPending} 
+          <Button
+            disabled={!code.trim() || redeemMutation.isPending}
             type="submit"
             size="sm"
             className="absolute right-1 h-auto py-1.5 px-2 bg-[var(--dyn-primary)] text-[var(--dyn-bg)] hover:opacity-90 disabled:opacity-50 rounded-md"
@@ -64,7 +66,7 @@ export const RedeemCode: React.FC = () => {
             {redeemMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
           </Button>
         </div>
-        
+
         <div className="min-h-[16px]">
           {feedback && (
             <div className={`flex items-center gap-1.5 text-[11px] font-medium ${feedback.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>

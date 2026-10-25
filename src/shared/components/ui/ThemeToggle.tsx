@@ -1,8 +1,10 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Sun, Moon, MonitorSmartphone } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 
 const ThemeToggle: React.FC = () => {
+  const { t } = useLanguage();
   const { theme, setTheme } = useTheme();
 
   return (
@@ -14,8 +16,8 @@ const ThemeToggle: React.FC = () => {
             ? 'bg-surface-elevated shadow-sm text-text-primary' 
             : 'text-text-secondary hover:text-text-primary bg-transparent'
         }`}
-        title="Light Mode"
-        aria-label="Set light theme"
+        title={t('theme.lightMode')}
+        aria-label={t('theme.lightMode')}
       >
         <Sun size={18} />
       </button>
@@ -27,8 +29,8 @@ const ThemeToggle: React.FC = () => {
             ? 'bg-surface-elevated shadow-sm text-text-primary' 
             : 'text-text-secondary hover:text-text-primary bg-transparent'
         }`}
-        title="Dark Mode"
-        aria-label="Set dark theme"
+        title={t('theme.darkMode')}
+        aria-label={t('theme.darkMode')}
       >
         <Moon size={18} />
       </button>
@@ -40,8 +42,8 @@ const ThemeToggle: React.FC = () => {
             ? 'bg-surface-elevated shadow-sm text-text-primary' 
             : 'text-text-secondary hover:text-text-primary bg-transparent'
         }`}
-        title="System (Auto Follow Admin/Device Theme)"
-        aria-label="Follow system theme"
+        title={t('theme.systemMode')}
+        aria-label={t('theme.systemMode')}
       >
         <MonitorSmartphone size={18} />
       </button>

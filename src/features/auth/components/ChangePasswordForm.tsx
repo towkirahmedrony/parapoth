@@ -8,6 +8,7 @@ import {
   MIN_PASSWORD_LENGTH,
   type PasswordVisibilityState,
 } from "../utils/changePasswordUtils";
+import { useLanguage } from "@/shared/i18n/LanguageProvider";
 
 type ChangePasswordFormProps = {
   isRecoveryMode: boolean;
@@ -48,6 +49,7 @@ export function ChangePasswordForm({
   onToggleConfirmVisibility,
   onSubmit,
 }: ChangePasswordFormProps) {
+  const { t } = useLanguage();
   const isDisabled = isLoading || isSuccess;
 
   return (
@@ -56,17 +58,17 @@ export function ChangePasswordForm({
         <>
           <PasswordInput
             id="current-password"
-            label="বর্তমান পাসওয়ার্ড"
+            label={t('auth.pw.currentPassword')}
             value={oldPassword}
-            placeholder="বর্তমান পাসওয়ার্ড দিন"
+            placeholder={t('auth.pw.currentPasswordPlaceholder')}
             autoComplete="current-password"
             isVisible={visibleFields.old}
             disabled={isDisabled}
             required
             errorId={errorId}
             hasError={hasError}
-            toggleLabelWhenVisible="বর্তমান পাসওয়ার্ড লুকান"
-            toggleLabelWhenHidden="বর্তমান পাসওয়ার্ড দেখুন"
+            toggleLabelWhenVisible={t('auth.pw.hideCurrent')}
+            toggleLabelWhenHidden={t('auth.pw.showCurrent')}
             onChange={onOldPasswordChange}
             onToggleVisibility={onToggleOldVisibility}
             rightAction={
@@ -74,7 +76,7 @@ export function ChangePasswordForm({
                 to={FORGOT_PASSWORD_PATH}
                 className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary hover:underline"
               >
-                পাসওয়ার্ড ভুলে গেছেন?
+                {t('auth.forgotPassword')}
               </Link>
             }
           />
@@ -85,9 +87,9 @@ export function ChangePasswordForm({
 
       <PasswordInput
         id="new-password"
-        label="নতুন পাসওয়ার্ড"
+        label={t('auth.pw.newPassword')}
         value={newPassword}
-        placeholder={`নতুন পাসওয়ার্ড দিন, অন্তত ${MIN_PASSWORD_LENGTH} অক্ষর`}
+        placeholder={t('auth.pw.newPasswordPlaceholder', { min: MIN_PASSWORD_LENGTH })}
         autoComplete="new-password"
         isVisible={visibleFields.new}
         disabled={isDisabled}
@@ -95,17 +97,17 @@ export function ChangePasswordForm({
         minLength={MIN_PASSWORD_LENGTH}
         errorId={errorId}
         hasError={hasError}
-        toggleLabelWhenVisible="নতুন পাসওয়ার্ড লুকান"
-        toggleLabelWhenHidden="নতুন পাসওয়ার্ড দেখুন"
+        toggleLabelWhenVisible={t('auth.pw.hideNew')}
+        toggleLabelWhenHidden={t('auth.pw.showNew')}
         onChange={onNewPasswordChange}
         onToggleVisibility={onToggleNewVisibility}
       />
 
       <PasswordInput
         id="confirm-new-password"
-        label="নতুন পাসওয়ার্ড নিশ্চিত করুন"
+        label={t('auth.pw.confirmPassword')}
         value={confirmPassword}
-        placeholder="আবার নতুন পাসওয়ার্ড দিন"
+        placeholder={t('auth.pw.confirmPasswordPlaceholder')}
         autoComplete="new-password"
         isVisible={visibleFields.confirm}
         disabled={isDisabled}
@@ -113,8 +115,8 @@ export function ChangePasswordForm({
         minLength={MIN_PASSWORD_LENGTH}
         errorId={errorId}
         hasError={hasError}
-        toggleLabelWhenVisible="নিশ্চিতকরণ পাসওয়ার্ড লুকান"
-        toggleLabelWhenHidden="নিশ্চিতকরণ পাসওয়ার্ড দেখুন"
+        toggleLabelWhenVisible={t('auth.pw.hideConfirm')}
+        toggleLabelWhenHidden={t('auth.pw.showConfirm')}
         onChange={onConfirmPasswordChange}
         onToggleVisibility={onToggleConfirmVisibility}
       />
@@ -127,12 +129,12 @@ export function ChangePasswordForm({
         {isLoading ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-            <span>আপডেট হচ্ছে...</span>
+            <span>{t('auth.pw.saving')}</span>
           </>
         ) : isRecoveryMode ? (
-          "পাসওয়ার্ড সেভ করুন"
+          t('auth.pw.save')
         ) : (
-          "পাসওয়ার্ড পরিবর্তন করুন"
+          t('auth.pw.changeSubmit')
         )}
       </button>
     </form>

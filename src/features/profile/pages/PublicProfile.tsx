@@ -12,10 +12,12 @@ import { ProfileSkeleton } from '../components/public/ProfileSkeleton';
 import { ChallengeSetupModal } from '../../exam/components/ChallengeSetupModal';
 import { getPublicProfileData, PublicProfileResponse } from '../services/profileService';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import Lottie from 'lottie-react';
 import userNotFoundAnimation from '@/assets/animations/user-not-found.json';
 
 const PublicProfile: React.FC = () => {
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -48,10 +50,10 @@ const PublicProfile: React.FC = () => {
           <Lottie animationData={userNotFoundAnimation} loop={true} />
         </div>
         <p className="font-['Hind_Siliguri'] text-lg font-medium mb-6 text-text-primary">
-          {error || 'দুঃখিত, এই ইউজারকে খুঁজে পাওয়া যায়নি।'}
+          {error || t('profile.userNotFound')}
         </p>
         <button onClick={handleGoBack} className="flex items-center gap-2 px-6 py-2.5 rounded-full font-['Hind_Siliguri'] shadow-md active:scale-95 bg-primary text-primary-foreground">
-          <ChevronLeft className="w-5 h-5" /> ফিরে যান
+<ChevronLeft className="w-5 h-5" /> {t('common.back')}
         </button>
       </div>
     );

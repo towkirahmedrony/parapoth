@@ -1,4 +1,5 @@
 import { KeyRound, Lock } from "lucide-react";
+import { useLanguage } from "@/shared/i18n/LanguageProvider";
 
 type ChangePasswordCardHeaderProps = {
   isRecoveryMode: boolean;
@@ -7,6 +8,8 @@ type ChangePasswordCardHeaderProps = {
 export function ChangePasswordCardHeader({
   isRecoveryMode,
 }: ChangePasswordCardHeaderProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="mb-8 text-center">
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-elevated text-text-primary">
@@ -18,13 +21,13 @@ export function ChangePasswordCardHeader({
       </div>
 
       <h2 className="mb-2 text-2xl font-bold text-text-primary">
-        {isRecoveryMode ? "নতুন পাসওয়ার্ড সেট করুন" : "পাসওয়ার্ড আপডেট করুন"}
+        {isRecoveryMode ? t('auth.pw.recoveryTitle') : t('auth.pw.updateTitle')}
       </h2>
 
       <p className="text-sm leading-6 text-text-secondary">
         {isRecoveryMode
-          ? "আপনার অ্যাকাউন্টের জন্য একটি নতুন এবং শক্তিশালী পাসওয়ার্ড দিন।"
-          : "নিরাপত্তার স্বার্থে প্রথমে আপনার বর্তমান পাসওয়ার্ডটি দিন।"}
+          ? t('auth.pw.recoverySubtitle')
+          : t('auth.pw.updateSubtitle')}
       </p>
     </div>
   );

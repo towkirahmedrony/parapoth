@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getRecoveryParams, validatePasswordForm } from './changePasswordUtils';
+import {
+  APP_LANGUAGES,
+  APP_MESSAGES,
+  type AppMessageKey,
+} from '@/shared/i18n/messages';
 
 const withLocationHash = async (hash: string, run: () => void) => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -35,14 +40,14 @@ test('recovery callback recognizes Supabase access/refresh tokens in the URL fra
 });
 
 test('password update requires the current password outside recovery mode', () => {
-  assert.match(
+  assert.equal(
     validatePasswordForm({
       isRecoveryMode: false,
       oldPassword: '',
       newPassword: 'new-password-123',
       confirmPassword: 'new-password-123',
-    }) ?? '',
-    /বর্তমান পাসওয়ার্ড/
+    }),
+    'auth.pw.currentRequired'
   );
   assert.equal(
     validatePasswordForm({
@@ -53,4 +58,22 @@ test('password update requires the current password outside recovery mode', () =
     }),
     null
   );
+});
+
+test('validation results are translation keys available in both languages', () => {
+  const result = validatePasswordForm({
+    isRecoveryMode: false,
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  assert.notEqual(result, null);
+  for (const language of APP_LANGUAGES) {
+    const translated = APP_MESSAGES[language][result as AppMessageKey];
+    assert.equal(typeof translated, 'string');
+    assert.equal(translated.length > 0, true);
+    // A missing key would fall back to the raw key itself.
+    assert.equal(translated.includes('auth.'), false);
+  }
 });

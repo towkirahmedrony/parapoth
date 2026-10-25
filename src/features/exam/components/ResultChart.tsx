@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface ResultChartProps {
   correct: number;
@@ -36,11 +37,12 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload }) => {
 };
 
 const ResultChart: React.FC<ResultChartProps> = memo(({ correct, wrong, skipped }) => {
+  const { t } = useLanguage();
   // Using explicit hex for Recharts data-mapping compatibility
   const data = [
-    { name: 'সঠিক', value: correct, color: '#10b981' },
-    { name: 'ভুল', value: wrong, color: '#ef4444' },
-    { name: 'স্কিপড', value: skipped, color: '#6b7280' },
+    { name: t('analysis.correct'), value: correct, color: '#10b981' },
+    { name: t('analysis.wrong'), value: wrong, color: '#ef4444' },
+    { name: t('analysis.skipped'), value: skipped, color: '#6b7280' },
   ];
 
   const activeData = data.filter((d) => d.value > 0);
@@ -48,13 +50,13 @@ const ResultChart: React.FC<ResultChartProps> = memo(({ correct, wrong, skipped 
   if (activeData.length === 0) {
     return (
       <div className="w-full h-64 md:h-80 flex flex-col items-center justify-center border-2 border-dashed border-border-color rounded-2xl">
-        <p className="font-medium text-text-secondary">কোনো তথ্য পাওয়া যায়নি</p>
+        <p className="font-medium text-text-secondary">{t('common.noData')}</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-64 md:h-80 relative" aria-label="Exam performance chart">
+    <div className="w-full h-64 md:h-80 relative" aria-label={t('analysis.chartAria')}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -93,7 +95,7 @@ const ResultChart: React.FC<ResultChartProps> = memo(({ correct, wrong, skipped 
           {correct + wrong + skipped}
         </span>
         <span className="text-xs uppercase tracking-wider text-text-secondary font-semibold mt-1">
-          মোট প্রশ্ন
+          {t('common.totalQuestions')}
         </span>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Edit3, Coins, ShieldCheck } from 'lucide-react';
 import { UserProfileData } from '../types/profile';
 import { PROFILE_DEFAULTS } from '../utils/profileConstants';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface ProfileHeaderProps {
   user: UserProfileData | any; 
@@ -10,13 +11,14 @@ interface ProfileHeaderProps {
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const userCoins = user?.coin_balance || 0;
   
   // Data fallbacks
   const fullName = user?.full_name || user?.user_metadata?.full_name || PROFILE_DEFAULTS.NAME;
   const avatarUrl = user?.avatar_url || user?.user_metadata?.avatar_url || PROFILE_DEFAULTS.AVATAR_URL;
-  const bio = user?.bio || "আপনার সম্পর্কে কিছু লিখুন...";
+const bio = user?.bio || t('profile.bioPlaceholder');
 
   return (
     <div className="relative pt-10 pb-8 px-6 rounded-3xl shadow-sm flex flex-col items-center overflow-hidden transition-all duration-300 bg-card-bg border border-card-border">
@@ -26,7 +28,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
       {/* Coin Badge - Clickable to navigate to Marketplace */}
       <button 
         onClick={() => navigate('/dashboard/marketplace')}
-        title="মার্কেটপ্লেসে যান"
+title={t('profile.goToMarketplace')}
         className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs shadow-sm font-['Hind_Siliguri'] cursor-pointer transition-transform hover:scale-105 active:scale-95 bg-surface-elevated text-text-primary border border-border-color backdrop-blur-sm"
       >
         <Coins size={14} style={{ color: '#F59E0B' }} />
@@ -52,7 +54,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
         <h1 className="text-2xl font-bold flex items-center justify-center gap-2 font-['Hind_Siliguri'] text-text-primary">
           {fullName}
           {user?.is_phone_verified && (
-            <span title="ভেরিফাইড" className="inline-flex">
+<span title={t('profile.verified')} className="inline-flex">
               <ShieldCheck size={18} className="text-green-500" />
             </span>
           )}
@@ -69,7 +71,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
           className="flex items-center gap-2 px-8 py-2.5 text-sm rounded-2xl font-bold shadow-md transition-all active:scale-95 hover:opacity-90 font-['Hind_Siliguri'] bg-primary text-primary-foreground"
         >
           <Edit3 size={16} />
-          এডিট প্রোফাইল
+          {t('profile.editProfile')}
         </button>
       </div>
     </div>

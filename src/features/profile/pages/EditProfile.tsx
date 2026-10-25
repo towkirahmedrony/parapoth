@@ -13,10 +13,14 @@ import { useAuth } from '../../auth/hooks/useAuth';
 // Components
 import FormInputGroup from '../components/FormInputGroup';
 import FormSelectGroup from '../components/FormSelectGroup';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { MessageError } from '@/shared/i18n/localize';
+import type { AppLanguage } from '@/shared/i18n/messages';
 import ProfileAvatarEdit from '../components/ProfileAvatarEdit';
 
-// --- Local Translation Helpers ---
-const translateBoard = (board: string) => {
+// --- Local Translation Helpers (Bangla labels only; English shows raw values) ---
+const translateBoard = (board: string, language: AppLanguage) => {
+  if (language !== 'bn') return board;
   const map: Record<string, string> = {
     'Dhaka': 'ঢাকা', 'Rajshahi': 'রাজশাহী', 'Cumilla': 'কুমিল্লা', 'Jashore': 'যশোর',
     'Chattogram': 'চট্টগ্রাম', 'Barishal': 'বরিশাল', 'Sylhet': 'সিলেট',
@@ -25,12 +29,14 @@ const translateBoard = (board: string) => {
   return map[board] || board;
 };
 
-const translateGroup = (group: string) => {
+const translateGroup = (group: string, language: AppLanguage) => {
+  if (language !== 'bn') return group;
   const map: Record<string, string> = { 'Science': 'বিজ্ঞান', 'Business': 'ব্যবসায় শিক্ষা', 'Humanities': 'মানবিক' };
   return map[group] || group;
 };
 
-const translateClass = (level: string) => level.replace('HSC', 'এইচএসসি');
+const translateClass = (level: string, language: AppLanguage) =>
+  language === 'bn' ? level.replace('HSC', 'এইচএসসি') : level;
 // ----------------------------------
 
 const EditProfile: React.FC = () => {
@@ -38,6 +44,7 @@ const EditProfile: React.FC = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { user: authUser, updateUserProfile } = useAuth();
+  const { language, t } = useLanguage();
 
   const [formData, setFormData] = useState<Partial<UserProfileData>>({});
 
@@ -92,9 +99,11 @@ const EditProfile: React.FC = () => {
         return response.data;
       } catch (error) {
         if (isAxiosError(error)) {
-          throw new Error(error.response?.data?.message || "প্রোফাইল আপডেট করতে সমস্যা হয়েছে।");
+          throw error.response?.data?.message
+            ? new Error(error.response.data.message)
+            : new MessageError('profile.updateError');
         }
-        throw new Error("অপ্রত্যাশিত একটি সমস্যা হয়েছে।");
+        throw new MessageError('profile.unexpectedError');
       }
     },
     onSuccess: () => {
@@ -140,7 +149,11 @@ const EditProfile: React.FC = () => {
 
   const isLoading = updateProfileMutation.isPending;
   const isPageLoading = isFetchingDB && !formData.id;
-  const errorMsg = updateProfileMutation.error?.message;
+  const mutationError = updateProfileMutation.error;
+  const errorMsg =
+    mutationError instanceof MessageError
+      ? t(mutationError.key)
+      : mutationError?.message;
 
   if (isPageLoading) {
     return (
@@ -161,7 +174,7 @@ const EditProfile: React.FC = () => {
         >
           <ArrowLeft size={24} />
         </button>
-        <h2 className="text-lg font-bold ml-2 text-text-primary">প্রোফাইল সম্পাদনা</h2>
+          <h2 className="text-lg font-bold ml-2 text-text-primary">{t('profile.editProfileTitle')}</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 pb-28 space-y-6">
@@ -180,48 +193,48 @@ const EditProfile: React.FC = () => {
         />
 
         <section>
-          <h3 className="text-xs font-bold mb-3 tracking-wider text-primary">ব্যক্তিগত তথ্য</h3>
+          <h3 className="text-xs font-bold mb-3 tracking-wider text-primary">{t('profile.sectionPersonal')}</h3>
           <div className="space-y-3">
-            <FormInputGroup label="ইউজারনেম" name="username" value={formData.username || ''} onChange={handleChange} placeholder="যেমন: towkir_ahmed" disabled={isLoading} />
-            <FormInputGroup label="সম্পূর্ণ নাম" name="full_name" value={formData.full_name || ''} onChange={handleChange} disabled={isLoading} />
-            <FormInputGroup label="বায়ো" name="bio" value={formData.bio || ''} onChange={handleChange} disabled={isLoading} isTextArea={true} placeholder="আপনার সম্পর্কে কিছু লিখুন..." />
+            <FormInputGroup label={t('profile.fieldUsername')} name="username" value={formData.username || ''} onChange={handleChange} placeholder="towkir_ahmed" disabled={isLoading} />
+            <FormInputGroup label={t('profile.fieldFullName')} name="full_name" value={formData.full_name || ''} onChange={handleChange} disabled={isLoading} />
+            <FormInputGroup label={t('profile.fieldBio')} name="bio" value={formData.bio || ''} onChange={handleChange} disabled={isLoading} isTextArea={true} placeholder={t('profile.bioPlaceholder')} />
             <div className="grid grid-cols-2 gap-3">
               {/* Updated Gender Select Field */}
               <FormSelectGroup 
-                label="লিঙ্গ" 
+                label={t('profile.fieldGender')}
                 name="gender" 
                 value={formData.gender || ''} 
                 onChange={handleChange} 
                 options={[
-                  { label: 'নির্বাচন করুন', value: '' },
-                  { label: 'ছাত্র', value: 'Male' },
-                  { label: 'ছাত্রী', value: 'Female' }
+                  { label: t('common.select'), value: '' },
+                  { label: t('profile.genderMale'), value: 'Male' },
+                  { label: t('profile.genderFemale'), value: 'Female' }
                 ]} 
                 disabled={isLoading} 
               />
-              <FormInputGroup type="date" label="জন্ম তারিখ" name="date_of_birth" value={formData.date_of_birth || ''} onChange={handleChange} disabled={isLoading} />
+              <FormInputGroup type="date" label={t('profile.fieldDateOfBirth')} name="date_of_birth" value={formData.date_of_birth || ''} onChange={handleChange} disabled={isLoading} />
             </div>
-            <FormInputGroup label="অভিভাবকের নম্বর" name="guardian_phone" type="tel" value={formData.guardian_phone || ''} onChange={handleChange} placeholder="01XXXXXXXXX" disabled={isLoading} />
-            <FormInputGroup label="ঠিকানা" name="address" value={getAddressValue(formData.address)} onChange={handleAddressChange} placeholder="আপনার সম্পূর্ণ ঠিকানা লিখুন" disabled={isLoading} />
+            <FormInputGroup label={t('profile.fieldGuardianPhone')} name="guardian_phone" type="tel" value={formData.guardian_phone || ''} onChange={handleChange} placeholder="01XXXXXXXXX" disabled={isLoading} />
+            <FormInputGroup label={t('profile.fieldAddress')} name="address" value={getAddressValue(formData.address)} onChange={handleAddressChange} placeholder={t('profile.addressPlaceholder')} disabled={isLoading} />
           </div>
         </section>
 
         <section>
-          <h3 className="text-xs font-bold mb-3 tracking-wider text-primary">একাডেমিক তথ্য</h3>
+          <h3 className="text-xs font-bold mb-3 tracking-wider text-primary">{t('profile.sectionAcademic')}</h3>
           <div className="space-y-3">
-            <FormInputGroup label="প্রতিষ্ঠান" name="institution" value={formData.institution || ''} onChange={handleChange} disabled={isLoading} />
+            <FormInputGroup label={t('profile.fieldInstitution')} name="institution" value={formData.institution || ''} onChange={handleChange} disabled={isLoading} />
             <div className="grid grid-cols-2 gap-3">
-              <FormSelectGroup label="শ্রেণী/ক্লাস" name="class_level" value={formData.class_level || ''} onChange={handleChange} 
-                options={CLASS_LEVELS.map(c => ({ label: translateClass(c), value: c }))} disabled={isLoading} />
-              <FormSelectGroup label="বিভাগ/গ্রুপ" name="group" value={formData.group || ''} onChange={handleChange} 
-                options={ACADEMIC_GROUPS.map(g => ({ label: translateGroup(g), value: g }))} disabled={isLoading} />
+              <FormSelectGroup label={t('profile.fieldClass')} name="class_level" value={formData.class_level || ''} onChange={handleChange}
+                options={CLASS_LEVELS.map(c => ({ label: translateClass(c, language), value: c }))} disabled={isLoading} />
+              <FormSelectGroup label={t('profile.fieldGroup')} name="group" value={formData.group || ''} onChange={handleChange}
+                options={ACADEMIC_GROUPS.map(g => ({ label: translateGroup(g, language), value: g }))} disabled={isLoading} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <FormSelectGroup label="শিক্ষা বোর্ড" name="education_board" value={formData.education_board || ''} onChange={handleChange} 
-                options={EDUCATION_BOARDS.map(b => ({ label: translateBoard(b), value: b }))} disabled={isLoading} />
-              <FormInputGroup label="ব্যাচ (বছর)" name="batch_year" value={formData.batch_year || ''} onChange={handleChange} placeholder="যেমন: ২০২৬" disabled={isLoading} />
+              <FormSelectGroup label={t('profile.fieldBoard')} name="education_board" value={formData.education_board || ''} onChange={handleChange}
+                options={EDUCATION_BOARDS.map(b => ({ label: translateBoard(b, language), value: b }))} disabled={isLoading} />
+              <FormInputGroup label={t('profile.fieldBatch')} name="batch_year" value={formData.batch_year || ''} onChange={handleChange} placeholder={t('profile.batchPlaceholder')} disabled={isLoading} />
             </div>
-            <FormInputGroup label="শিক্ষার লক্ষ্য" name="study_goal" value={formData.study_goal || ''} onChange={handleChange} placeholder="যেমন: বুয়েট (BUET)" disabled={isLoading} />
+            <FormInputGroup label={t('profile.fieldStudyGoal')} name="study_goal" value={formData.study_goal || ''} onChange={handleChange} placeholder={t('profile.studyGoalPlaceholder')} disabled={isLoading} />
           </div>
         </section>
       </form>
@@ -234,7 +247,7 @@ const EditProfile: React.FC = () => {
           className="w-full font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg bg-primary text-primary-foreground"
         >
           {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-          {isLoading ? 'সংরক্ষণ করা হচ্ছে...' : 'পরিবর্তনগুলো সেভ করুন'}
+          {isLoading ? t('profile.saving') : t('profile.saveChanges')}
         </button>
       </div>
     </div>

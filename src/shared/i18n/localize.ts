@@ -1,4 +1,19 @@
-import type { AppLanguage } from './messages';
+import type { AppLanguage, AppMessageKey } from './messages';
+
+/**
+ * A user-facing failure that carries a translation key instead of prose, so the
+ * UI can render it in whichever language is active at display time.
+ */
+export class MessageError extends Error {
+  readonly key: AppMessageKey;
+
+  constructor(key: AppMessageKey) {
+    super(key);
+    this.key = key;
+    this.name = 'MessageError';
+  }
+}
+
 
 export type LocalizedText = {
   bn?: string | null;

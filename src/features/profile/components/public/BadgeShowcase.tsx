@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { Lock } from 'lucide-react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 // DB 'achievements_master' টেবিলের সাথে সামঞ্জস্যপূর্ণ
 interface Badge {
@@ -12,14 +13,15 @@ interface Badge {
 }
 
 const BadgeShowcase: React.FC<{ badges: Badge[] }> = ({ badges }) => {
+  const { t } = useLanguage();
   return (
     <div className="py-2 mb-20">
       <div className="px-6 mb-4 flex justify-between items-end">
         <h3 className="text-lg font-bold font-['Hind_Siliguri'] text-text-primary">
-          অর্জনসমূহ 🎖️
+{t('profile.achievements')}
         </h3>
         <span className="text-xs font-['Hind_Siliguri'] text-text-secondary">
-          {badges.filter(b => b.is_earned).length} / {badges.length} টি আনলক হয়েছে
+{t('profile.unlockedCount', { done: badges.filter(b => b.is_earned).length, total: badges.length })}
         </span>
       </div>
 

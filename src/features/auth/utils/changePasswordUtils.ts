@@ -1,3 +1,5 @@
+import type { AppMessageKey } from '@/shared/i18n/messages';
+
 export const MIN_PASSWORD_LENGTH = 8;
 
 export const DASHBOARD_HOME_PATH = "/dashboard/home";
@@ -48,29 +50,34 @@ export function getRecoveryParams(searchParams: URLSearchParams): RecoveryParams
   };
 }
 
-export function getErrorMessage(_error?: unknown) {
+export { MessageError } from '@/shared/i18n/localize';
+import { MessageError } from '@/shared/i18n/localize';
+
+export function getErrorMessage(_error?: unknown): AppMessageKey {
   // Raw Auth/network messages can contain request internals, so the UI only
-  // ever shows a stable user-facing string for unrecognised failures.
-  return "পাসওয়ার্ড পরিবর্তন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
+  // ever shows a stable user-facing message for unrecognised failures.
+  return "auth.pw.genericError";
 }
 
-export function getUpdatePasswordErrorMessage(error: unknown) {
+export function getUpdatePasswordErrorMessage(error: unknown): AppMessageKey {
+  if (error instanceof MessageError) return error.key;
+
   const message = error instanceof Error ? error.message.toLowerCase() : "";
 
   if (message.includes("same password") || message.includes("different")) {
-    return "নতুন পাসওয়ার্ডটি আগের পাসওয়ার্ডের থেকে আলাদা হতে হবে।";
+    return "auth.pw.mustDiffer";
   }
 
   if (message.includes("rate limit") || message.includes("too many")) {
-    return "অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।";
+    return "auth.pw.rateLimited";
   }
 
   if (message.includes("network") || message.includes("fetch")) {
-    return "ইন্টারনেট সংযোগে সমস্যা হয়েছে। সংযোগ চেক করে আবার চেষ্টা করুন।";
+    return "auth.pw.networkError";
   }
 
   if (message.includes("weak") || message.includes("password")) {
-    return `পাসওয়ার্ডটি যথেষ্ট শক্তিশালী নয়। অন্তত ${MIN_PASSWORD_LENGTH} অক্ষর ব্যবহার করুন।`;
+    return "auth.pw.weakPassword";
   }
 
   if (
@@ -79,7 +86,7 @@ export function getUpdatePasswordErrorMessage(error: unknown) {
     message.includes("expired") ||
     message.includes("invalid login")
   ) {
-    return "সেশনটির মেয়াদ শেষ হয়েছে। আবার পাসওয়ার্ড রিসেট লিংক ব্যবহার করুন।";
+    return "auth.pw.sessionExpired";
   }
 
   return getErrorMessage(error);
@@ -95,21 +102,21 @@ export function validatePasswordForm({
   oldPassword: string;
   newPassword: string;
   confirmPassword: string;
-}) {
+}): AppMessageKey | null {
   if (!isRecoveryMode && !oldPassword) {
-    return "বর্তমান পাসওয়ার্ড দিতে হবে।";
+    return "auth.pw.currentRequired";
   }
 
   if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    return `নতুন পাসওয়ার্ড অন্তত ${MIN_PASSWORD_LENGTH} অক্ষরের হতে হবে।`;
+    return "auth.pw.minCharacters";
   }
 
   if (newPassword !== confirmPassword) {
-    return "নতুন পাসওয়ার্ড দুটি মিলছে না। অনুগ্রহ করে চেক করুন।";
+    return "auth.pw.mismatch";
   }
 
   if (!isRecoveryMode && oldPassword === newPassword) {
-    return "বর্তমান পাসওয়ার্ড এবং নতুন পাসওয়ার্ড একই হতে পারবে না।";
+    return "auth.pw.sameAsCurrent";
   }
 
   return null;

@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabase';
 import { PASSWORD_RECOVERY_REDIRECT_PATH } from '../utils/passwordRecovery';
 import { hasRecentPasswordRecoverySession } from '../utils/passwordRecoverySession';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 function getProviderError(): string | null {
   const query = new URLSearchParams(window.location.search);
@@ -14,6 +15,7 @@ function getProviderError(): string | null {
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -55,10 +57,10 @@ export default function AuthCallback() {
   if (failed) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-app text-text-primary p-6 text-center">
-        <h1 className="text-xl font-bold mb-2">গুগল লগইন সম্পন্ন হয়নি</h1>
-        <p className="text-sm text-text-secondary mb-6">আবার চেষ্টা করুন অথবা ইমেইল দিয়ে লগ ইন করুন।</p>
+        <h1 className="text-xl font-bold mb-2">{t('auth.callback.failedTitle')}</h1>
+        <p className="text-sm text-text-secondary mb-6">{t('auth.callback.failedBody')}</p>
         <Link to="/auth/login" className="rounded-xl bg-primary px-5 py-3 font-medium text-primary-foreground">
-          লগ ইন পেজে ফিরে যান
+          {t('auth.callback.backToLogin')}
         </Link>
       </main>
     );
@@ -68,7 +70,7 @@ export default function AuthCallback() {
     <main className="min-h-screen flex items-center justify-center bg-app text-text-primary p-6" role="status" aria-live="polite">
       <div className="flex items-center gap-3 text-sm">
         <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-        <span>লগইন সম্পন্ন হচ্ছে...</span>
+        <span>{t('auth.callback.completing')}</span>
       </div>
     </main>
   );

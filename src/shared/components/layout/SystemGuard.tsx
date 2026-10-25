@@ -32,7 +32,7 @@ interface SystemGuardProps {
 }
 
 export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [dismissedNoticeId, setDismissedNoticeId] = useLocalStorage<string | null>(STORAGE_KEYS.DISMISSED_NOTICE, null);
 
   const { data: configs, isLoading } = useQuery<SystemConfig[]>({
@@ -93,8 +93,8 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center fixed inset-0 z-[9999] bg-app text-text-primary">
         <Wrench className="w-16 h-16 text-text-secondary mb-6" />
-        <h1 className="text-3xl font-bold mb-4">সিস্টেম আপডেট চলছে</h1>
-        <p className="text-lg text-text-secondary">{maintenance.message || "পরোখ-এর সার্ভারে কিছু গুরুত্বপূর্ণ কাজ চলছে।"}</p>
+        <h1 className="text-3xl font-bold mb-4">{t('system.maintenanceTitle')}</h1>
+        <p className="text-lg text-text-secondary">{maintenance.message || t('system.maintenanceFallback')}</p>
       </div>
     );
   }
@@ -103,9 +103,9 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center fixed inset-0 z-[9999] bg-app text-text-primary">
         <AlertTriangle className="w-16 h-16 text-text-secondary mb-6" />
-        <h1 className="text-3xl font-bold mb-4">নতুন আপডেট এভেইলেবল!</h1>
+        <h1 className="text-3xl font-bold mb-4">{t('system.forceUpdateTitle')}</h1>
         <button onClick={handleUpdate} className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium bg-primary text-primary-foreground transition-opacity hover:opacity-90">
-          <RefreshCw className="w-5 h-5" /> আপডেট করুন
+          <RefreshCw className="w-5 h-5" /> {t('system.updateNow')}
         </button>
       </div>
     );
@@ -117,7 +117,7 @@ export const SystemGuard: React.FC<SystemGuardProps> = ({ children }) => {
         <div className="px-4 py-2.5 flex items-center justify-between z-50 relative shadow-md bg-primary text-primary-foreground">
           <div className="flex-1 text-sm">
             <strong>{globalNotice.title}:</strong> {globalNotice.message}
-            {globalNotice.action_link && <a href={globalNotice.action_link} className="underline ml-2 hover:opacity-80">বিস্তারিত</a>}
+            {globalNotice.action_link && <a href={globalNotice.action_link} className="underline ml-2 hover:opacity-80">{t('system.noticeDetails')}</a>}
           </div>
           <button onClick={() => currentNoticeId && setDismissedNoticeId(currentNoticeId)} className="p-1 hover:bg-black/10 rounded transition-colors">
             <X className="w-4 h-4" />

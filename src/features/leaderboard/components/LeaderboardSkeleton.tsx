@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const SkeletonBlock: React.FC<{ className?: string }> = ({ className = '' }) => (
@@ -43,6 +44,7 @@ type LeaderboardSkeletonProps = {
 };
 
 const LeaderboardSkeleton: React.FC<LeaderboardSkeletonProps> = ({ rowsOnly = false }) => {
+  const { t } = useLanguage();
   if (rowsOnly) {
     return (
       <div className="space-y-2.5">
@@ -63,7 +65,7 @@ const LeaderboardSkeleton: React.FC<LeaderboardSkeletonProps> = ({ rowsOnly = fa
         <div className="relative mx-auto flex max-w-md items-center justify-between">
           <button
             type="button"
-            aria-label="Previous league"
+            aria-label={t('leaderboard.previousLeague')}
             className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary/50"
             disabled
           >
@@ -103,7 +105,7 @@ const LeaderboardSkeleton: React.FC<LeaderboardSkeletonProps> = ({ rowsOnly = fa
 
           <button
             type="button"
-            aria-label="Next league"
+            aria-label={t('leaderboard.nextLeague')}
             className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary/70"
             disabled
           >

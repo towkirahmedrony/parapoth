@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Copy, Share2, Check, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 
@@ -9,6 +10,7 @@ interface ReferralHeroProps {
 }
 
 export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, refereeBonus = 100 }) => {
+  const { t } = useLanguage();
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -46,13 +48,13 @@ export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, ref
       try {
         const referralLink = `${window.location.origin}/register?ref=${code}`;
         await navigator.share({
-          title: 'পরোখে জয়েন করুন (Join Porokh)',
-          text: `আমার লিংক দিয়ে পরোখে অ্যাকাউন্ট খুললে আপনি পেয়ে যাবেন ${refereeBonus} বোনাস লার্নিং কয়েন!`,
+          title: t('referral.shareTitle'),
+          text: t('referral.shareText', { bonus: refereeBonus }),
           url: referralLink,
         });
       } catch (err) {}
     }
-  }, [code, refereeBonus]);
+  }, [code, refereeBonus, t]);
 
   if (isLoading) {
     return <div className="h-32 rounded-xl animate-pulse bg-secondary" />;
@@ -63,9 +65,9 @@ export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, ref
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         
         <div className="flex-1">
-          <h2 className="text-lg font-bold mb-1 text-text-primary">আপনার ইনভাইট লিংক</h2>
+          <h2 className="text-lg font-bold mb-1 text-text-primary">{t('referral.inviteLinkTitle')}</h2>
           <p className="text-xs text-text-secondary leading-relaxed max-w-sm">
-            আপনার লিংকটি বন্ধুদের সাথে শেয়ার করুন। তারা অ্যাকাউন্ট ভেরিফাই করলেই আপনারা দুজনেই কয়েন পাবেন।
+            {t('referral.inviteLinkDesc')}
           </p>
         </div>
 
@@ -82,7 +84,7 @@ export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, ref
               className="flex-1 px-2 h-8 flex items-center justify-center gap-1.5 text-primary hover:bg-surface border-border-color text-xs rounded-md focus:ring-focus-ring"
             >
               {copiedCode ? <Check size={14} /> : <Copy size={14} />}
-              <span className="hidden sm:inline">{copiedCode ? 'কপি হয়েছে' : 'কোড'}</span>
+              <span className="hidden sm:inline">{copiedCode ? t('referral.copied') : t('referral.code')}</span>
             </Button>
 
             <Button 
@@ -92,7 +94,7 @@ export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, ref
               className="flex-1 px-2 h-8 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground hover:opacity-90 font-medium text-xs rounded-md focus:ring-focus-ring"
             >
               {copiedLink ? <Check size={14} /> : <LinkIcon size={14} />}
-              <span className="hidden sm:inline">{copiedLink ? 'কপি হয়েছে' : 'লিংক'}</span>
+              <span className="hidden sm:inline">{copiedLink ? t('referral.copied') : t('referral.link')}</span>
             </Button>
             
             {!!navigator.share && (

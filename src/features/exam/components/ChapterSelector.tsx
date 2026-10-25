@@ -17,7 +17,7 @@ export const ChapterSelector: React.FC<ChapterSelectorProps> = memo(({ isLoading
   return (
     <div className="mb-6 w-full group">
       <label className="text-sm md:text-base font-semibold mb-2.5 flex items-center gap-2 text-text-primary">
-        <Layers size={18} className="opacity-70 group-focus-within:opacity-100 transition-opacity" /> অধ্যায় (ঐচ্ছিক)
+        <Layers size={18} className="opacity-70 group-focus-within:opacity-100 transition-opacity" /> {t('exam.chapterOptional')}
       </label>
       {isLoading ? (
         <Skeleton className="w-full h-[54px] rounded-xl opacity-50" />

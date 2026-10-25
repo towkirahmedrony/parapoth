@@ -12,19 +12,32 @@ import { User, GraduationCap } from 'lucide-react';
 import LanguageSwitcher from '@/shared/components/ui/LanguageSwitcher';
 import { MyPlanCard } from '@/features/access/components/MyPlanCard';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import type { AppMessageKey } from '@/shared/i18n/messages';
 
-const getGenderText = (g?: string) => {
-  if (g === 'Male') return 'ছাত্র';
-  if (g === 'Female') return 'ছাত্রী';
+const getGenderText = (g: string | undefined, t: TranslateFn) => {
+  if (g === 'Male') return t('profile.genderMale');
+  if (g === 'Female') return t('profile.genderFemale');
   return g;
+};
+
+type TranslateFn = (key: AppMessageKey) => string;
+
+const GROUP_LABELS: Record<string, string> = {
+  Science: 'বিজ্ঞান',
+  Business: 'ব্যবসায় শিক্ষা',
+  Humanities: 'মানবিক',
+};
+
+const BOARD_LABELS: Record<string, string> = {
+  Dhaka: 'ঢাকা',
 };
 
 const UserProfile: React.FC = () => {
   const { user: authUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
-  // ডাটাবেজ থেকে সবসময় ফ্রেশ প্রোফাইল ডাটা ফেচ করা
+  // ডাটাবেজ থেকে সবসময় ফ্রেশ প্রোফাইল ডাটা ফেচ করা
   const { data: profileData } = useQuery({
     queryKey: [...QUERY_KEYS.USER_PROFILE, authUser?.id ?? null],
     queryFn: getCurrentUserProfile,
@@ -65,61 +78,61 @@ const UserProfile: React.FC = () => {
         {/* Left Side (Desktop) / Top (Mobile): Account & Personal Details */}
         <div className="lg:col-span-2 space-y-6 order-1">
           
-          <InfoCard title="পার্সোনাল ডিটেইলস" icon={<User size={18} />}>
+          <InfoCard title={t('profile.personalDetails')} icon={<User size={18} />}>
             <InfoRow 
-              label="নাম" 
+              label={t('profile.infoName')}
               value={user?.full_name || user?.user_metadata?.full_name} 
             />
             <InfoRow 
-              label="ইউজারনেম" 
+              label={t('profile.fieldUsername')}
               value={user?.username ? `@${user.username}` : undefined} 
             />
             <InfoRow 
-              label="ইমেইল" 
+              label={t('profile.fieldEmail')}
               value={user?.email || user?.user_metadata?.email} 
               isVerified={user?.is_email_verified || user?.user_metadata?.email_verified} 
             />
             <InfoRow 
-              label="লিঙ্গ" 
-              value={getGenderText(user?.gender)} 
+              label={t('profile.fieldGender')}
+              value={getGenderText(user?.gender, t)}
             />
             <InfoRow 
-              label="জন্ম তারিখ" 
+              label={t('profile.fieldDateOfBirth')}
               value={user?.date_of_birth} 
             />
             <InfoRow 
-              label="অভিভাবকের নম্বর" 
+              label={t('profile.fieldGuardianPhone')}
               value={user?.guardian_phone} 
             />
             <InfoRow 
-              label="ঠিকানা" 
+              label={t('profile.fieldAddress')}
               value={user?.address ? String(user?.address?.full_address || user?.address) : undefined} 
             />
           </InfoCard>
 
-          <InfoCard title="একাডেমিক তথ্য" icon={<GraduationCap size={18} />}>
+          <InfoCard title={t('profile.sectionAcademic')} icon={<GraduationCap size={18} />}>
             <InfoRow 
-              label="প্রতিষ্ঠান" 
+              label={t('profile.fieldInstitution')}
               value={user?.institution} 
             />
             <InfoRow 
-              label="ক্লাস/লেভেল" 
+              label={t('profile.fieldClassInfo')}
               value={user?.class_level} 
             />
             <InfoRow 
-              label="বিভাগ/গ্রুপ" 
-              value={user?.group ? (user.group === 'Science' ? 'বিজ্ঞান' : user.group === 'Business' ? 'ব্যবসায় শিক্ষা' : user.group === 'Humanities' ? 'মানবিক' : user.group) : undefined} 
+              label={t('profile.fieldGroup')}
+              value={user?.group ? (language === 'bn' ? GROUP_LABELS[user.group] ?? user.group : user.group) : undefined}
             />
             <InfoRow 
-              label="ব্যাচ" 
+              label={t('profile.batchInfo')}
               value={user?.batch_year} 
             />
             <InfoRow 
-              label="বোর্ড" 
-              value={user?.education_board ? (user.education_board === 'Dhaka' ? 'ঢাকা' : user.education_board) : undefined} 
+              label={t('profile.boardInfo')}
+              value={user?.education_board ? (language === 'bn' ? BOARD_LABELS[user.education_board] ?? user.education_board : user.education_board) : undefined}
             />
             <InfoRow 
-              label="শিক্ষার লক্ষ্য" 
+              label={t('profile.fieldStudyGoal')}
               value={user?.study_goal} 
             />
           </InfoCard>

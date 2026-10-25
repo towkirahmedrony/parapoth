@@ -9,12 +9,14 @@ import { Subject, BoardExamPaper } from '../types/content';
 import searchEmptyAnim from '@/assets/animations/empty-search.json';
 import { supabase } from '@/shared/lib/supabase';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface BoardExamTabProps {
   onViewChange: (isDetail: boolean) => void;
 }
 
 const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
+  const { t } = useLanguage();
   const [view, setView] = useState<'subject_list' | 'paper_list'>('subject_list');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   
@@ -70,14 +72,14 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
   useEffect(() => {
     if (subjectsError) {
       console.error("Error fetching subjects:", subjectsError);
-      toast.error('বিষয়গুলো লোড করতে সমস্যা হয়েছে।');
+      toast.error(t('exam.subjectsLoadError'));
     }
   }, [subjectsError]);
 
   useEffect(() => {
     if (papersError) {
       console.error("Error fetching exam papers:", papersError);
-      toast.error('প্রশ্নপত্র লোড করতে সমস্যা হয়েছে।');
+      toast.error(t('exam.papersLoadError'));
     }
   }, [papersError]);
 
@@ -166,11 +168,11 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
                   <div className="flex items-center gap-4 text-xs mt-3 text-text-secondary">
                     <div className="flex items-center gap-1.5">
                       <FileText size={14} className="text-primary" />
-                      <span>{paper.total_marks} নম্বর</span>
+                      <span>{paper.total_marks} {t('exam.marks')}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Clock size={14} />
-                      <span>{paper.duration_min} মিনিট</span>
+                      <span>{paper.duration_min} {t('exam.minutes')}</span>
                     </div>
                   </div>
                 </div>
@@ -178,8 +180,8 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
             })
           ) : (
             <EmptyState 
-              message="দুঃখিত! কোনো প্রশ্ন পাওয়া যায়নি"
-              subMessage="দয়া করে অন্য বোর্ড বা সাল নির্বাচন করে আবার চেষ্টা করুন।"
+              message={t('exam.noPapers')}
+              subMessage={t('exam.noPapersHint')}
               animationData={searchEmptyAnim}
             />
           )}

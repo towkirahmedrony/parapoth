@@ -1,5 +1,6 @@
 import React from 'react';
 import { Send, UserPlus, Gift } from 'lucide-react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface HowItWorksProps {
   referrerBonus: number;
@@ -7,27 +8,28 @@ interface HowItWorksProps {
 }
 
 export const HowItWorks: React.FC<HowItWorksProps> = ({ referrerBonus, refereeBonus }) => {
+  const { t } = useLanguage();
   const steps = [
     {
       icon: <Send className="w-5 h-5" />,
-      title: 'লিংক শেয়ার করুন',
-      description: 'বন্ধুদের আপনার ইউনিক লিংক বা কোড পাঠান।',
+      title: t('referral.step1Title'),
+      description: t('referral.step1Desc'),
     },
     {
       icon: <UserPlus className="w-5 h-5" />,
-      title: 'বন্ধুর জয়েনিং',
-      description: 'তারা অ্যাকাউন্ট তৈরি করে ইমেইল ভেরিফাই করবে।',
+      title: t('referral.step2Title'),
+      description: t('referral.step2Desc'),
     },
     {
       icon: <Gift className="w-5 h-5" />,
-      title: 'রিওয়ার্ড অর্জন',
-      description: `আপনি পাবেন ${referrerBonus} কয়েন এবং তারা পাবে ${refereeBonus} কয়েন।`,
+      title: t('referral.step3Title'),
+      description: t('referral.step3Desc', { referrer: referrerBonus, referee: refereeBonus }),
     },
   ];
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-3 px-1 text-text-primary">কীভাবে কাজ করে?</h3>
+      <h3 className="text-sm font-semibold mb-3 px-1 text-text-primary">{t('referral.howItWorks')}</h3>
       <div className="flex overflow-x-auto gap-3 pb-2 snap-x hide-scrollbar">
         {steps.map((step, idx) => (
           <div 

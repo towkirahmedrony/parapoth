@@ -3,6 +3,7 @@ import { Camera, Loader2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '../../../shared/lib/supabase';
 import { PROFILE_DEFAULTS } from '../utils/profileConstants';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface ProfileAvatarEditProps {
   userId?: string;
@@ -11,6 +12,7 @@ interface ProfileAvatarEditProps {
 }
 
 const ProfileAvatarEdit: React.FC<ProfileAvatarEditProps> = ({ userId, currentAvatarUrl, onAvatarUpdate }) => {
+  const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,7 +60,7 @@ const ProfileAvatarEdit: React.FC<ProfileAvatarEditProps> = ({ userId, currentAv
       
     } catch (error) {
       console.error('Upload Error:', error);
-      alert('ছবি আপলোড করতে সমস্যা হয়েছে।');
+  alert(t('profile.photoUploadError'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -95,7 +97,7 @@ const ProfileAvatarEdit: React.FC<ProfileAvatarEditProps> = ({ userId, currentAv
         className="hidden" 
       />
       <p className="text-xs mt-3 font-medium text-primary">
-        {isUploading ? 'আপলোড হচ্ছে...' : 'ছবি পরিবর্তন করতে ট্যাপ করুন'}
+  {isUploading ? t('profile.uploading') : t('profile.tapToChangePhoto')}
       </p>
     </div>
   );

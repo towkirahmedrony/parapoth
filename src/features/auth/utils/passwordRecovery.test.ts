@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  PASSWORD_RECOVERY_PUBLIC_MESSAGE,
+  PASSWORD_RECOVERY_PUBLIC_MESSAGE_KEY,
   PASSWORD_RECOVERY_REDIRECT_PATH,
   requestPasswordRecovery,
 } from './passwordRecovery';
+import { APP_LANGUAGES, APP_MESSAGES } from '@/shared/i18n/messages';
 
 test('recovery calls Supabase Auth directly and uses the public recovery route', async () => {
   const calls: Array<{ email: string; redirectTo: string }> = [];
@@ -21,7 +22,14 @@ test('recovery calls Supabase Auth directly and uses the public recovery route',
     email: 'user@example.com',
     redirectTo: `https://porokhbd.vercel.app${PASSWORD_RECOVERY_REDIRECT_PATH}`,
   }]);
-  assert.equal(PASSWORD_RECOVERY_PUBLIC_MESSAGE.includes('account'), false);
+  // The public copy must never reveal whether an account exists, in any
+  // language: it is shown identically for known and unknown addresses.
+  for (const language of APP_LANGUAGES) {
+    const message = APP_MESSAGES[language][PASSWORD_RECOVERY_PUBLIC_MESSAGE_KEY];
+    assert.equal(message.includes('registered'), false);
+    assert.equal(message.includes('not found'), false);
+    assert.equal(message.length > 0, true);
+  }
 });
 
 test('recovery does not reject or expose Auth errors that could identify an account', async () => {

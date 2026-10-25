@@ -4,6 +4,7 @@ import { MailWarning, ShieldAlert } from "lucide-react";
 import HomeSkeleton from "@/features/dashboard/components/HomeSkeleton";
 
 import { useAuth } from "../hooks/useAuth";
+import { useLanguage } from "@/shared/i18n/LanguageProvider";
 
 interface PermissionGuardProps {
   children: ReactNode;
@@ -16,6 +17,8 @@ function PermissionGuardLoader() {
 }
 
 function EmailVerificationRequired({ email }: { email?: string | null }) {
+  const { t } = useLanguage();
+
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center p-6 text-center">
       <div className="mb-6 rounded-full bg-accent/10 p-4">
@@ -23,18 +26,17 @@ function EmailVerificationRequired({ email }: { email?: string | null }) {
       </div>
 
       <h2 className="mb-3 text-2xl font-bold text-text-primary">
-        ইমেইল ভেরিফিকেশন প্রয়োজন
+        {t('auth.verifyEmailRequired')}
       </h2>
 
       <p className="mb-6 max-w-md text-[15px] leading-relaxed text-text-secondary">
-        এগিয়ে যাওয়ার আগে অনুগ্রহ করে আপনার{" "}
+        {t('auth.verifyEmailIntro')}
         {email ? (
           <strong className="break-all text-primary">{email}</strong>
         ) : (
-          "ইমেইল"
-        )}{" "}
-        ইনবক্স চেক করে অ্যাকাউন্টটি ভেরিফাই করুন। ইনবক্সে না পেলে Spam বা Junk
-        ফোল্ডার চেক করুন।
+          t('auth.field.emailWord')
+        )}
+        {t('auth.verifyEmailOutro')}
       </p>
 
       <button
@@ -42,20 +44,20 @@ function EmailVerificationRequired({ email }: { email?: string | null }) {
         onClick={() => window.location.reload()}
         className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-md transition-all hover:opacity-90 active:scale-95"
       >
-        আমি ভেরিফাই করেছি
+        {t('auth.iHaveVerified')}
       </button>
     </div>
   );
 }
 
 function AccessDenied() {
+  const { t } = useLanguage();
+
   return (
     <div className="flex h-[60vh] flex-col items-center justify-center p-4 text-center">
       <ShieldAlert className="mb-4 h-12 w-12 text-accent" aria-hidden="true" />
-      <h2 className="text-xl font-bold text-text-primary">Access Denied</h2>
-      <p className="mt-2 text-text-secondary">
-        You do not have permission to view this page.
-      </p>
+      <h2 className="text-xl font-bold text-text-primary">{t('auth.accessDenied')}</h2>
+      <p className="mt-2 text-text-secondary">{t('auth.noPermission')}</p>
     </div>
   );
 }

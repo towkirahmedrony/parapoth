@@ -57,7 +57,7 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
       <div className="rounded-xl p-4 mb-6 flex items-center gap-4 sticky top-0 z-10 shadow-lg bg-surface-elevated border border-border-color">
         <button 
           onClick={onBack} 
-          aria-label="Go back"
+          aria-label={t('common.back')}
           className="w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-95 bg-secondary border border-border-color text-text-primary hover:opacity-80"
         >
           <ChevronLeft size={22} strokeWidth={2.5} />
@@ -76,7 +76,7 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
           {/* Question Count */}
           <div className="space-y-2">
             <label htmlFor="questionCount" className="text-sm font-medium flex items-center gap-2 text-text-secondary">
-              <FileQuestion size={16} /> প্রশ্ন সংখ্যা
+              <FileQuestion size={16} /> {t('exam.questions')}
             </label>
             <input
               id="questionCount"
@@ -91,7 +91,7 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
           {/* Duration */}
           <div className="space-y-2">
             <label htmlFor="duration" className="text-sm font-medium flex items-center gap-2 text-text-secondary">
-              <Clock size={16} /> সময় (মিনিট)
+              <Clock size={16} /> {t('exam.timeMinutes')}
             </label>
             <input
               id="duration"
@@ -132,7 +132,7 @@ const ExamConfiguration: React.FC<ExamConfigurationProps> = memo(({
         <div className="flex gap-3 p-3 rounded-lg bg-secondary border border-border-color">
           <AlertCircle size={18} className="flex-shrink-0 mt-0.5 text-text-secondary" />
           <p className="text-xs leading-relaxed text-text-primary">
-            ডিফল্ট সেটিংস পরিবর্তন করতে চাইলে উপরের বক্সে লিখুন। প্রস্তুত হলে নিচের বাটনে ক্লিক করুন।
+            {t('exam.settingsHint')}
           </p>
         </div>
       </div>

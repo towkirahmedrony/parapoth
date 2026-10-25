@@ -217,11 +217,11 @@ const AdmissionExamPage: React.FC = () => {
               setAutosaveInvalidated({
                 historyId: shape.response?.data?.details?.exam_history_id ?? null,
               });
-              toast.error('এই এক্সামটি আর চলমান নেই। উত্তর আর সেভ হবে না।');
+              toast.error(t('admission.exam.noLongerActive'));
               return;
             }
 
-            toast.error('খসড়া উত্তর সেভ করা যায়নি।');
+            toast.error(t('admission.exam.draftSaveFailed'));
           },
         }
       );
@@ -343,9 +343,9 @@ const AdmissionExamPage: React.FC = () => {
         <div className="mx-auto min-h-screen w-full max-w-4xl bg-app px-4 py-10">
           <AdmissionState
             variant="error"
-            title="আপনি এই এক্সাম আগেই দিয়েছেন"
-            message="প্রতিটি এক্সাম একজন শিক্ষার্থী একবারই দিতে পারবে।"
-            actionLabel={resultPath ? 'রেজাল্ট দেখুন' : t('admission.backToAdmission')}
+            title={t('admission.exam.alreadyTakenTitle')}
+            message={t('admission.exam.alreadyTakenBody')}
+            actionLabel={resultPath ? t('admission.exam.viewResult') : t('admission.backToAdmission')}
             onAction={() => navigate(resultPath ?? '/admission')}
             secondaryLabel={t('admission.back')}
             onSecondary={() => navigate(-1)}
@@ -361,9 +361,9 @@ const AdmissionExamPage: React.FC = () => {
         <div className="mx-auto min-h-screen w-full max-w-4xl bg-app px-4 py-10">
           <AdmissionState
             variant="error"
-            title="আজকের ফ্রি এক্সাম লিমিট শেষ"
-            message="প্রিমিয়াম প্ল্যান নিলে সীমা ছাড়াই এক্সাম দিতে পারবেন।"
-            actionLabel="প্রিমিয়াম প্ল্যান দেখুন"
+            title={t('admission.exam.freeLimitTitle')}
+            message={t('admission.exam.freeLimitBody')}
+            actionLabel={t('admission.exam.viewPremiumPlan')}
             onAction={() => navigate('/premium')}
             secondaryLabel={t('admission.backToAdmission')}
             onSecondary={() => navigate('/admission')}
@@ -379,13 +379,13 @@ const AdmissionExamPage: React.FC = () => {
             variant="not-found"
             title={
               info.kind === 'not_started'
-                ? 'এক্সাম এখনো শুরু হয়নি'
-                : 'এক্সামের সময় শেষ হয়েছে'
+                ? t('admission.exam.notStartedYet')
+                : t('admission.exam.timeOver')
             }
             message={
               info.kind === 'not_started'
-                ? 'নির্ধারিত সময়ে আবার চেষ্টা করুন।'
-                : 'এই এক্সামের সময়সীমা পার হয়ে গেছে।'
+                ? t('admission.exam.tryAtScheduledTime')
+                : t('admission.exam.timeLimitPassed')
             }
             actionLabel={t('admission.backToAdmission')}
             onAction={() => navigate('/admission')}
@@ -489,7 +489,7 @@ const AdmissionExamPage: React.FC = () => {
 
         {autosaveInvalidated && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/40 bg-surface px-4 py-3 text-xs font-semibold text-accent sm:text-sm">
-            <span>এই এক্সামটি আর চলমান নেই — উত্তর সেভ হচ্ছে না।</span>
+            <span>{t('admission.exam.noSavingBanner')}</span>
             {autosaveInvalidated.historyId && (
               <button
                 type="button"
@@ -498,7 +498,7 @@ const AdmissionExamPage: React.FC = () => {
                 }
                 className="rounded-lg bg-primary px-3 py-1.5 font-bold text-primary-foreground"
               >
-                রেজাল্ট দেখুন
+                {t('admission.exam.viewResult')}
               </button>
             )}
           </div>

@@ -4,6 +4,8 @@ import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { supabase } from "@/shared/lib/supabase";
 import { isValidUsername, normalizeUsername } from "../utils/username";
+import { useLanguage } from "@/shared/i18n/LanguageProvider";
+import type { AppMessageKey } from "@/shared/i18n/messages";
 
 interface RegisterFormProps {
   onSuccess: (email: string) => void;
@@ -23,6 +25,13 @@ type NormalizedRegisterData = {
   username: string;
   email: string;
   password: string;
+};
+
+/** A message is kept as a key plus its interpolation values so the rendered
+ * text always follows the active language. */
+type FormMessage = {
+  key: AppMessageKey;
+  values?: Record<string, string | number>;
 };
 
 const INITIAL_FORM_DATA: RegisterFormData = {
@@ -48,7 +57,7 @@ function normalizeRegisterData(userData: RegisterFormData): NormalizedRegisterDa
   };
 }
 
-function getRegisterErrorMessage(error: unknown): string {
+function getRegisterErrorMessage(error: unknown): FormMessage {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
 
   if (
@@ -56,7 +65,7 @@ function getRegisterErrorMessage(error: unknown): string {
     message.includes("duplicate key value") ||
     (message.includes("username") && message.includes("duplicate"))
   ) {
-    return "এই ইউজারনেমটি আগে থেকেই ব্যবহৃত। অন্য একটি দিন।";
+    return { key: "auth.register.usernameTaken" };
   }
 
   if (
@@ -64,26 +73,27 @@ function getRegisterErrorMessage(error: unknown): string {
     message.includes("already registered") ||
     (message.includes("email") && message.includes("already"))
   ) {
-    return "এই তথ্য দিয়ে অ্যাকাউন্ট তৈরি করা যাচ্ছে না। লগ ইন অথবা পাসওয়ার্ড রিসেট চেষ্টা করুন।";
+    return { key: "auth.register.blocked" };
   }
 
   if (message.includes("valid_username") || message.includes("username")) {
-    return "ইউজারনেমে শুধু ইংরেজি ছোট হাতের অক্ষর, সংখ্যা এবং আন্ডারস্কোর ব্যবহার করা যাবে।";
+    return { key: "auth.register.usernameFormat" };
   }
 
   if (message.includes("password")) {
-    return "পাসওয়ার্ডটি যথেষ্ট শক্তিশালী নয়। অন্তত ৮ অক্ষর ব্যবহার করুন।";
+    return { key: "auth.register.weakPassword", values: { min: MIN_PASSWORD_LENGTH } };
   }
 
-  return "অ্যাকাউন্ট তৈরি করতে সমস্যা হচ্ছে। আবার চেষ্টা করুন।";
+  return { key: "auth.register.failed" };
 }
 
 export default function RegisterForm({
   onSuccess,
   defaultRefCode,
 }: RegisterFormProps) {
+  const { t } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
-  const [customError, setCustomError] = useState<string | null>(null);
+  const [customError, setCustomError] = useState<FormMessage | null>(null);
   const [formData, setFormData] = useState<RegisterFormData>(INITIAL_FORM_DATA);
 
   const registerMutation = useMutation({
@@ -155,52 +165,52 @@ export default function RegisterForm({
     }
   };
 
-  const validateForm = (): string | null => {
+  const validateForm = (): FormMessage | null => {
     const normalizedData = normalizeRegisterData(formData);
     const confirmPassword = formData.confirmPassword;
 
     if (!normalizedData.fullName) {
-      return "পুরো নাম লিখুন।";
+      return { key: "auth.register.nameRequired" };
     }
 
     if (normalizedData.fullName.length < 2) {
-      return "পুরো নাম কমপক্ষে ২ অক্ষরের হতে হবে।";
+      return { key: "auth.register.nameMin" };
     }
 
     if (normalizedData.fullName.length > MAX_FULL_NAME_LENGTH) {
-      return `পুরো নাম ${MAX_FULL_NAME_LENGTH} অক্ষরের বেশি হতে পারবে না।`;
+      return { key: "auth.register.nameMax", values: { max: MAX_FULL_NAME_LENGTH } };
     }
 
     if (!normalizedData.username) {
-      return "ইউজারনেম লিখুন।";
+      return { key: "auth.register.usernameRequired" };
     }
 
     if (normalizedData.username.length < MIN_USERNAME_LENGTH) {
-      return `ইউজারনেম কমপক্ষে ${MIN_USERNAME_LENGTH} অক্ষরের হতে হবে।`;
+      return { key: "auth.register.usernameMin", values: { min: MIN_USERNAME_LENGTH } };
     }
 
     if (normalizedData.username.length > MAX_USERNAME_LENGTH) {
-      return `ইউজারনেম ${MAX_USERNAME_LENGTH} অক্ষরের বেশি হতে পারবে না।`;
+      return { key: "auth.register.usernameMax", values: { max: MAX_USERNAME_LENGTH } };
     }
 
     if (!isValidUsername(normalizedData.username)) {
-      return "ইউজারনেমে শুধু ইংরেজি ছোট হাতের অক্ষর, সংখ্যা এবং আন্ডারস্কোর ব্যবহার করা যাবে।";
+      return { key: "auth.register.usernameFormat" };
     }
 
     if (!normalizedData.email) {
-      return "ইমেইল অ্যাড্রেস লিখুন।";
+      return { key: "auth.register.emailRequired" };
     }
 
     if (!EMAIL_PATTERN.test(normalizedData.email)) {
-      return "সঠিক ইমেইল অ্যাড্রেস লিখুন।";
+      return { key: "auth.register.emailInvalid" };
     }
 
     if (normalizedData.password.length < MIN_PASSWORD_LENGTH) {
-      return `পাসওয়ার্ড অন্তত ${MIN_PASSWORD_LENGTH} অক্ষরের হতে হবে।`;
+      return { key: "auth.register.passwordMin", values: { min: MIN_PASSWORD_LENGTH } };
     }
 
     if (normalizedData.password !== confirmPassword) {
-      return "পাসওয়ার্ড দুটি মিলছে না।";
+      return { key: "auth.register.passwordMismatch" };
     }
 
     return null;
@@ -236,7 +246,7 @@ export default function RegisterForm({
             className="mt-0.5 h-4 w-4 flex-shrink-0 text-text-primary"
             aria-hidden="true"
           />
-          <p className="font-medium leading-5">{customError}</p>
+          <p className="font-medium leading-5">{t(customError.key, customError.values)}</p>
         </div>
       )}
 
@@ -249,7 +259,7 @@ export default function RegisterForm({
           maxLength={MAX_FULL_NAME_LENGTH}
           disabled={isPending}
           className={inputClasses}
-          placeholder="পুরো নাম"
+          placeholder={t('auth.field.fullName')}
           value={formData.fullName}
           onChange={(event) => updateField("fullName", event.target.value)}
           aria-invalid={Boolean(customError)}
@@ -267,7 +277,7 @@ export default function RegisterForm({
           maxLength={MAX_USERNAME_LENGTH}
           disabled={isPending}
           className={`${inputClasses} lowercase`}
-          placeholder="ইউজারনেম (ছোট হাতের অক্ষর ও সংখ্যা)"
+          placeholder={t('auth.register.usernamePlaceholder')}
           value={formData.username}
           onChange={(event) => updateField("username", event.target.value)}
           aria-invalid={Boolean(customError)}
@@ -282,7 +292,7 @@ export default function RegisterForm({
           inputMode="email"
           disabled={isPending}
           className={inputClasses}
-          placeholder="ইমেইল অ্যাড্রেস"
+          placeholder={t('auth.field.email')}
           value={formData.email}
           onChange={(event) => updateField("email", event.target.value)}
           aria-invalid={Boolean(customError)}
@@ -298,7 +308,7 @@ export default function RegisterForm({
             autoComplete="new-password"
             disabled={isPending}
             className={`${inputClasses} pr-12`}
-            placeholder={`পাসওয়ার্ড (অন্তত ${MIN_PASSWORD_LENGTH} অক্ষরের)`}
+            placeholder={t('auth.register.passwordPlaceholder', { min: MIN_PASSWORD_LENGTH })}
             value={formData.password}
             onChange={(event) => updateField("password", event.target.value)}
             aria-invalid={Boolean(customError)}
@@ -310,7 +320,7 @@ export default function RegisterForm({
             disabled={isPending}
             onClick={() => setShowPassword((prev) => !prev)}
             className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-text-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed"
-            aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"}
+            aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPasswordAlt')}
             aria-pressed={showPassword}
           >
             {showPassword ? (
@@ -329,7 +339,7 @@ export default function RegisterForm({
           autoComplete="new-password"
           disabled={isPending}
           className={inputClasses}
-          placeholder="পাসওয়ার্ড নিশ্চিত করুন"
+          placeholder={t('auth.field.confirmPassword')}
           value={formData.confirmPassword}
           onChange={(event) => updateField("confirmPassword", event.target.value)}
           aria-invalid={Boolean(customError)}
@@ -344,10 +354,10 @@ export default function RegisterForm({
           {isPending ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-              <span>সাইন আপ...</span>
+              <span>{t('auth.signingUp')}</span>
             </>
           ) : (
-            "সাইন আপ"
+            t('auth.signUp')
           )}
         </button>
       </form>

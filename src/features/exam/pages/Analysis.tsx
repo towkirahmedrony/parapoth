@@ -20,6 +20,9 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import type { AppMessageKey } from '@/shared/i18n/messages';
+
+type TranslateFn = (key: AppMessageKey) => string;
 
 type ResultDetailItem = {
   question_id: string;
@@ -77,15 +80,12 @@ const getSafeDetailsJson = (result: any) => {
   return {};
 };
 
-const getStatusText = (item: ResultDetailItem, language: 'bn' | 'en') => {
-  const labels = language === 'bn'
-    ? { missing: 'প্রশ্ন পাওয়া যায়নি', skipped: 'স্কিপ', correct: 'সঠিক', wrong: 'ভুল', unknown: 'অজানা' }
-    : { missing: 'Question not found', skipped: 'Skipped', correct: 'Correct', wrong: 'Wrong', unknown: 'Unknown' };
-  if (item.status === 'question_not_found') return labels.missing;
-  if (item.status === 'skipped' || item.is_correct === null) return labels.skipped;
-  if (item.is_correct === true || item.status === 'correct') return labels.correct;
-  if (item.is_correct === false || item.status === 'wrong') return labels.wrong;
-  return labels.unknown;
+const getStatusText = (item: ResultDetailItem, t: TranslateFn) => {
+  if (item.status === 'question_not_found') return t('analysis.questionNotFound');
+  if (item.status === 'skipped' || item.is_correct === null) return t('analysis.skipped');
+  if (item.is_correct === true || item.status === 'correct') return t('analysis.correct');
+  if (item.is_correct === false || item.status === 'wrong') return t('analysis.wrong');
+  return t('analysis.unknown');
 };
 
 const getStatusIcon = (item: ResultDetailItem) => {
@@ -125,7 +125,7 @@ const getStatusCardClass = (item: ResultDetailItem) => {
 };
 
 const Analysis: React.FC = () => {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -181,11 +181,11 @@ const Analysis: React.FC = () => {
             return;
           }
 
-          toast.error('ফলাফল পাওয়া যায়নি!');
+          toast.error(t('exam.resultsLoadFailed'));
           navigate('/dashboard/home', { replace: true });
         } catch {
           if (!cancelled) {
-            toast.error('ফলাফল লোড করতে সমস্যা হয়েছে!');
+            toast.error(t('exam.resultsLoadError'));
             navigate('/dashboard/home', { replace: true });
           }
         }
@@ -199,7 +199,7 @@ const Analysis: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [result, id, navigate]);
+  }, [result, id, navigate, t]);
 
   const reportMutation = useMutation({
     mutationFn: async (payload: ModalReportPayload) => {
@@ -207,10 +207,10 @@ const Analysis: React.FC = () => {
       return response.data;
     },
     onSuccess: () => {
-      toast.success('রিপোর্ট সফলভাবে জমা দেওয়া হয়েছে!');
+      toast.success(t('exam.reportSubmitted'));
     },
     onError: () => {
-      toast.error('সার্ভার এরর! রিপোর্ট জমা দেওয়া যায়নি।');
+      toast.error(t('exam.reportSubmitFailed'));
     },
   });
 
@@ -220,10 +220,10 @@ const Analysis: React.FC = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      toast.success(data?.message || 'বুকমার্ক আপডেট হয়েছে!');
+      toast.success(data?.message || t('exam.bookmarkUpdated'));
     },
     onError: () => {
-      toast.error('সার্ভার এরর! বুকমার্ক আপডেট করা যায়নি।');
+      toast.error(t('exam.bookmarkFailed'));
     },
   });
 
@@ -349,7 +349,7 @@ const Analysis: React.FC = () => {
           </div>
 
           <h2 className="text-xl md:text-2xl font-bold mb-6 font-['Hind_Siliguri'] text-text-primary">
-            পরীক্ষার ফলাফল
+            {t('analysis.title')}
           </h2>
 
           <div className="grid grid-cols-3 gap-3 md:gap-5 mb-6">
@@ -413,9 +413,9 @@ const Analysis: React.FC = () => {
         ) : resultDetails.length > 0 ? (
           <>
             <div className="rounded-2xl border border-border-color bg-card-bg p-4">
-              <h3 className="font-bold text-lg mb-1">উত্তরের সংক্ষিপ্ত বিস্তারিত</h3>
+              <h3 className="font-bold text-lg mb-1">{t('analysis.answerSummaryTitle')}</h3>
               <p className="text-sm text-text-secondary opacity-80">
-                এই পরীক্ষার প্রশ্নের পূর্ণ লেখা এখন পাওয়া যাচ্ছে না, তাই এখানে উত্তর-স্ট্যাটাস দেখানো হচ্ছে।
+                {t('analysis.detailsUnavailable')}
               </p>
             </div>
 
@@ -429,8 +429,8 @@ const Analysis: React.FC = () => {
               const selectedAnswerText = item.selected_option_text?.trim()
                 ? item.selected_option_text
                 : hasSelectedOption
-                  ? 'নির্বাচিত উত্তরটি সংরক্ষিত আছে, তবে প্রশ্নের বিবরণ পাওয়া যাচ্ছে না।'
-                  : 'উত্তর দেওয়া হয়নি';
+                  ? t('analysis.answerSavedNoDetails')
+                  : t('analysis.notAnswered')
 
               const correctAnswerText = showCorrectAnswers
                 ? item.correct_option_text?.trim() || null
@@ -453,7 +453,7 @@ const Analysis: React.FC = () => {
 
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-color bg-card-bg text-sm font-bold">
                       {getStatusIcon(item)}
-                      <span>{getStatusText(item, language)}</span>
+              {getStatusText(item, t)}
                     </div>
                   </div>
 

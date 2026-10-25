@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Search, ChevronDown, ChevronLeft, Calendar, Building2 } from 'lucide-react';
 import { Subject } from '../types/content';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface BoardExamFilterProps {
   subject: Subject;
@@ -22,6 +23,21 @@ const BOARDS = [
 
 const YEARS = ['2025', '2024', '2023', '2022', '2021'] as const;
 
+// English display labels for the Bangla board values stored in the data.
+const BOARD_LABELS_EN: Record<string, string> = {
+  'ঢাকা বোর্ড': 'Dhaka Board',
+  'রাজশাহী বোর্ড': 'Rajshahi Board',
+  'কুমিল্লা বোর্ড': 'Cumilla Board',
+  'যশোর বোর্ড': 'Jashore Board',
+  'চট্টগ্রাম বোর্ড': 'Chittagong Board',
+  'বরিশাল বোর্ড': 'Barishal Board',
+  ' সিলেট বোর্ড': 'Sylhet Board',
+  'দিনাজপুর বোর্ড': 'Dinajpur Board',
+  'ময়মনসিংহ বোর্ড': 'Mymensingh Board',
+  'মাদ্রাসা বোর্ড': 'Madrasah Board',
+  'কারিগরি বোর্ড': 'Technical Board',
+};
+
 const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
   subject,
   selectedBoard,
@@ -32,6 +48,8 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
   setSearchQuery,
   onBack
 }) => {
+  const { t, language } = useLanguage();
+
   return (
     <div className="space-y-4">
       
@@ -40,7 +58,7 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
         <button 
           onClick={onBack} 
           className="w-10 h-10 flex items-center justify-center rounded-full border transition-all active:scale-95 bg-surface-elevated border-border-color text-text-secondary hover:bg-surface hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-focus-ring"
-          aria-label="Go back"
+          aria-label={t('common.back')}
         >
           <ChevronLeft size={22} strokeWidth={2.5} />
         </button>
@@ -49,7 +67,7 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
             {subject.name_bn}
           </h2>
           <p className="text-xs text-text-secondary">
-            বোর্ড প্রশ্ন খুঁজুন
+            {t('exam.searchBoardQuestions')}
           </p>
         </div>
       </div>
@@ -68,9 +86,9 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
               onChange={(e) => setSelectedBoard(e.target.value)}
               className="w-full text-sm rounded-lg pl-9 pr-8 py-3 border appearance-none outline-none transition-all bg-input-bg text-text-primary border-input-border focus:ring-1 focus:border-focus-ring focus:ring-focus-ring"
             >
-              <option value="">সকল বোর্ড</option>
+              <option value="">{t('exam.allBoards')}</option>
               {BOARDS.map(board => (
-                <option key={board} value={board}>{board}</option>
+                <option key={board} value={board}>{language === 'en' ? BOARD_LABELS_EN[board] ?? board : board}</option>
               ))}
             </select>
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-text-secondary">
@@ -88,7 +106,7 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
               onChange={(e) => setSelectedYear(e.target.value)}
               className="w-full text-sm rounded-lg pl-9 pr-8 py-3 border appearance-none outline-none transition-all bg-input-bg text-text-primary border-input-border focus:ring-1 focus:border-focus-ring focus:ring-focus-ring"
             >
-              <option value="">সকল সাল</option>
+              <option value="">{t('exam.allYears')}</option>
               {YEARS.map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
@@ -106,7 +124,7 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
           </div>
           <input
             type="text"
-            placeholder="প্রশ্নপত্র খুঁজুন... (যেমন: ঢাকা বোর্ড ২০২৩)"
+            placeholder={t('exam.searchPapers')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-lg pl-10 pr-4 py-3 border outline-none transition-all bg-input-bg text-text-primary border-input-border focus:ring-1 focus:border-focus-ring focus:ring-focus-ring placeholder:text-text-secondary"

@@ -1,4 +1,7 @@
+import type { AppLanguage } from '@/shared/i18n/messages';
+
 export const calculateXP = (correct: number, wrong: number, total: number): number => {
+
   const correctXP = correct * 2.5;
   const penaltyXP = wrong * 0.5;
   
@@ -16,7 +19,7 @@ export const calculateXP = (correct: number, wrong: number, total: number): numb
   return Math.max(0, parseFloat(totalXP.toFixed(2)));
 };
 
-export const formatBoardRef = (ref?: string) => {
+export const formatBoardRef = (ref?: string, language: AppLanguage = 'bn') => {
   if (!ref) return null;
   // Simple mapping for short forms
   const map: Record<string, string> = {
@@ -39,7 +42,8 @@ export const formatBoardRef = (ref?: string) => {
   const boardName = parts.slice(0, parts.length - 1).join(' ');
 
   if (map[boardName]) {
-    return `${map[boardName]}:${year.slice(-2)}`; // 2024 -> 24
+    const short = language === 'en' ? boardName.replace(/ Board$/, '') : map[boardName];
+    return `${short}:${year.slice(-2)}`; // 2024 -> 24
   }
   return ref;
 };

@@ -11,9 +11,11 @@ import {
   normalizeRecoveryReason,
   readPasswordRecoveryErrorFromUrl,
 } from "../utils/passwordRecovery";
+import type { AppMessageKey } from "@/shared/i18n/messages";
 import {
   clearRecoveryUrlTokens,
   DASHBOARD_HOME_PATH,
+  MessageError,
   getRecoveryParams,
   getUpdatePasswordErrorMessage,
   LOGIN_PATH,
@@ -43,8 +45,8 @@ export function useChangePasswordController() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [error, setError] = useState<AppMessageKey | null>(null);
+  const [successMessage, setSuccessMessage] = useState<AppMessageKey | null>(null);
 
   const isSuccess = Boolean(successMessage);
   const errorId = error ? "change-password-error" : undefined;
@@ -230,7 +232,7 @@ export function useChangePasswordController() {
     } = await supabase.auth.getUser();
 
     if (userError || !user?.email) {
-      throw new Error("ইউজারের তথ্য পাওয়া যায়নি। আবার লগইন করুন।");
+      throw new MessageError("auth.pw.userNotFound");
     }
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -239,7 +241,7 @@ export function useChangePasswordController() {
     });
 
     if (signInError) {
-      throw new Error("আপনার বর্তমান পাসওয়ার্ডটি ভুল হয়েছে।");
+      throw new MessageError("auth.pw.wrongCurrentPassword");
     }
   };
 
@@ -291,9 +293,7 @@ export function useChangePasswordController() {
       clearRecoveryUrlTokens();
 
       setSuccessMessage(
-        isRecoveryMode
-          ? "পাসওয়ার্ড সফলভাবে রিসেট হয়েছে। এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন।"
-          : "পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে।"
+        isRecoveryMode ? "auth.pw.resetSuccess" : "auth.pw.changedSuccess"
       );
     } catch (submitError: unknown) {
       setError(getUpdatePasswordErrorMessage(submitError));

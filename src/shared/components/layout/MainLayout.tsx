@@ -6,11 +6,7 @@ import BottomNav from './BottomNav';
 import { requestNotificationPermission } from '@/features/notifications/services/notificationService';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
-
-const SITE_TITLE = 'Porokh — SSC HSC MCQ, Model Test & Exam Preparation';
-
-const SITE_DESCRIPTION =
-  'Porokh (পরোখ) হলো SSC, HSC ও board exam প্রস্তুতির জন্য MCQ practice, CQ exam, model test, question bank, suggestion ও progress tracking platform.';
+import type { AppMessageKey } from '@/shared/i18n/messages';
 
 const updateMetaTag = (
   selector: string,
@@ -29,20 +25,26 @@ const updateMetaTag = (
   tag.setAttribute('content', content);
 };
 
-const updateSeoMeta = (pathname: string) => {
+const updateSeoMeta = (
+  pathname: string,
+  t: (key: AppMessageKey) => string
+) => {
   const routeTitleMap: Record<string, string> = {
-    '/dashboard': SITE_TITLE,
-    '/dashboard/home': SITE_TITLE,
-    '/dashboard/question-bank': 'Question Bank - SSC HSC MCQ Practice | Porokh',
-    '/dashboard/arena': 'Online Exam Arena - MCQ Model Test | Porokh',
-    '/dashboard/leaderboard': 'Leaderboard - Exam Practice Ranking | Porokh',
-    '/dashboard/progress': 'Progress Tracking - Exam Preparation | Porokh',
-    '/dashboard/streak': 'Daily Study Streak - Porokh',
+    '/dashboard': t('meta.dashboardTitle'),
+    '/dashboard/home': t('meta.dashboardTitle'),
+    '/dashboard/question-bank': t('meta.route.questionBank'),
+    '/bank': t('meta.route.questionBank'),
+    '/dashboard/arena': t('meta.route.arena'),
+    '/exam/live': t('meta.route.arena'),
+    '/dashboard/leaderboard': t('meta.route.leaderboard'),
+    '/dashboard/progress': t('meta.route.progress'),
+    '/progress': t('meta.route.progress'),
+    '/dashboard/streak': t('meta.route.streak'),
   };
 
   const title = pathname.startsWith('/admission')
-    ? 'Admission Preparation - Model Tests & Past Exams | Porokh'
-    : routeTitleMap[pathname] ?? SITE_TITLE;
+    ? t('meta.route.admission')
+    : routeTitleMap[pathname] ?? t('meta.dashboardTitle');
 
   document.title = title;
 
@@ -50,14 +52,14 @@ const updateSeoMeta = (pathname: string) => {
     'meta[name="description"]',
     'name',
     'description',
-    SITE_DESCRIPTION
+    t('meta.description')
   );
 
   updateMetaTag(
     'meta[name="keywords"]',
     'name',
     'keywords',
-    'Porokh, পরোখ, SSC MCQ, HSC MCQ, MCQ practice, CQ exam, model test, question bank, board exam, online exam preparation, suggestion, leaderboard'
+    t('meta.keywords')
   );
 
   updateMetaTag('meta[property="og:title"]', 'property', 'og:title', title);
@@ -66,7 +68,7 @@ const updateSeoMeta = (pathname: string) => {
     'meta[property="og:description"]',
     'property',
     'og:description',
-    SITE_DESCRIPTION
+    t('meta.description')
   );
 
   updateMetaTag(
@@ -82,18 +84,18 @@ const updateSeoMeta = (pathname: string) => {
     'meta[name="twitter:description"]',
     'name',
     'twitter:description',
-    SITE_DESCRIPTION
+    t('meta.description')
   );
 };
 
 export const MainLayout: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   useEffect(() => {
-    updateSeoMeta(location.pathname);
-  }, [location.pathname]);
+    updateSeoMeta(location.pathname, t);
+  }, [location.pathname, language, t]);
 
   useEffect(() => {
     if (user?.id) {

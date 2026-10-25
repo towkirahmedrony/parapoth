@@ -352,7 +352,7 @@ const Checkout: React.FC = () => {
                   <Input
                     id="trx-id"
                     type="text"
-                    placeholder="Ex: A1B2C3D4"
+                    placeholder={t('subscription.trxPlaceholder')}
                     value={trxId}
                     onChange={(event) => setTrxId(event.target.value.toUpperCase())}
                     className="uppercase placeholder:normal-case"

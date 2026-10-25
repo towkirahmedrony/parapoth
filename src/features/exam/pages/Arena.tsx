@@ -235,10 +235,10 @@ const Arena: React.FC = () => {
       await apiClient.post('/reports', reportData);
     },
     onSuccess: () => {
-      toast.success('রিপোর্ট সফলভাবে জমা দেওয়া হয়েছে!');
+      toast.success(t('exam.reportSubmitted'));
     },
     onError: () => {
-      toast.error('রিপোর্ট সাবমিট করতে সমস্যা হয়েছে!');
+      toast.error(t('exam.reportSubmitError'));
     },
   });
 
@@ -259,10 +259,10 @@ const Arena: React.FC = () => {
           <AlertCircle size={40} className="text-text-primary" />
         </div>
 
-        <h2 className="text-2xl font-bold mb-3 text-text-primary">প্রশ্ন পাওয়া যায়নি</h2>
+        <h2 className="text-2xl font-bold mb-3 text-text-primary">{t('exam.noQuestionsTitle')}</h2>
 
         <p className="mb-8 opacity-70 text-text-secondary">
-          দুঃখিত, এই বিষয়ের জন্য পর্যাপ্ত প্রশ্ন এই মুহূর্তে নেই।
+          {t('exam.noQuestionsBody')}
         </p>
 
         <button
@@ -270,7 +270,7 @@ const Arena: React.FC = () => {
           onClick={() => navigate(-1)}
           className="px-6 py-3 rounded-xl font-medium transition-all active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          ফিরে যান
+          {t('common.back')}
         </button>
       </div>
     );
@@ -283,7 +283,7 @@ const Arena: React.FC = () => {
   return (
     <div className="min-h-screen pb-32 lg:pb-10 bg-app text-text-primary">
       <ExamHeader
-        title="মডেল টেস্ট লাইভ"
+        title={t('exam.modelTestLive')}
         onBack={() => navigate(-1)}
         rightContent={
           <div className="flex items-center gap-4">
@@ -319,11 +319,11 @@ const Arena: React.FC = () => {
 
               <div className="p-6 rounded-2xl border shadow-sm bg-card-bg border-card-border">
                 <h3 className="font-bold text-lg mb-4 font-['Hind_Siliguri'] text-text-primary">
-                  অগ্রগতি
+              {t('exam.progress')}
                 </h3>
 
                 <div className="flex justify-between text-sm mb-2 opacity-80 text-text-primary">
-                  <span>উত্তর দেওয়া হয়েছে</span>
+              <span>{t('exam.answered')}</span>
                   <span className="font-bold">
                     {answeredCount} / {questions.length}
                   </span>
@@ -344,7 +344,7 @@ const Arena: React.FC = () => {
                 className="w-full flex items-center justify-center gap-3 font-bold py-4 rounded-xl disabled:opacity-50 transition-all shadow-md hover:shadow-lg active:scale-95 text-lg hover:opacity-90 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <CheckCircle size={22} />
-                {isSubmitting ? 'জমা দেওয়া হচ্ছে...' : 'উত্তরপত্র জমা দিন'}
+                {isSubmitting ? t('exam.submittingAnswerSheet') : t('exam.submitAnswerSheet')}
               </button>
             </div>
           </div>
@@ -371,7 +371,7 @@ const Arena: React.FC = () => {
           disabled={isSubmitting}
           className="w-full font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all active:scale-95 shadow-sm text-base hover:opacity-90 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          {isSubmitting ? 'জমা দেওয়া হচ্ছে...' : 'উত্তরপত্র জমা দিন'}
+          {isSubmitting ? t('exam.submittingAnswerSheet') : t('exam.submitAnswerSheet')}
         </button>
       </div>
 
@@ -391,8 +391,8 @@ const Arena: React.FC = () => {
       {isConfirmModalOpen && (
         <ConfirmModal
           isOpen={isConfirmModalOpen}
-          title="পরীক্ষা জমাদান"
-          message={`আপনি ${answeredCount} টি প্রশ্নের উত্তর দিয়েছেন। জমা দিতে চান?`}
+        title={t('exam.submitConfirmTitle')}
+          message={t('exam.submitConfirmMessage', { count: answeredCount })}
           onConfirm={() => {
             setIsConfirmModalOpen(false);
             processSubmission();

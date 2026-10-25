@@ -104,7 +104,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   }, [resolvedStatus, t]);
   
   const rawExamRef = question.exam_references ? JSON.stringify(question.exam_references) : question.board_ref;
-  const boardTag = formatBoardRef(rawExamRef || '');
+  const boardTag = formatBoardRef(rawExamRef || '', language);
 
   const questionText = useMemo(() => {
     let text = pickLang(language, question.text_bn, question.text_en) || question.text || '';

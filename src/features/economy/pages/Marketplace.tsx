@@ -22,7 +22,7 @@ const getFeatures = (item: MarketplaceItem, language: string): string[] => {
 };
 
 const Marketplace: React.FC = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { 
     coinBalance, 
     isCoinsLoading, 
@@ -35,20 +35,20 @@ const Marketplace: React.FC = () => {
 
   const handlePurchase = (item: MarketplaceItem) => {
     if (coinBalance < item.price_coins) {
-      setPurchaseError('আপনার পর্যাপ্ত কয়েন নেই!');
+      setPurchaseError(t('marketplace.insufficientCoins'));
       return;
     }
     
-    if (confirm(`আপনি কি ${item.price_coins} কয়েন দিয়ে "${item.title}" কিনতে চান?`)) {
+    if (confirm(t('marketplace.confirmPurchase', { price: item.price_coins, title: item.title }))) {
       setPurchaseError(null);
       purchaseMutation.mutate(item.id, {
         onSuccess: (data: unknown) => {
           const responseData = data as { message?: string };
-          alert(responseData.message || 'ক্রয় সফল হয়েছে! 🎉');
+          alert(responseData.message || t('marketplace.purchaseSuccess'));
         },
         onError: (error: unknown) => {
           const err = error as { response?: { data?: { message?: string } } };
-          setPurchaseError(err.response?.data?.message || 'লেনদেন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
+          setPurchaseError(err.response?.data?.message || t('marketplace.purchaseFailed'));
         }
       });
     }
@@ -59,10 +59,10 @@ const Marketplace: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
         <div>
           <h1 className="text-3xl font-extrabold text-text-primary font-['Hind_Siliguri']">
-            প্রিমিয়াম মার্কেটপ্লেস
+            {t('marketplace.title')}
           </h1>
           <p className="mt-2 text-sm text-text-secondary font-['Hind_Siliguri']">
-            এক্সক্লুসিভ ফিচার আনলক করতে কয়েন ব্যবহার করুন
+            {t('marketplace.subtitle')}
           </p>
         </div>
 
@@ -73,7 +73,7 @@ const Marketplace: React.FC = () => {
             </svg>
           </div>
           <div>
-            <p className="text-[10px] text-text-secondary uppercase tracking-widest font-['Hind_Siliguri']">মোট কয়েন</p>
+            <p className="text-[10px] text-text-secondary uppercase tracking-widest font-['Hind_Siliguri']">{t('marketplace.totalCoins')}</p>
             <p className="text-2xl font-bold text-text-primary">
               {isCoinsLoading ? '...' : coinBalance.toLocaleString()}
             </p>
@@ -92,7 +92,7 @@ const Marketplace: React.FC = () => {
           [1, 2, 3].map(i => <div key={i} className="h-64 rounded-2xl bg-surface animate-pulse border border-border-color" />)
         ) : marketplaceItems.length === 0 ? (
           <div className="col-span-full text-center py-10 text-text-secondary font-['Hind_Siliguri']">
-            মার্কেটপ্লেসে বর্তমানে কোনো আইটেম নেই।
+            {t('marketplace.empty')}
           </div>
         ) : (
           marketplaceItems.map((item: MarketplaceItem) => (
@@ -115,7 +115,7 @@ const Marketplace: React.FC = () => {
                   disabled={purchaseMutation.isPending}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:opacity-90 transition-opacity font-['Hind_Siliguri'] disabled:opacity-50"
                 >
-                  {purchaseMutation.isPending ? 'প্রসেসিং...' : 'কিনুন'}
+                  {purchaseMutation.isPending ? t('marketplace.processing') : t('marketplace.buy')}
                 </button>
               </div>
             </div>

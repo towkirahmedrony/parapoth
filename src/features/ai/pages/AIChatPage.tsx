@@ -30,6 +30,8 @@ import type { Subject } from '../types/ai';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { supabase } from '@/shared/lib/supabase';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
+import { LOCALE_BY_LANGUAGE, type AppLanguage, type AppMessageKey } from '@/shared/i18n/messages';
 
 type ChatRole = 'user' | 'assistant' | 'system';
 type ChatMessageStatus = 'sending' | 'sent' | 'failed';
@@ -106,49 +108,41 @@ const toSafeRole = (role: string | null): ChatRole => {
   return 'assistant';
 };
 
-const getSessionTitle = (sessionTitle: string | null): string => {
-  if (sessionTitle && sessionTitle.trim().length > 0) {
-    return sessionTitle.trim();
-  }
-
-  return 'নতুন AI চ্যাট';
-};
-
-const getSafeErrorMessage = (error: unknown): string => {
+const getSafeErrorMessage = (error: unknown): AppMessageKey => {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
 
     if (message.includes('network') || message.includes('fetch')) {
-      return 'নেটওয়ার্ক সমস্যা হয়েছে। ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।';
+      return 'ai.errorNetwork';
     }
 
     if (message.includes('unauthorized') || message.includes('401')) {
-      return 'আপনার সেশন শেষ হয়ে গেছে। আবার লগইন করে চেষ্টা করুন।';
+      return 'ai.errorSessionExpired';
     }
 
     if (message.includes('quota') || message.includes('limit') || message.includes('429')) {
-      return 'AI ব্যবহারের সীমা সাময়িকভাবে শেষ হয়েছে। একটু পরে আবার চেষ্টা করুন।';
+      return 'ai.errorLimit';
     }
   }
 
-  return 'দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। আবার চেষ্টা করুন।';
+  return 'ai.errorGeneric';
 };
 
-const formatTime = (timestamp: number): string => {
-  return new Intl.DateTimeFormat('bn-BD', {
+const formatTime = (timestamp: number, language: AppLanguage): string => {
+  return new Intl.DateTimeFormat(LOCALE_BY_LANGUAGE[language], {
     hour: 'numeric',
     minute: '2-digit',
   }).format(timestamp);
 };
 
-const formatSessionDate = (value: string | null): string => {
+const formatSessionDate = (value: string | null, language: AppLanguage): string => {
   if (!value) return '';
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) return '';
 
-  return new Intl.DateTimeFormat('bn-BD', {
+  return new Intl.DateTimeFormat(LOCALE_BY_LANGUAGE[language], {
     day: 'numeric',
     month: 'short',
     hour: 'numeric',
@@ -164,7 +158,7 @@ const mapSessionRow = (row: unknown): ChatSession | null => {
 
   return {
     id,
-    title: getSessionTitle(toStringOrNull(row.session_title)),
+    title: toStringOrNull(row.session_title) ?? '',
     subjectId: toStringOrNull(row.subject_id),
     createdAt: toStringOrNull(row.created_at),
     lastActiveAt: toStringOrNull(row.last_active_at),
@@ -243,7 +237,7 @@ const deleteChatSession = async (sessionId: string): Promise<void> => {
 
 const AIChatPage = () => {
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const queryClient = useQueryClient();
 
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
@@ -329,7 +323,7 @@ const AIChatPage = () => {
         {
           id: createId(),
           role: 'assistant',
-          content: data.reply || 'দুঃখিত, কোনো উত্তর পাওয়া যায়নি। আবার চেষ্টা করুন।',
+          content: data.reply || t('ai.noAnswer'),
           status: 'sent',
           createdAt: Date.now(),
         },
@@ -362,7 +356,7 @@ const AIChatPage = () => {
         {
           id: createId(),
           role: 'assistant',
-          content: getSafeErrorMessage(error),
+          content: t(getSafeErrorMessage(error)),
           status: 'sent',
           createdAt: Date.now(),
         },
@@ -575,10 +569,10 @@ const AIChatPage = () => {
 
               <div className="mb-8 text-center">
                 <h2 id="ai-subject-modal-title" className="text-2xl font-bold text-text-primary">
-                  প্যারা সাথী AI
+                  {t('ai.brand')}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  ভালো উত্তর পেতে আগে আপনার পড়ার বিষয়টি নির্বাচন করুন।
+                  {t('ai.selectSubjectHint')}
                 </p>
               </div>
 
@@ -588,10 +582,10 @@ const AIChatPage = () => {
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-semibold text-text-primary">
-                        বিষয় লোড করা যায়নি
+                        {t('ai.subjectsLoadError')}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-text-secondary">
-                        ইন্টারনেট সংযোগ অথবা সার্ভার সমস্যা হতে পারে।
+                        {t('ai.subjectsLoadErrorHint')}
                       </p>
                       <button
                         type="button"
@@ -604,7 +598,7 @@ const AIChatPage = () => {
                         ) : (
                           <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                         )}
-                        আবার চেষ্টা করুন
+                        {t('common.retry')}
                       </button>
                     </div>
                   </div>
@@ -612,7 +606,7 @@ const AIChatPage = () => {
               ) : (
                 <div>
                   <label htmlFor="ai-subject-select" className="mb-2 block text-sm font-semibold text-text-primary">
-                    বিষয় নির্বাচন করুন
+                    {t('ai.selectSubject')}
                   </label>
 
                   <div className="relative">
@@ -624,7 +618,7 @@ const AIChatPage = () => {
                       disabled={isSubjectsLoading}
                     >
                       <option value="" disabled>
-                        {isSubjectsLoading ? 'বিষয় লোড হচ্ছে...' : 'একটি বিষয় বেছে নিন...'}
+                        {isSubjectsLoading ? t('ai.subjectsLoading') : t('ai.chooseSubjectPlaceholder')}
                       </option>
 
                       {subjects.map(subject => (
@@ -642,7 +636,7 @@ const AIChatPage = () => {
 
                   {subjects.length === 0 && !isSubjectsLoading && (
                     <p className="mt-3 text-sm text-text-secondary">
-                      এখনো কোনো AI বিষয় পাওয়া যায়নি।
+                      {t('ai.noSubjects')}
                     </p>
                   )}
                 </div>
@@ -654,7 +648,7 @@ const AIChatPage = () => {
                   onClick={() => setIsSubjectModalOpen(false)}
                   className="mt-6 w-full rounded-2xl border border-border-color bg-secondary px-4 py-3 text-sm font-semibold text-text-primary transition active:scale-[0.99]"
                 >
-                  আগের বিষয় রেখেই চালিয়ে যান
+                  {t('ai.continueWithPrevious')}
                 </button>
               )}
             </div>
@@ -662,7 +656,7 @@ const AIChatPage = () => {
             <div className="flex items-start gap-2 border-t border-border-color bg-surface p-4">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-text-secondary" aria-hidden="true" />
               <p className="text-xs leading-5 text-text-secondary">
-                আপনার নির্বাচিত বিষয়ের উপর ভিত্তি করে উত্তর দেওয়া হবে। গুরুত্বপূর্ণ তথ্য অবশ্যই যাচাই করে নিন।
+                {t('ai.subjectDisclaimer')}
               </p>
             </div>
           </div>
@@ -673,7 +667,7 @@ const AIChatPage = () => {
         <div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-labelledby="ai-history-title">
           <button
             type="button"
-            aria-label="চ্যাট হিস্ট্রি বন্ধ করুন"
+            aria-label={t('ai.closeHistoryAria')}
             className="absolute inset-0 bg-app/75 backdrop-blur-sm"
             onClick={() => setIsHistoryOpen(false)}
           />
@@ -682,17 +676,17 @@ const AIChatPage = () => {
             <div className="flex items-center justify-between border-b border-border-color p-4">
               <div>
                 <h2 id="ai-history-title" className="text-lg font-bold text-text-primary">
-                  AI চ্যাট হিস্ট্রি
+                  {t('ai.historyTitle')}
                 </h2>
                 <p className="text-xs text-text-secondary">
-                  আপনার সংরক্ষিত চ্যাট সেশন
+                  {t('ai.historySubtitle')}
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setIsHistoryOpen(false)}
-                aria-label="চ্যাট হিস্ট্রি বন্ধ করুন"
+                aria-label={t('ai.closeHistoryAria')}
                 className="rounded-2xl p-2 text-text-secondary transition hover:bg-secondary"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -706,7 +700,7 @@ const AIChatPage = () => {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99]"
               >
                 <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                নতুন চ্যাট
+                {t('ai.newChat')}
               </button>
             </div>
 
@@ -726,7 +720,7 @@ const AIChatPage = () => {
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-semibold text-text-primary">
-                        হিস্ট্রি লোড করা যায়নি
+                        {t('ai.historyLoadError')}
                       </p>
                       <button
                         type="button"
@@ -737,7 +731,7 @@ const AIChatPage = () => {
                         {isSessionsFetching && (
                           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                         )}
-                        আবার চেষ্টা করুন
+                        {t('common.retry')}
                       </button>
                     </div>
                   </div>
@@ -746,17 +740,17 @@ const AIChatPage = () => {
                 <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-border-color bg-surface p-6 text-center">
                   <History className="mb-3 h-8 w-8 text-text-secondary" aria-hidden="true" />
                   <p className="text-sm font-semibold text-text-primary">
-                    এখনো কোনো চ্যাট নেই
+                    {t('ai.noChats')}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-text-secondary">
-                    নতুন প্রশ্ন করলে এখানে সেশন দেখা যাবে।
+                    {t('ai.noChatsHint')}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {chatSessions.map(session => {
                     const subjectName = session.subjectId
-                      ? subjectById.get(session.subjectId)?.name_bn
+                      ? pickLang(language, subjectById.get(session.subjectId)?.name_bn ?? null, subjectById.get(session.subjectId)?.name_en ?? null)
                       : null;
 
                     const isActive = activeSessionId === session.id;
@@ -776,14 +770,14 @@ const AIChatPage = () => {
                           className="w-full text-left"
                         >
                           <p className="line-clamp-2 text-sm font-semibold text-text-primary">
-                            {session.title}
+                            {session.title || t('ai.newChatTitle')}
                           </p>
                           <div className="mt-2 flex items-center justify-between gap-2 text-xs text-text-secondary">
                             <span className="truncate">
-                              {subjectName || 'বিষয় নেই'}
+                              {subjectName || t('ai.noSubject')}
                             </span>
                             <span className="shrink-0">
-                              {formatSessionDate(session.lastActiveAt)}
+                              {formatSessionDate(session.lastActiveAt, language)}
                             </span>
                           </div>
                         </button>
@@ -794,7 +788,7 @@ const AIChatPage = () => {
                           className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent opacity-80 transition hover:opacity-100"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          মুছুন
+                          {t('ai.delete')}
                         </button>
                       </div>
                     );
@@ -817,17 +811,17 @@ const AIChatPage = () => {
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 id="delete-session-title" className="text-lg font-bold text-text-primary">
-                  চ্যাট মুছে ফেলবেন?
+                  {t('ai.deleteConfirmTitle')}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  “{sessionToDelete.title}” সেশনটি স্থায়ীভাবে মুছে যাবে।
+                  {t('ai.deleteConfirmBody', { title: sessionToDelete.title || t('ai.newChatTitle') })}
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setSessionToDelete(null)}
-                aria-label="ডিলিট কনফার্মেশন বন্ধ করুন"
+                aria-label={t('ai.closeDeleteAria')}
                 className="rounded-full p-2 text-text-secondary transition hover:bg-secondary"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -836,7 +830,7 @@ const AIChatPage = () => {
 
             {deleteSessionMutation.isError && (
               <div className="mb-4 rounded-2xl border border-border-color bg-surface p-3 text-sm text-accent">
-                চ্যাট মুছতে সমস্যা হয়েছে। আবার চেষ্টা করুন।
+                {t('ai.deleteError')}
               </div>
             )}
 
@@ -847,7 +841,7 @@ const AIChatPage = () => {
                 disabled={deleteSessionMutation.isPending}
                 className="flex-1 rounded-2xl border border-border-color bg-secondary px-4 py-3 text-sm font-semibold text-text-primary transition active:scale-[0.99] disabled:opacity-60"
               >
-                বাতিল
+                {t('common.cancel')}
               </button>
 
               <button
@@ -856,7 +850,7 @@ const AIChatPage = () => {
                 disabled={deleteSessionMutation.isPending}
                 className="flex-1 rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
               >
-                {deleteSessionMutation.isPending ? 'মুছছে...' : 'মুছুন'}
+                {deleteSessionMutation.isPending ? t('ai.deleting') : t('ai.delete')}
               </button>
             </div>
           </div>
@@ -869,7 +863,7 @@ const AIChatPage = () => {
             <button
               type="button"
               onClick={() => setIsHistoryOpen(true)}
-              aria-label="AI চ্যাট হিস্ট্রি খুলুন"
+              aria-label={t('ai.openHistoryAria')}
               className="rounded-2xl p-2.5 text-text-secondary transition hover:bg-secondary active:scale-95"
             >
               <History className="h-5 w-5" aria-hidden="true" />
@@ -878,13 +872,13 @@ const AIChatPage = () => {
             <button
               type="button"
               onClick={() => setIsSubjectModalOpen(true)}
-              aria-label="AI বিষয় নির্বাচন করুন"
+              aria-label={t('ai.chooseSubjectAria')}
               className="min-w-0 rounded-2xl border border-border-color bg-secondary px-3 py-2 text-text-primary transition active:scale-[0.99]"
             >
               <span className="flex min-w-0 items-center gap-2">
                 <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="truncate text-sm font-semibold">
-                  {selectedSubject?.name_bn || 'বিষয় নির্বাচন'}
+                  {pickLang(language, selectedSubject?.name_bn ?? null, selectedSubject?.name_en ?? null) || t('ai.selectSubjectShort')}
                 </span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-text-secondary" aria-hidden="true" />
               </span>
@@ -895,14 +889,14 @@ const AIChatPage = () => {
             <button
               type="button"
               onClick={handleNewChat}
-              aria-label="নতুন AI চ্যাট শুরু করুন"
+              aria-label={t('ai.startNewChatAria')}
               className="rounded-2xl p-2.5 text-text-secondary transition hover:bg-secondary active:scale-95"
             >
               <MessageCircle className="h-5 w-5" aria-hidden="true" />
             </button>
 
             <div
-              aria-label="ব্যবহারকারী"
+              aria-label={t('ai.userAria')}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
             >
               {userInitial}
@@ -930,10 +924,10 @@ const AIChatPage = () => {
               <div className="max-w-sm rounded-3xl border border-border-color bg-surface p-6 text-center">
                 <AlertCircle className="mx-auto mb-3 h-9 w-9 text-accent" aria-hidden="true" />
                 <h1 className="text-lg font-bold text-text-primary">
-                  মেসেজ লোড করা যায়নি
+                  {t('ai.messagesLoadError')}
                 </h1>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  এই চ্যাটের মেসেজ আনতে সমস্যা হয়েছে।
+                  {t('ai.messagesLoadErrorHint')}
                 </p>
                 <button
                   type="button"
@@ -944,7 +938,7 @@ const AIChatPage = () => {
                   {isMessagesFetching && (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   )}
-                  আবার চেষ্টা করুন
+                  {t('common.retry')}
                 </button>
               </div>
             </div>
@@ -955,13 +949,13 @@ const AIChatPage = () => {
               </div>
 
               <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">
-                হ্যালো, আমি প্যারা সাথী AI
+                {t('ai.greeting')}
               </h1>
 
               <p className="mt-3 max-w-md text-sm leading-7 text-text-secondary">
                 {selectedSubject
-                  ? `${selectedSubject.name_bn} বিষয়ের কোনো টপিক, সূত্র, MCQ, CQ বা বোর্ড প্রশ্ন বুঝতে সমস্যা হলে জিজ্ঞেস করুন।`
-                  : 'চ্যাট শুরু করতে আগে একটি বিষয় নির্বাচন করুন।'}
+                  ? t('ai.welcomeWithSubject', { subject: pickLang(language, selectedSubject.name_bn, selectedSubject.name_en) })
+                  : t('ai.welcomeNoSubject')}
               </p>
 
               {!selectedSubject && (
@@ -970,7 +964,7 @@ const AIChatPage = () => {
                   onClick={() => setIsSubjectModalOpen(true)}
                   className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition active:scale-[0.99]"
                 >
-                  বিষয় নির্বাচন করুন
+                  {t('ai.selectSubject')}
                 </button>
               )}
             </section>
@@ -1006,25 +1000,25 @@ const AIChatPage = () => {
                     </div>
 
                     <div className="mt-1.5 flex items-center gap-2 text-[11px] text-text-secondary">
-                      <span>{formatTime(message.createdAt)}</span>
+                      <span>{formatTime(message.createdAt, language)}</span>
 
                       {message.status === 'sending' && (
                         <span className="inline-flex items-center gap-1">
                           <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-                          পাঠানো হচ্ছে
+                          {t('ai.sending')}
                         </span>
                       )}
 
                       {message.status === 'failed' && (
                         <span className="inline-flex items-center gap-2 text-accent">
-                          পাঠানো যায়নি
+                          {t('ai.sendFailed')}
                           <button
                             type="button"
                             onClick={() => handleRetryMessage(message)}
                             disabled={chatMutation.isPending}
                             className="font-semibold underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            আবার পাঠান
+                            {t('ai.resend')}
                           </button>
                         </span>
                       )}
@@ -1036,7 +1030,7 @@ const AIChatPage = () => {
           )}
 
           {chatMutation.isPending && (
-            <div className="flex gap-3 sm:gap-5" aria-label="AI উত্তর তৈরি করছে">
+            <div className="flex gap-3 sm:gap-5" aria-label={t('ai.generatingAria')}>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border-color bg-surface text-text-secondary">
                 <Bot className="h-5 w-5" aria-hidden="true" />
               </div>
@@ -1058,7 +1052,7 @@ const AIChatPage = () => {
         <div className="mx-auto max-w-4xl">
           {!selectedSubject && (
             <div className="mb-3 rounded-2xl border border-border-color bg-surface px-4 py-3 text-sm text-text-secondary">
-              প্রশ্ন পাঠানোর আগে একটি বিষয় নির্বাচন করুন।
+              {t('ai.selectSubjectFirst')}
             </div>
           )}
 
@@ -1074,19 +1068,19 @@ const AIChatPage = () => {
               onKeyDown={handleInputKeyDown}
               placeholder={
                 selectedSubject
-                  ? `${selectedSubject.name_bn} নিয়ে প্রশ্ন করুন...`
-                  : 'আগে বিষয় নির্বাচন করুন...'
+                  ? t('ai.inputPlaceholderSubject', { subject: pickLang(language, selectedSubject.name_bn, selectedSubject.name_en) })
+                  : t('ai.inputPlaceholder')
               }
               disabled={!selectedSubject || chatMutation.isPending}
               className="min-w-0 flex-1 border-none bg-transparent py-3 text-text-primary placeholder:text-text-secondary focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               autoComplete="off"
-              aria-label="AI-কে প্রশ্ন লিখুন"
+              aria-label={t('ai.inputAria')}
             />
 
             <button
               type="submit"
               disabled={!canSendMessage}
-              aria-label="মেসেজ পাঠান"
+              aria-label={t('ai.sendAria')}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:scale-95 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-text-secondary"
             >
               {chatMutation.isPending ? (
@@ -1099,7 +1093,7 @@ const AIChatPage = () => {
 
           <div className="mt-2 flex items-center justify-between gap-3 px-1">
             <p className="text-[10px] leading-4 text-text-secondary">
-              Porokh AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করে নিন।
+              {t('ai.aiDisclaimer')}
             </p>
 
             <span

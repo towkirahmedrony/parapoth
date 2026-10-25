@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface SelectOption {
   label: string;
@@ -14,9 +15,11 @@ interface FormSelectGroupProps {
   disabled?: boolean;
 }
 
-const FormSelectGroup: React.FC<FormSelectGroupProps> = React.memo(({ 
+const FormSelectGroup: React.FC<FormSelectGroupProps> = React.memo(({
   label, name, value, onChange, options, disabled 
-}) => (
+}) => {
+  const { t } = useLanguage();
+  return (
   <div className="flex flex-col gap-1.5">
     <label className="text-xs font-medium" style={{ color: 'color-mix(in srgb, var(--dyn-text) 70%, transparent)' }}>
       {label}
@@ -33,7 +36,7 @@ const FormSelectGroup: React.FC<FormSelectGroupProps> = React.memo(({
         color: 'var(--dyn-text)'
       }}
     >
-      <option value="" style={{ color: '#000' }}>নির্বাচন করুন</option>
+      <option value="" style={{ color: '#000' }}>{t('common.select')}</option>
       {options.map((opt) => (
         <option key={opt.value} value={opt.value} style={{ color: '#000' }}>
           {opt.label}
@@ -41,7 +44,8 @@ const FormSelectGroup: React.FC<FormSelectGroupProps> = React.memo(({
       ))}
     </select>
   </div>
-));
+  );
+});
 
 FormSelectGroup.displayName = 'FormSelectGroup';
 export default FormSelectGroup;
