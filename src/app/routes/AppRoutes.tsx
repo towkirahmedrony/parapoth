@@ -84,7 +84,12 @@ const Plans = lazy(() => import('@/features/subscription/pages/Plans'));
 const Checkout = lazy(() => import('@/features/subscription/pages/Checkout'));
 
 // Group & Squad Pages (Lazy Loaded)
-const Lobby = lazy(() => import('@/features/leaderboard/pages/Lobby'));
+const GroupsHub = lazy(() => import('@/features/groups/pages/GroupsHub'));
+const CreateSquad = lazy(() => import('@/features/groups/pages/CreateSquad'));
+const GroupDetail = lazy(() => import('@/features/groups/pages/GroupDetail'));
+const GroupLeaderboard = lazy(() => import('@/features/groups/pages/GroupLeaderboard'));
+const GroupBattle = lazy(() => import('@/features/groups/pages/GroupBattle'));
+
 
 const FullPageLoader = () => (
   <div className="min-h-screen bg-slate-50 dark:bg-slate-900" />
@@ -304,8 +309,13 @@ const AppRoutes: React.FC = () => {
           <Route path="premium" element={<Plans />} />
 
           {/* Group & Social */}
-          <Route path="group" element={<Lobby />} />
-          <Route path="group/:groupId/battle" element={<Placeholder title={t('placeholder.groupBattle')} />} />
+          <Route path="groups" element={<GroupsHub />} />
+          <Route path="groups/new" element={<CreateSquad />} />
+          <Route path="groups/leaderboard" element={<GroupLeaderboard />} />
+          <Route path="groups/:groupId" element={<GroupDetail />} />
+          <Route path="groups/:groupId/battles/:battleId" element={<GroupBattle />} />
+          <Route path="group" element={<Navigate to="/groups" replace />} />
+          <Route path="group/:groupId/battle" element={<Navigate to="/groups" replace />} />
           <Route path="group/:groupId/focus" element={<Placeholder title={t('placeholder.focusSession')} />} />
 
           {/* Admission */}
