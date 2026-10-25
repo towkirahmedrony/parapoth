@@ -8,6 +8,7 @@ import type {
   DiscoverGroupsData,
   Group,
   GroupDetailData,
+  GroupPreview,
   GroupLeaderboardData,
   GroupsConfig,
   LeaderboardPeriod,
@@ -39,6 +40,7 @@ export const groupsService = {
     groupType?: 'squad' | 'community';
     maxMembers?: number;
     visibility?: 'public' | 'code' | 'approval';
+    slug?: string;
   }): Promise<{ id: string; group: Group }> =>
     unwrap(await apiClient.post<ApiResponse<{ id: string; group: Group }>>('/groups', payload)),
 
@@ -62,8 +64,17 @@ export const groupsService = {
       await apiClient.post<ApiResponse<{ left: boolean }>>(`/groups/${groupId}/leave`)
     ),
 
-  getGroup: async (groupId: string): Promise<GroupDetailData> =>
-    unwrap(await apiClient.get<ApiResponse<GroupDetailData>>(`/groups/${groupId}`)),
+  getGroup: async (groupIdOrSlug: string): Promise<GroupDetailData> =>
+    unwrap(
+      await apiClient.get<ApiResponse<GroupDetailData>>(`/groups/${groupIdOrSlug}`)
+    ),
+
+  getPreview: async (groupIdOrSlug: string): Promise<{ preview: GroupPreview }> =>
+    unwrap(
+      await apiClient.get<ApiResponse<{ preview: GroupPreview }>>(
+        `/groups/preview/${groupIdOrSlug}`
+      )
+    ),
 
   updateGroup: async (
     groupId: string,
@@ -72,6 +83,7 @@ export const groupsService = {
       icon?: string | null;
       description?: string | null;
       visibility?: 'public' | 'code' | 'approval';
+      slug?: string;
       maxMembers?: number;
       regenerateJoinCode?: boolean;
       disband?: boolean;
@@ -143,12 +155,33 @@ export const groupsService = {
   postMessage: async (
     groupId: string,
     content: string,
-    messageType: 'text' | 'emoji' | 'question_share' = 'text'
+    messageType: 'text' | 'emoji' | 'question_share' = 'text',
+    replyToId?: string | null
   ): Promise<{ message: MessagesData['messages'][number] }> =>
     unwrap(
       await apiClient.post<ApiResponse<{ message: MessagesData['messages'][number] }>>(
         `/groups/${groupId}/messages`,
-        { content, messageType }
+        { content, messageType, ...(replyToId ? { replyToId } : {}) }
+      )
+    ),
+
+  deleteMessage: async (groupId: string, messageId: string): Promise<{ deleted: boolean }> =>
+    unwrap(
+      await apiClient.delete<ApiResponse<{ deleted: boolean }>>(
+        `/groups/${groupId}/messages/${messageId}`
+      )
+    ),
+
+  reportMessage: async (
+    groupId: string,
+    messageId: string,
+    offenseType: 'Profanity' | 'Spam' | 'Harassment' | 'Other',
+    reason?: string | null
+  ): Promise<{ reported: boolean }> =>
+    unwrap(
+      await apiClient.post<ApiResponse<{ reported: boolean }>>(
+        `/groups/${groupId}/messages/${messageId}/report`,
+        { offenseType, reason: reason?.trim() || null }
       )
     ),
 

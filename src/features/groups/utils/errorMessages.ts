@@ -24,6 +24,28 @@ const COPY: Record<string, LocalizedCopy> = {
   CANNOT_KICK_OWNER: { bn: 'মালিককে বের করা যাবে না', en: 'The owner cannot be removed' },
   REQUEST_NOT_FOUND: { bn: 'অনুরোধটি পাওয়া যায়নি', en: 'The request was not found' },
   INVALID_MAX_MEMBERS: { bn: 'সদস্য সীমা সঠিক নয়', en: 'The member limit is not valid' },
+  INVALID_SLUG: {
+    bn: 'লিংকটি সঠিক নয়। ৩-৪০ অক্ষরের ছোট হাতের ইংরেজি, সংখ্যা ও হাইফেন ব্যবহার করুন।',
+    en: 'The link is not valid. Use 3-40 lowercase letters, numbers and hyphens.',
+  },
+  SLUG_TAKEN: { bn: 'এই লিংকটি আগেই ব্যবহার করা হয়েছে', en: 'That link is already taken' },
+  INVALID_GROUP_TYPE: { bn: 'গ্রুপের ধরন সঠিক নয়', en: 'The group type is not valid' },
+  INVALID_VISIBILITY: { bn: 'দৃশ্যমানতা সঠিক নয়', en: 'The visibility setting is not valid' },
+  USE_LEAVE_GROUP: {
+    bn: 'মালিক গ্রুপ ছাড়তে চাইলে গ্রুপ ভেঙে দিন',
+    en: 'The owner must disband the group instead of leaving',
+  },
+  MESSAGE_NOT_FOUND: { bn: 'বার্তাটি পাওয়া যায়নি', en: 'The message was not found' },
+  CANNOT_REPORT_THIS_MESSAGE: {
+    bn: 'নিজের বা সিস্টেম বার্তা রিপোর্ট করা যায় না',
+    en: 'You cannot report your own or a system message',
+  },
+  INVALID_OFFENSE_TYPE: { bn: 'রিপোর্টের ধরন সঠিক নয়', en: 'The report type is not valid' },
+  BATTLE_NOT_FOUND: { bn: 'ব্যাটলটি পাওয়া যায়নি', en: 'The battle was not found' },
+  CODE_GENERATION_FAILED: {
+    bn: 'জয়েন কোড তৈরি করা যায়নি, আবার চেষ্টা করুন',
+    en: 'Could not generate a join code. Please try again.',
+  },
   PROTECTED_FIELD: { bn: 'এই তথ্য পরিবর্তন করা যাবে না', en: 'This field cannot be changed' },
   BATTLE_ALREADY_OPEN: { bn: 'একটি ব্যাটল আগে থেকেই চলছে', en: 'A battle is already open' },
   BATTLE_CLOSED: { bn: 'ব্যাটলের সময় শেষ', en: 'The battle window has closed' },

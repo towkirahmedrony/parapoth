@@ -99,7 +99,7 @@ const GroupLeaderboard: React.FC = () => {
               <button
                 key={`${row.group_id}-${row.period_type}`}
                 type="button"
-                onClick={() => row.group && navigate(`/groups/${row.group_id}`)}
+                onClick={() => row.group && navigate(`/groups/${row.group.slug ?? row.group_id}`)}
                 className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${
                   row.is_my_group
                     ? 'border-primary bg-primary/5'

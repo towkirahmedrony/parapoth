@@ -8,6 +8,7 @@ import {
   LogOut,
   RefreshCw,
   Settings,
+  Share2,
   Swords,
   Trophy,
   Users,
@@ -37,6 +38,7 @@ import {
 import { groupsService } from '../services/groupsService';
 import { resolveGroupErrorMessage } from '../utils/errorMessages';
 import { serverOffsetMs } from '../utils/battleState';
+import { groupShareUrl, isGroupUuid } from '../utils/groupSlug';
 
 type Tab = 'overview' | 'members' | 'chat' | 'battles' | 'settings';
 
@@ -67,10 +69,14 @@ const GroupDetail: React.FC = () => {
   } | null>(null);
 
   const [joinCode, setJoinCode] = useState<string | null>(null);
+  const [joinCodeInput, setJoinCodeInput] = useState(() =>
+    (searchParams.get('code') ?? '').toUpperCase()
+  );
   const [showBattleForm, setShowBattleForm] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
   const [icon, setIcon] = useState('');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'code' | 'approval'>('code');
@@ -99,11 +105,25 @@ const GroupDetail: React.FC = () => {
   useEffect(() => {
     if (!group) return;
     setName(group.name);
+    setSlug(group.slug ?? '');
     setIcon(group.icon ?? '');
     setDescription(group.description ?? '');
     setVisibility(group.visibility);
     setMaxMembers(group.max_members);
   }, [group]);
+
+  useEffect(() => {
+    if (!group?.slug || !groupId || groupId === group.slug) return;
+    if (!isGroupUuid(groupId) && groupId.toLowerCase() === group.slug.toLowerCase()) {
+      const suffix = searchParams.toString();
+      navigate(`/groups/${group.slug}${suffix ? `?${suffix}` : ''}`, { replace: true });
+      return;
+    }
+    if (isGroupUuid(groupId)) {
+      const suffix = searchParams.toString();
+      navigate(`/groups/${group.slug}${suffix ? `?${suffix}` : ''}`, { replace: true });
+    }
+  }, [group?.slug, groupId, navigate, searchParams]);
 
   const requests = useQuery({
     queryKey: [...GROUP_QUERY_KEYS.detail(groupId ?? ''), 'requests'],
@@ -119,7 +139,8 @@ const GroupDetail: React.FC = () => {
   };
 
   const joinMutation = useMutation({
-    mutationFn: () => groupsService.joinGroup(groupId as string),
+    mutationFn: (code?: string | null) =>
+      groupsService.joinGroup(group?.id ?? (groupId as string), code ?? undefined),
     onSuccess: (result) => {
       invalidateGroup();
       toast.success(
@@ -146,6 +167,7 @@ const GroupDetail: React.FC = () => {
     mutationFn: () =>
       groupsService.updateGroup(groupId as string, {
         name: name.trim(),
+        slug: slug.trim().toLowerCase(),
         icon: icon || null,
         description: description.trim() || null,
         visibility,
@@ -210,7 +232,7 @@ const GroupDetail: React.FC = () => {
     mutationFn: (battleId: string) => groupsService.joinBattle(battleId),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: GROUP_QUERY_KEYS.battles(groupId ?? '') });
-      navigate(`/groups/${groupId}/battles/${data.battle_id}`);
+      navigate(`/groups/${group?.slug ?? groupId}/battles/${data.battle_id}`);
     },
     onError: (error) => toast.error(resolveGroupErrorMessage(error, language)),
   });
@@ -249,6 +271,29 @@ const GroupDetail: React.FC = () => {
   }
 
   if (!group) return null;
+
+  const inviteIdentifier = group.slug ?? group.id;
+
+  const shareGroup = async (withCode = false) => {
+    try {
+      let code: string | null = null;
+      if (withCode) {
+        const result = await groupsService.getJoinCode(group.id);
+        code = result.joinCode || null;
+      }
+      const url = groupShareUrl(inviteIdentifier, code);
+      const text = t('groups.shareMessage', { name: group.name });
+      if (navigator.share) {
+        await navigator.share({ title: group.name, text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        toast.success(t('groups.linkCopied'));
+      }
+    } catch (error) {
+      if ((error as { name?: string })?.name === 'AbortError') return;
+      toast.error(t('groups.shareFailed'));
+    }
+  };
 
   const setTab = (next: Tab) => setSearchParams({ tab: next });
 
@@ -303,16 +348,42 @@ const GroupDetail: React.FC = () => {
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            {!isMember && !isPending && group.is_active && group.visibility !== 'code' && (
+            {!isMember && !isPending && membershipStatus !== 'kicked' && group.is_active && group.visibility === 'code' && (
+              <div className="flex w-full flex-wrap items-center gap-2">
+                <Input
+                  value={joinCodeInput}
+                  onChange={(event) =>
+                    setJoinCodeInput(event.target.value.toUpperCase().slice(0, 16))
+                  }
+                  placeholder={t('groups.enterCode')}
+                  className="max-w-[220px]"
+                />
+                <Button
+                  size="sm"
+                  isLoading={joinMutation.isPending}
+                  disabled={!joinCodeInput.trim()}
+                  onClick={() => joinMutation.mutate(joinCodeInput.trim())}
+                >
+                  {t('groups.joinAction')}
+                </Button>
+              </div>
+            )}
+            {!isMember && !isPending && membershipStatus !== 'kicked' && group.is_active && group.visibility !== 'code' && (
               <Button
                 size="sm"
                 isLoading={joinMutation.isPending}
-                onClick={() => joinMutation.mutate()}
+                disabled={Number(group.member_count) >= Number(group.max_members)}
+                onClick={() => joinMutation.mutate(null)}
               >
-                {group.visibility === 'approval'
-                  ? t('groups.requestAction')
-                  : t('groups.joinAction')}
+                {Number(group.member_count) >= Number(group.max_members)
+                  ? t('groups.fullGroup')
+                  : group.visibility === 'approval'
+                    ? t('groups.requestAction')
+                    : t('groups.joinAction')}
               </Button>
+            )}
+            {membershipStatus === 'kicked' && (
+              <p className="text-sm text-red-500">{t('groups.statusKicked')}</p>
             )}
             {(isMember || isPending) && (
               <Button
@@ -329,6 +400,14 @@ const GroupDetail: React.FC = () => {
                 <LogOut className="mr-1 h-4 w-4" /> {t('groups.leave')}
               </Button>
             )}
+            <Button size="sm" variant="secondary" onClick={() => void shareGroup(false)}>
+              <Share2 className="mr-1 h-4 w-4" /> {t('groups.share')}
+            </Button>
+            {isOwner && group.visibility === 'code' && (
+              <Button size="sm" variant="ghost" onClick={() => void shareGroup(true)}>
+                {t('groups.shareCode')}
+              </Button>
+            )}
             {isOwner && (
               <Button size="sm" variant="ghost" onClick={() => setTab('settings')}>
                 <Settings className="mr-1 h-4 w-4" /> {t('groups.settings')}
@@ -336,6 +415,38 @@ const GroupDetail: React.FC = () => {
             )}
           </div>
         </header>
+
+        {searchParams.get('created') === '1' && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <p className="font-semibold text-text-primary">{t('groups.shareCreatedTitle')}</p>
+            <p className="mt-1 text-sm text-text-secondary">{t('groups.shareCreatedBody')}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => void shareGroup(false)}>
+                <Share2 className="mr-1 h-4 w-4" /> {t('groups.share')}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams);
+                  next.delete('created');
+                  setSearchParams(next, { replace: true });
+                }}
+              >
+                {t('groups.openGroup')}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!isMember && !isPending && (
+          <div className="rounded-2xl border border-card-border bg-card-bg p-4">
+            <p className="text-sm font-semibold text-text-primary">{t('groups.previewAbout')}</p>
+            <p className="mt-1 text-sm text-text-secondary">
+              {group.description || t('groups.noResults')}
+            </p>
+          </div>
+        )}
 
         {isMember && (
           <div className="flex gap-1 overflow-x-auto rounded-xl border border-border-color p-1">
@@ -495,7 +606,7 @@ const GroupDetail: React.FC = () => {
 
         {tab === 'chat' && (
           <section>
-            <GroupChat groupId={group.id} canSend={isMember} />
+            <GroupChat groupId={group.id} groupSlug={group.slug ?? group.id} canSend={isMember} isAdmin={isAdmin} />
           </section>
         )}
 
@@ -527,7 +638,9 @@ const GroupDetail: React.FC = () => {
                 nowMs={nowMs}
                 isAdmin={isAdmin}
                 onJoin={(battleId) => battleJoinMutation.mutate(battleId)}
-                onOpen={(battleId) => navigate(`/groups/${group.id}/battles/${battleId}`)}
+                onOpen={(battleId) =>
+                  navigate(`/groups/${group.slug ?? group.id}/battles/${battleId}`)
+                }
                 onCancel={(battleId) => battleCancelMutation.mutate(battleId)}
                 joiningId={battleJoinMutation.isPending ? battleJoinMutation.variables : null}
               />
@@ -556,6 +669,22 @@ const GroupDetail: React.FC = () => {
                   minLength={2}
                   maxLength={50}
                 />
+              </label>
+
+              <label className="block text-sm text-text-secondary">
+                {t('groups.slug')}
+                <Input
+                  value={slug}
+                  onChange={(event) => setSlug(event.target.value.toLowerCase().slice(0, 40))}
+                  className="mt-1"
+                  placeholder={t('groups.slugPlaceholder')}
+                  minLength={3}
+                  maxLength={40}
+                />
+                <span className="mt-1 block text-xs">{t('groups.slugHint')}</span>
+                <span className="mt-1 block text-xs text-amber-600">
+                  {t('groups.settingsSlugWarning')}
+                </span>
               </label>
 
               <label className="block text-sm text-text-secondary">
