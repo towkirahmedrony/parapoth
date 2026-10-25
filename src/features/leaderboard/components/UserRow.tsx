@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Crown } from 'lucide-react';
 import { LeaderboardUser } from '../types/leaderboard';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 interface Props {
   user: LeaderboardUser; 
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   
   if (!user) return null;
@@ -65,7 +66,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
             </div>
             {isTop3 && (
                 <div className="absolute -top-1 -right-1 text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-border-color bg-card-bg text-text-primary">
-                    {user.rank}
+                    {localizeDigits(user.rank, language)}
                 </div>
             )}
         </div>
@@ -83,7 +84,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
       <div className="flex flex-col items-end min-w-[50px]">
         {!isTop3 && (
             <span className="text-lg font-bold font-['Inter'] leading-none mb-0.5 text-text-secondary">
-                {user.rank}
+                {localizeDigits(user.rank, language)}
             </span>
         )}
         {isTop3 && (
@@ -92,7 +93,7 @@ export const UserRow: React.FC<Props> = ({ user, index, isFooter = false }) => {
               style={{ color: getRankColor(user.rank) }} 
             />
         )}
-        <span className="text-[9px] font-medium text-text-secondary">{user.total_score || 0} XP</span>
+        <span className="text-[9px] font-medium text-text-secondary">{localizeDigits(user.total_score || 0, language)} {t('leaderboard.xp')}</span>
       </div>
     </motion.div>
   );

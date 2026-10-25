@@ -48,7 +48,7 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
           {compImageUrl && (
             <img 
               src={compImageUrl} 
-              alt="Stimulus" 
+              alt={t('exam.stimulus')}
               className="w-full max-h-72 object-contain rounded-xl mb-4 border border-border-color bg-surface-elevated"
             />
           )}
@@ -86,7 +86,7 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
               <div className="relative mt-3">
                 <img 
                   src={qImageUrl} 
-                  alt="Question" 
+                  alt={t('exam.questionImageAlt')}
                   className="w-full max-h-72 object-contain rounded-xl border border-border-color bg-surface"
                 />
               </div>

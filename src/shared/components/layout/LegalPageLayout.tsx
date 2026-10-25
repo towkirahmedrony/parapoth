@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
-
-export type Language = 'bn' | 'en';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { APP_LANGUAGES, LANGUAGE_OPTION_LABELS } from '@/shared/i18n/messages';
 
 export interface LegalPageLayoutProps {
   icon: React.ReactNode;
@@ -18,7 +18,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
   lastUpdated,
   content,
 }) => {
-  const [language, setLanguage] = useState<Language>('bn');
+  const { language, setLanguage } = useLanguage();
   const activeContent = language === 'en' ? content.en : content.bn;
 
   return (
@@ -47,22 +47,20 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
               {language === 'bn' ? lastUpdated.bn : lastUpdated.en}
             </span>
             
-            {/* Toggle Button Group */}
+            {/* Toggle Button Group — bound to the app-wide language preference */}
             <div className="flex p-1 rounded-lg bg-secondary">
-              <button
-                onClick={() => setLanguage('bn')}
-                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${language === 'bn' ? 'shadow-sm bg-surface text-primary' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}
-                aria-pressed={language === 'bn'}
-              >
-                বাংলা
-              </button>
-              <button
-                onClick={() => setLanguage('en')}
-                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${language === 'en' ? 'shadow-sm bg-surface text-primary' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}
-                aria-pressed={language === 'en'}
-              >
-                English
-              </button>
+              {APP_LANGUAGES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  lang={option}
+                  onClick={() => setLanguage(option)}
+                  className={`px-5 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${language === option ? 'shadow-sm bg-surface text-primary' : 'text-text-secondary hover:text-text-primary bg-transparent'}`}
+                  aria-pressed={language === option}
+                >
+                  {LANGUAGE_OPTION_LABELS[option]}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -68,7 +68,7 @@ export const referralService = {
     return (data || []).map((user: any) => ({
       user: {
         id: user.id,
-        full_name: user.full_name || 'Unknown User',
+        full_name: user.full_name || '',
         avatar_url: user.avatar_url,
         joined_at: user.created_at,
         status: user.account_status === 'active' ? 'active' : 'pending',
@@ -91,6 +91,6 @@ export const referralService = {
       throw new Error(error.message || "Failed to apply referral code.");
     }
 
-    return { success: true, message: "Referral applied successfully!" };
+    return { success: true };
   }
 };

@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { pickLang } from '@/shared/i18n/localize';
+import { LOCALE_BY_LANGUAGE, type AppLanguage } from '@/shared/i18n/messages';
 import { Bell, Megaphone, Clock, ChevronRight, ExternalLink } from 'lucide-react';
 import { DBNotificationItem } from '../types/notificationTypes'; 
 
@@ -11,13 +12,15 @@ interface NotificationItemProps {
 }
 
 // Extracted outside the component to prevent function recreation on every render
-const formatTime = (isoString: string) => {
+const formatTime = (isoString: string, language: AppLanguage) => {
   if (!isoString) return '';
   const utcDateStr = isoString.endsWith('Z') ? isoString : `${isoString}Z`;
   const date = new Date(utcDateStr);
   
-  return date.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' }) + ', ' + 
-         date.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' });
+  const locale = LOCALE_BY_LANGUAGE[language];
+
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) + ', ' +
+         date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 };
 
 const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, onClick }) => {
@@ -35,7 +38,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, on
         {item.image_url ? (
           <img 
             src={item.image_url} 
-            alt="icon" 
+            alt=""
             className="w-10 h-10 rounded-full object-cover border border-border-color bg-secondary"
           />
         ) : (
@@ -60,7 +63,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, on
         <div className="flex items-center gap-3 pt-1">
           <div className="flex items-center gap-1 text-text-secondary opacity-80">
             <Clock size={12} />
-            <span className="text-[10px]">{formatTime(item.created_at)}</span>
+            <span className="text-[10px]">{formatTime(item.created_at, language)}</span>
           </div>
           {item.action_link && (
             <div className="flex items-center gap-1 text-[10px] text-primary hover:underline">

@@ -25,7 +25,7 @@ export const BackButton: React.FC<BackButtonProps> = ({ onClick, className = '' 
       onClick={handleBack}
       className={`flex items-center justify-center w-10 h-10 rounded-full transition-all hover:scale-105 bg-surface border border-border-color text-text-primary ${className}`}
       aria-label={t('common.back')}
-      title="Back"
+      title={t('common.back')}
     >
       <ChevronLeft size={24} strokeWidth={2.5} />
     </button>

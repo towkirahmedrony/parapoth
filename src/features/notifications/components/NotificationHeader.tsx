@@ -16,6 +16,7 @@ const NotificationHeader: React.FC<NotificationHeaderProps> = ({ activeTab, setA
         <div className="flex items-center gap-3">
           <button 
             onClick={onBack} 
+            aria-label={t('common.back')}
             className="p-1 -ml-1 transition-colors hover:opacity-70 text-text-secondary hover:text-text-primary"
           >
             <ArrowLeft size={24} />

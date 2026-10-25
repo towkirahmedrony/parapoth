@@ -48,7 +48,7 @@ export const LeagueHeader: React.FC<Props> = ({
   isLocked, direction, progressPercentage, pointsNeeded, isCurrentLeague,
   onPrev, onNext, onDragEnd
 }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const gradientColors = getLeagueGradientColors(selectedLeagueIndex);
 
   return (
@@ -111,7 +111,7 @@ export const LeagueHeader: React.FC<Props> = ({
                           <Lock className="w-6 h-6 text-text-secondary" />
                       ) : (
                           selectedLeague.badge_url && (
-                            <img src={selectedLeague.badge_url} className="w-8 h-8 drop-shadow-md object-contain" alt="icon" />
+                            <img src={selectedLeague.badge_url} className="w-8 h-8 drop-shadow-md object-contain" alt="" />
                           )
                       )}
                     </div>
@@ -125,7 +125,7 @@ export const LeagueHeader: React.FC<Props> = ({
                 </div>
                 
                 <h2 className="text-lg font-bold tracking-wide mt-1 text-shadow-sm text-text-primary">
-                  {selectedLeague.name_bn}
+                  {language === 'en' ? selectedLeague.name_en || selectedLeague.name_bn : selectedLeague.name_bn}
                 </h2>
               </motion.div>
             </AnimatePresence>

@@ -623,7 +623,7 @@ const AIChatPage = () => {
 
                       {subjects.map(subject => (
                         <option key={subject.id} value={subject.id}>
-                          {subject.name_bn}
+                          {pickLang(language, subject.name_bn, subject.name_en)}
                         </option>
                       ))}
                     </select>

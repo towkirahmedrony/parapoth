@@ -2,7 +2,7 @@ import React from 'react';
 import { UserPlus, Clock, CheckCircle2 } from 'lucide-react';
 import { ReferralHistoryItem } from '../types/referral';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
-import { LOCALE_BY_LANGUAGE } from '@/shared/i18n/messages';
+import { LOCALE_BY_LANGUAGE, localizeDigits } from '@/shared/i18n/messages';
 
 interface HistoryProps {
   history: ReferralHistoryItem[];
@@ -35,7 +35,7 @@ export const ReferralHistory: React.FC<HistoryProps> = ({ history, isLoading }) 
         <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
           {t('referral.invitedSquad')}
           <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-badge-bg text-badge-text">
-            {history.length}
+            {localizeDigits(history.length, language)}
           </span>
         </h3>
       </div>
@@ -72,7 +72,7 @@ export const ReferralHistory: React.FC<HistoryProps> = ({ history, isLoading }) 
 
               <div className="text-right flex flex-col items-end gap-1">
                 <span className={`flex items-center gap-1 text-sm font-semibold ${isActive ? 'text-green-600' : 'text-text-secondary'}`}>
-                  +{item.bonus_amount} <span className="text-[10px] font-normal">{t('referral.coins')}</span>
+                  +{localizeDigits(item.bonus_amount, language)} <span className="text-[10px] font-normal">{t('referral.coins')}</span>
                 </span>
                 {isActive ? (
                   <span className="flex items-center gap-1 text-[9px] text-green-600/80 font-medium px-1 rounded bg-green-600/10">

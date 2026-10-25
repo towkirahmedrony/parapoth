@@ -109,8 +109,8 @@ const PvpStats: React.FC<PvpStatsProps> = ({ myStats, theirStats, opponentName, 
       className="mx-4 mb-4 rounded-2xl shadow-xl border p-5 relative z-20 bg-card-bg border-card-border"
     >
       <div className="flex justify-between items-center mb-4 px-4">
-        <span className="text-xs font-bold font-['Inter'] text-text-secondary">YOU</span>
-        <span className="text-xs font-bold px-3 py-1 rounded-full border bg-badge-bg text-badge-text border-border-color">VS</span>
+        <span className="text-xs font-bold font-['Inter'] text-text-secondary">{t('profile.you')}</span>
+        <span className="text-xs font-bold px-3 py-1 rounded-full border bg-badge-bg text-badge-text border-border-color">{t('common.vs')}</span>
         <span className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right text-text-secondary">{opponentName}</span>
       </div>
 

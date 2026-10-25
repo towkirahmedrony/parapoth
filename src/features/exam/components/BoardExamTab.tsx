@@ -10,13 +10,15 @@ import searchEmptyAnim from '@/assets/animations/empty-search.json';
 import { supabase } from '@/shared/lib/supabase';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
+import { localizeBoardName } from '../utils/examLabels';
 
 interface BoardExamTabProps {
   onViewChange: (isDetail: boolean) => void;
 }
 
 const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [view, setView] = useState<'subject_list' | 'paper_list'>('subject_list');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   
@@ -34,7 +36,7 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('subjects')
-        .select('id, name_bn, icon_url')
+        .select('id, name_bn, name_en, icon_url')
         .eq('is_active', true)
         .order('sequence', { ascending: true });
 
@@ -160,7 +162,7 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
                     </h3>
                     {metaData?.board && (
                       <div className="px-2 py-1 rounded text-xs border border-border-color bg-badge-bg text-badge-text whitespace-nowrap">
-                        {metaData.board}
+                        {localizeBoardName(metaData.board, language)}
                       </div>
                     )}
                   </div>
@@ -218,7 +220,7 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
                   <IconComponent size={20} strokeWidth={2} />
                 </div>
                 <h3 className="text-[15px] font-medium transition-colors text-text-primary group-hover:text-primary">
-                  {subject.name_bn}
+                  {pickLang(language, subject.name_bn, subject.name_en)}
                 </h3>
               </div>
               <ChevronRight 

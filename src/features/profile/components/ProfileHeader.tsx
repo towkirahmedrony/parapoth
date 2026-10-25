@@ -4,6 +4,7 @@ import { Edit3, Coins, ShieldCheck } from 'lucide-react';
 import { UserProfileData } from '../types/profile';
 import { PROFILE_DEFAULTS } from '../utils/profileConstants';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 interface ProfileHeaderProps {
   user: UserProfileData | any; 
@@ -11,12 +12,12 @@ interface ProfileHeaderProps {
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({ user, onEdit }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const userCoins = user?.coin_balance || 0;
   
   // Data fallbacks
-  const fullName = user?.full_name || user?.user_metadata?.full_name || PROFILE_DEFAULTS.NAME;
+  const fullName = user?.full_name || user?.user_metadata?.full_name || t('profile.anonymousUser');
   const avatarUrl = user?.avatar_url || user?.user_metadata?.avatar_url || PROFILE_DEFAULTS.AVATAR_URL;
 const bio = user?.bio || t('profile.bioPlaceholder');
 
@@ -32,7 +33,7 @@ title={t('profile.goToMarketplace')}
         className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs shadow-sm font-['Hind_Siliguri'] cursor-pointer transition-transform hover:scale-105 active:scale-95 bg-surface-elevated text-text-primary border border-border-color backdrop-blur-sm"
       >
         <Coins size={14} style={{ color: '#F59E0B' }} />
-        <span>{userCoins}</span>
+        <span>{localizeDigits(userCoins, language)}</span>
       </button>
 
       <div className="relative z-10 mt-2">

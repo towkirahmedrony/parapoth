@@ -202,7 +202,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
           {imageUrl && (
             <img 
               src={imageUrl} 
-              alt="Question" 
+              alt={t('exam.questionImageAlt')}
               className="mt-4 rounded-xl max-h-56 object-contain border border-border-color bg-surface-elevated mx-auto" 
             />
           )}

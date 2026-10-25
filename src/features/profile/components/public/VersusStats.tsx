@@ -63,7 +63,7 @@ const VersusStats: React.FC<VersusStatsProps> = ({ stats, opponentName }) => {
           {t('leaderboard.you')}
         </span>
         <span className="text-xs font-bold px-3 py-1 rounded-full border bg-badge-bg text-badge-text border-border-color">
-          VS
+          {t('common.vs')}
         </span>
         <span className="text-xs font-bold font-['Inter'] uppercase truncate max-w-[80px] text-right text-text-secondary">
           {opponentName || t('leaderboard.them')}
@@ -71,7 +71,7 @@ const VersusStats: React.FC<VersusStatsProps> = ({ stats, opponentName }) => {
       </div>
 
       <div className="space-y-1">
-        <StatRow icon={Trophy} label="XP" myValue={my_stats?.total_xp || 0} theirValue={their_stats?.total_xp || 0} />
+        <StatRow icon={Trophy} label={t('leaderboard.xp')} myValue={my_stats?.total_xp || 0} theirValue={their_stats?.total_xp || 0} />
         <StatRow icon={Target} label={t('leaderboard.accuracy')} myValue={my_stats?.accuracy || 0} theirValue={their_stats?.accuracy || 0} unit="%" />
         <StatRow icon={Flame} label={t('profile.streak')} myValue={my_stats?.current_streak || 0} theirValue={their_stats?.current_streak || 0} />
         <StatRow icon={BookOpen} label={t('leaderboard.exams')} myValue={my_stats?.total_exams || 0} theirValue={their_stats?.total_exams || 0} />

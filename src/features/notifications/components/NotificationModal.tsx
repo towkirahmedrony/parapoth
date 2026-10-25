@@ -31,7 +31,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }
           <div className="w-40 h-40 mx-auto">
             <img 
               src={notificationGif} 
-              alt="Enable Notifications" 
+              alt={t('notification.enableAlt')}
               className="w-full h-full object-contain"
             />
           </div>

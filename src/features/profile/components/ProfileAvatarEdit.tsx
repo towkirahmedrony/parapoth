@@ -76,7 +76,7 @@ const ProfileAvatarEdit: React.FC<ProfileAvatarEditProps> = ({ userId, currentAv
         <img 
           src={displayUrl} 
           className={`w-28 h-28 object-cover transition-opacity ${isUploading ? 'opacity-50' : 'opacity-90'}`} 
-          alt="Avatar" 
+          alt={t('profile.avatarAlt')}
         />
         
         {/* Overlay - Always visible with Camera Icon */}

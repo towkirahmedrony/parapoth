@@ -16,14 +16,14 @@ export const RedeemCode: React.FC = () => {
 
   const redeemMutation = useMutation({
     mutationFn: (referralCode: string) => referralService.redeemCode(user!.id, referralCode),
-    onSuccess: (data) => {
-      setFeedback({ type: 'success', message: data.message || t('referral.redeemSuccess') });
+    onSuccess: () => {
+      setFeedback({ type: 'success', message: t('referral.redeemSuccess') });
       setCode('');
       queryClient.invalidateQueries({ queryKey: ['referralStats', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['referralHistory', user?.id] });
     },
-    onError: (error: Error) => {
-      setFeedback({ type: 'error', message: error.message || t('referral.redeemError') });
+    onError: () => {
+      setFeedback({ type: 'error', message: t('referral.redeemError') });
     }
   });
 

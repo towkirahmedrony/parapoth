@@ -7,6 +7,8 @@ import ExamConfiguration, { ExamConfig } from './ExamConfiguration';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
 import { Subject } from '../types/content';
 import { useCurriculumTree } from '../hooks/useContentData';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
 
 interface ModelTestTabProps {
   onViewChange: (isDetail: boolean) => void;
@@ -16,6 +18,7 @@ type ViewState = 'subject_list' | 'chapter_selection' | 'exam_config';
 
 const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [view, setView] = useState<ViewState>('subject_list');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
@@ -50,10 +53,10 @@ const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
       state: { 
         config: config,
         topics: selectedTopicIds,
-        subjectName: selectedSubject?.name_bn
+        subjectName: pickLang(language, selectedSubject?.name_bn, selectedSubject?.name_en)
       } 
     });
-  }, [navigate, selectedTopicIds, selectedSubject]);
+  }, [navigate, selectedTopicIds, selectedSubject, language]);
 
   if (view === 'exam_config') {
     return (
@@ -100,7 +103,7 @@ const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
                   <IconComponent size={20} strokeWidth={2} />
                 </div>
                 <h3 className="text-[15px] font-medium transition-colors text-text-primary">
-                  {subject.name_bn}
+                  {pickLang(language, subject.name_bn, subject.name_en)}
                 </h3>
               </div>
               <ChevronRight className="transition-transform group-hover:translate-x-1 text-text-secondary" size={18} />

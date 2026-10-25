@@ -41,6 +41,7 @@ export const GroupLeaderboard: React.FC<GroupLeaderboardProps> = ({ data, isLoad
         </div>
         <button 
           onClick={onClose} 
+          aria-label={t('common.close')}
           className="hover:bg-surface-elevated p-2 rounded-full transition-colors"
         >
           <X className="text-text-secondary w-5 h-5" />

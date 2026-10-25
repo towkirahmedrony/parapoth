@@ -1,6 +1,7 @@
 import React from 'react';
 import { Send, UserPlus, Gift } from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 interface HowItWorksProps {
   referrerBonus: number;
@@ -8,7 +9,7 @@ interface HowItWorksProps {
 }
 
 export const HowItWorks: React.FC<HowItWorksProps> = ({ referrerBonus, refereeBonus }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const steps = [
     {
       icon: <Send className="w-5 h-5" />,
@@ -23,7 +24,10 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ referrerBonus, refereeBo
     {
       icon: <Gift className="w-5 h-5" />,
       title: t('referral.step3Title'),
-      description: t('referral.step3Desc', { referrer: referrerBonus, referee: refereeBonus }),
+      description: t('referral.step3Desc', {
+        referrer: localizeDigits(referrerBonus, language),
+        referee: localizeDigits(refereeBonus, language),
+      }),
     },
   ];
 

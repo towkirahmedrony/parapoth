@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { SUPPORT_CONFIG } from '@/shared/constants/supportConfig';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 type Language = 'bn' | 'en';
 
@@ -414,7 +415,7 @@ export const Contact = () => {
                   <span />
                 )}
                 <p id="contact-message-count" className="text-xs text-text-secondary">
-                  {formData.message.trim().length}/{MAX_MESSAGE_LENGTH}
+                  {localizeDigits(formData.message.trim().length, language)}/{localizeDigits(MAX_MESSAGE_LENGTH, language)}
                 </p>
               </div>
             </div>

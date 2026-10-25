@@ -50,7 +50,7 @@ const PublicProfile: React.FC = () => {
           <Lottie animationData={userNotFoundAnimation} loop={true} />
         </div>
         <p className="font-['Hind_Siliguri'] text-lg font-medium mb-6 text-text-primary">
-          {error || t('profile.userNotFound')}
+          {t('profile.loadError')}
         </p>
         <button onClick={handleGoBack} className="flex items-center gap-2 px-6 py-2.5 rounded-full font-['Hind_Siliguri'] shadow-md active:scale-95 bg-primary text-primary-foreground">
 <ChevronLeft className="w-5 h-5" /> {t('common.back')}
@@ -64,7 +64,7 @@ const PublicProfile: React.FC = () => {
   const versusStats = (profileData as any).versusStats; 
   
   const isOwnProfile = user?.id === profile.id || (user as any)?.username === (profile as any).username;
-  const opponentFirstName = profile.full_name?.split(' ')[0] || 'Opponent';
+  const opponentFirstName = profile.full_name?.split(' ')[0] || t('exam.opponent');
 
   return (
     <div className="min-h-screen pb-10 animate-in fade-in duration-500 bg-app">
@@ -104,7 +104,7 @@ const PublicProfile: React.FC = () => {
 
       {profile.badges && <BadgeShowcase badges={profile.badges} />}
 
-      <ChallengeSetupModal isOpen={isChallengeModalOpen} onClose={handleCloseModal} opponentId={profile.id} opponentName={profile.full_name || 'Opponent'} />
+      <ChallengeSetupModal isOpen={isChallengeModalOpen} onClose={handleCloseModal} opponentId={profile.id} opponentName={profile.full_name || t('exam.opponent')} />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Copy, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PaymentMethod } from '../types/subscription';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 interface PaymentMethodCardProps {
   method: PaymentMethod;
@@ -10,6 +11,7 @@ interface PaymentMethodCardProps {
 }
 
 const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelected, onSelect }) => {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   // Handle cleanup for setTimeout to prevent memory leaks on unmount
@@ -30,11 +32,11 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
     try {
       await navigator.clipboard.writeText(method.number);
       setCopied(true);
-      toast.success('Number copied to clipboard!');
-    } catch (error) {
-      toast.error('Failed to copy number');
+      toast.success(t('premium.number_copied'));
+    } catch {
+      toast.error(t('premium.copy_failed'));
     }
-  }, [method?.number]);
+  }, [method?.number, t]);
 
   if (!method) return null;
 
@@ -83,7 +85,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
           <button 
             onClick={handleCopy}
             className="p-2 rounded-full transition-colors hover:bg-secondary text-text-secondary hover:text-text-primary"
-            title="Copy Number"
+            title={t('premium.copy_number')}
           >
             {copied ? (
                <CheckCircle size={18} className="text-primary" />

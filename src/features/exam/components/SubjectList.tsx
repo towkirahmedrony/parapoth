@@ -5,6 +5,7 @@ import { useCurriculumTree } from '../hooks/useContentData';
 import { getIconByName } from '@/shared/utils/iconMapper';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
 import { usePaywall } from '@/features/access/context/PaywallProvider';
+import { pickLang } from '@/shared/i18n/localize';
 
 interface SubjectListProps {
   onSelect: (id: string) => void;
@@ -13,6 +14,7 @@ interface SubjectListProps {
 export interface CurriculumSubject {
   id: string;
   name_bn?: string;
+  name_en?: string | null;
   title?: string;
   icon_url?: string | null;
   is_locked?: boolean | null;
@@ -20,7 +22,7 @@ export interface CurriculumSubject {
 }
 
 const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { openPaywall } = usePaywall();
   const { data: subjects, isLoading } = useCurriculumTree();
   if (isLoading) {
@@ -61,7 +63,7 @@ const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
               }}
               aria-label={
                 subject.is_locked
-                  ? `${subject.name_bn || subject.title || ''} — ${t('premium.a11y_locked')}`
+                  ? `${pickLang(language, subject.name_bn, subject.name_en) || subject.title || ''} — ${t('premium.a11y_locked')}`
                   : undefined
               }
               aria-disabled={subject.is_locked || undefined}
@@ -76,7 +78,7 @@ const SubjectList: React.FC<SubjectListProps> = memo(({ onSelect }) => {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold font-['Hind_Siliguri'] text-[17px] md:text-[19px] leading-tight text-text-primary">
-                  {subject.name_bn || subject.title || 'Untitled Subject'}
+                  {pickLang(language, subject.name_bn, subject.name_en) || subject.title || t('exam.untitledSubject')}
                 </h3>
               </div>
               {subject.is_locked ? (

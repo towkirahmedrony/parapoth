@@ -15,29 +15,8 @@ import FormInputGroup from '../components/FormInputGroup';
 import FormSelectGroup from '../components/FormSelectGroup';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { MessageError } from '@/shared/i18n/localize';
-import type { AppLanguage } from '@/shared/i18n/messages';
 import ProfileAvatarEdit from '../components/ProfileAvatarEdit';
-
-// --- Local Translation Helpers (Bangla labels only; English shows raw values) ---
-const translateBoard = (board: string, language: AppLanguage) => {
-  if (language !== 'bn') return board;
-  const map: Record<string, string> = {
-    'Dhaka': 'ঢাকা', 'Rajshahi': 'রাজশাহী', 'Cumilla': 'কুমিল্লা', 'Jashore': 'যশোর',
-    'Chattogram': 'চট্টগ্রাম', 'Barishal': 'বরিশাল', 'Sylhet': 'সিলেট',
-    'Dinajpur': 'দিনাজপুর', 'Mymensingh': 'ময়মনসিংহ'
-  };
-  return map[board] || board;
-};
-
-const translateGroup = (group: string, language: AppLanguage) => {
-  if (language !== 'bn') return group;
-  const map: Record<string, string> = { 'Science': 'বিজ্ঞান', 'Business': 'ব্যবসায় শিক্ষা', 'Humanities': 'মানবিক' };
-  return map[group] || group;
-};
-
-const translateClass = (level: string, language: AppLanguage) =>
-  language === 'bn' ? level.replace('HSC', 'এইচএসসি') : level;
-// ----------------------------------
+import { localizeAcademicGroup, localizeClassLevel, localizeEducationBoard } from '../utils/profileLabels';
 
 const EditProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -225,13 +204,13 @@ const EditProfile: React.FC = () => {
             <FormInputGroup label={t('profile.fieldInstitution')} name="institution" value={formData.institution || ''} onChange={handleChange} disabled={isLoading} />
             <div className="grid grid-cols-2 gap-3">
               <FormSelectGroup label={t('profile.fieldClass')} name="class_level" value={formData.class_level || ''} onChange={handleChange}
-                options={CLASS_LEVELS.map(c => ({ label: translateClass(c, language), value: c }))} disabled={isLoading} />
+                options={CLASS_LEVELS.map(c => ({ label: localizeClassLevel(c, language), value: c }))} disabled={isLoading} />
               <FormSelectGroup label={t('profile.fieldGroup')} name="group" value={formData.group || ''} onChange={handleChange}
-                options={ACADEMIC_GROUPS.map(g => ({ label: translateGroup(g, language), value: g }))} disabled={isLoading} />
+                options={ACADEMIC_GROUPS.map(g => ({ label: localizeAcademicGroup(g, language), value: g }))} disabled={isLoading} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <FormSelectGroup label={t('profile.fieldBoard')} name="education_board" value={formData.education_board || ''} onChange={handleChange}
-                options={EDUCATION_BOARDS.map(b => ({ label: translateBoard(b, language), value: b }))} disabled={isLoading} />
+                options={EDUCATION_BOARDS.map(b => ({ label: localizeEducationBoard(b, language), value: b }))} disabled={isLoading} />
               <FormInputGroup label={t('profile.fieldBatch')} name="batch_year" value={formData.batch_year || ''} onChange={handleChange} placeholder={t('profile.batchPlaceholder')} disabled={isLoading} />
             </div>
             <FormInputGroup label={t('profile.fieldStudyGoal')} name="study_goal" value={formData.study_goal || ''} onChange={handleChange} placeholder={t('profile.studyGoalPlaceholder')} disabled={isLoading} />

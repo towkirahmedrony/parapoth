@@ -2,6 +2,8 @@ import React, { memo } from 'react';
 import { Search, ChevronDown, ChevronLeft, Calendar, Building2 } from 'lucide-react';
 import { Subject } from '../types/content';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { pickLang } from '@/shared/i18n/localize';
+import { localizeBoardName } from '../utils/examLabels';
 
 interface BoardExamFilterProps {
   subject: Subject;
@@ -22,21 +24,6 @@ const BOARDS = [
 ] as const;
 
 const YEARS = ['2025', '2024', '2023', '2022', '2021'] as const;
-
-// English display labels for the Bangla board values stored in the data.
-const BOARD_LABELS_EN: Record<string, string> = {
-  'ঢাকা বোর্ড': 'Dhaka Board',
-  'রাজশাহী বোর্ড': 'Rajshahi Board',
-  'কুমিল্লা বোর্ড': 'Cumilla Board',
-  'যশোর বোর্ড': 'Jashore Board',
-  'চট্টগ্রাম বোর্ড': 'Chittagong Board',
-  'বরিশাল বোর্ড': 'Barishal Board',
-  ' সিলেট বোর্ড': 'Sylhet Board',
-  'দিনাজপুর বোর্ড': 'Dinajpur Board',
-  'ময়মনসিংহ বোর্ড': 'Mymensingh Board',
-  'মাদ্রাসা বোর্ড': 'Madrasah Board',
-  'কারিগরি বোর্ড': 'Technical Board',
-};
 
 const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
   subject,
@@ -64,7 +51,7 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
         </button>
         <div>
           <h2 className="text-lg font-bold leading-tight text-text-primary">
-            {subject.name_bn}
+            {pickLang(language, subject.name_bn, subject.name_en)}
           </h2>
           <p className="text-xs text-text-secondary">
             {t('exam.searchBoardQuestions')}
@@ -88,7 +75,7 @@ const BoardExamFilter: React.FC<BoardExamFilterProps> = memo(({
             >
               <option value="">{t('exam.allBoards')}</option>
               {BOARDS.map(board => (
-                <option key={board} value={board}>{language === 'en' ? BOARD_LABELS_EN[board] ?? board : board}</option>
+                <option key={board} value={board}>{localizeBoardName(board, language)}</option>
               ))}
             </select>
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-text-secondary">

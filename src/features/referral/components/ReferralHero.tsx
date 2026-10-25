@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Copy, Share2, Check, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 interface ReferralHeroProps {
   code: string;
@@ -10,7 +11,7 @@ interface ReferralHeroProps {
 }
 
 export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, refereeBonus = 100 }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -49,12 +50,12 @@ export const ReferralHero: React.FC<ReferralHeroProps> = ({ code, isLoading, ref
         const referralLink = `${window.location.origin}/register?ref=${code}`;
         await navigator.share({
           title: t('referral.shareTitle'),
-          text: t('referral.shareText', { bonus: refereeBonus }),
+          text: t('referral.shareText', { bonus: localizeDigits(refereeBonus, language) }),
           url: referralLink,
         });
       } catch (err) {}
     }
-  }, [code, refereeBonus, t]);
+  }, [code, refereeBonus, language, t]);
 
   if (isLoading) {
     return <div className="h-32 rounded-xl animate-pulse bg-secondary" />;

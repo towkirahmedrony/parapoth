@@ -13,6 +13,7 @@ import LanguageSwitcher from '@/shared/components/ui/LanguageSwitcher';
 import { MyPlanCard } from '@/features/access/components/MyPlanCard';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import type { AppMessageKey } from '@/shared/i18n/messages';
+import { localizeAcademicGroup, localizeClassLevel, localizeEducationBoard } from '../utils/profileLabels';
 
 const getGenderText = (g: string | undefined, t: TranslateFn) => {
   if (g === 'Male') return t('profile.genderMale');
@@ -21,16 +22,6 @@ const getGenderText = (g: string | undefined, t: TranslateFn) => {
 };
 
 type TranslateFn = (key: AppMessageKey) => string;
-
-const GROUP_LABELS: Record<string, string> = {
-  Science: 'বিজ্ঞান',
-  Business: 'ব্যবসায় শিক্ষা',
-  Humanities: 'মানবিক',
-};
-
-const BOARD_LABELS: Record<string, string> = {
-  Dhaka: 'ঢাকা',
-};
 
 const UserProfile: React.FC = () => {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -117,11 +108,11 @@ const UserProfile: React.FC = () => {
             />
             <InfoRow 
               label={t('profile.fieldClassInfo')}
-              value={user?.class_level} 
+              value={user?.class_level ? localizeClassLevel(user.class_level, language) : undefined}
             />
             <InfoRow 
               label={t('profile.fieldGroup')}
-              value={user?.group ? (language === 'bn' ? GROUP_LABELS[user.group] ?? user.group : user.group) : undefined}
+              value={user?.group ? localizeAcademicGroup(user.group, language) : undefined}
             />
             <InfoRow 
               label={t('profile.batchInfo')}
@@ -129,7 +120,7 @@ const UserProfile: React.FC = () => {
             />
             <InfoRow 
               label={t('profile.boardInfo')}
-              value={user?.education_board ? (language === 'bn' ? BOARD_LABELS[user.education_board] ?? user.education_board : user.education_board) : undefined}
+              value={user?.education_board ? localizeEducationBoard(user.education_board, language) : undefined}
             />
             <InfoRow 
               label={t('profile.fieldStudyGoal')}

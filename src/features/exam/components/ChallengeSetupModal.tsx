@@ -59,11 +59,11 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('subjects')
-        .select('id, name_bn')
+        .select('id, name_bn, name_en')
         .eq('is_active', true);
 
       if (error) throw error;
-      return data as Pick<Subject, 'id' | 'name_bn'>[];
+      return data as Pick<Subject, 'id' | 'name_bn' | 'name_en'>[];
     },
     enabled: isOpen,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -75,12 +75,12 @@ export const ChallengeSetupModal: React.FC<ChallengeModalProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('chapters')
-        .select('id, name_bn')
+        .select('id, name_bn, name_en')
         .eq('subject_id', selectedSubject)
         .eq('is_active', true);
 
       if (error) throw error;
-      return data as Pick<Chapter, 'id' | 'name_bn'>[];
+      return data as Pick<Chapter, 'id' | 'name_bn' | 'name_en'>[];
     },
     enabled: isOpen && !!selectedSubject,
     staleTime: 5 * 60 * 1000,

@@ -2,6 +2,7 @@ import React, { useState, memo, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { ChevronDown, ChevronRight, Check, ChevronLeft, Minus, ArrowRight, AlertCircle } from 'lucide-react';
 import { Subject, Chapter } from '../types/content';
+import { pickLang } from '@/shared/i18n/localize';
 
 interface ChapterSelectionProps {
   subject: Subject;
@@ -32,7 +33,7 @@ const Checkbox = memo(({ status, onClick }: { status: 'checked' | 'unchecked' | 
 Checkbox.displayName = 'Checkbox';
 
 const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, onProceed }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [expandedChapters, setExpandedChapters] = useState<string[]>([]);
   const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set());
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -122,7 +123,7 @@ const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, on
               <ChevronLeft size={22} strokeWidth={2.5} />
             </button>
             <div className="flex flex-col">
-              <h2 className="text-lg md:text-xl font-bold leading-tight text-text-primary">{subject.name_bn}</h2>
+              <h2 className="text-lg md:text-xl font-bold leading-tight text-text-primary">{pickLang(language, subject.name_bn, subject.name_en)}</h2>
               <span className="text-xs md:text-sm opacity-70 text-text-secondary">{t('exam.topicsSelected', { count: selectedTopicIds.size })}</span>
             </div>
           </div>
@@ -147,7 +148,7 @@ const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, on
                 >
                   <Checkbox status={status} onClick={() => handleChapterCheck(chapter)} />
                   <div className="flex-1 flex items-center justify-between">
-                    <span className="font-semibold text-[15px] md:text-base text-text-primary">{chapter.name_bn}</span>
+                    <span className="font-semibold text-[15px] md:text-base text-text-primary">{pickLang(language, chapter.name_bn, chapter.name_en)}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-xs md:text-sm font-mono px-2 py-1 rounded-md bg-badge-bg text-badge-text">
                         {selectedCount}/{totalTopics}
@@ -176,7 +177,7 @@ const ChapterSelection: React.FC<ChapterSelectionProps> = ({ subject, onBack, on
                           </div>
                           <div className="flex-1 flex justify-between items-center">
                             <span className={`text-sm md:text-[15px] transition-colors ${isSelected ? 'font-semibold text-primary' : 'text-text-primary opacity-80'}`}>
-                              {topic.name_bn}
+                              {pickLang(language, topic.name_bn, topic.name_en)}
                             </span>
                             <span className="text-xs text-text-secondary opacity-60">
                                {t('exam.questionsCount', { count: topic.total_questions || 0 })}

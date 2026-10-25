@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import apiClient from '@/shared/lib/apiClient';
 import { Question, ExamResultData } from '../types/exam';
+import { useLanguage } from '@/shared/i18n/LanguageProvider';
 
 // ১. কাস্টম এক্সাম বা প্রশ্ন জেনারেট করা
 export const useGenerateExam = (topicIds: string[], questionCount: number) => {
@@ -21,6 +22,7 @@ export const useGenerateExam = (topicIds: string[], questionCount: number) => {
 // ২. এক্সাম সাবমিট করে রেজাল্ট সেভ করা
 export const useSubmitExamResult = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async (resultData: ExamResultData) => {
@@ -40,7 +42,7 @@ export const useSubmitExamResult = () => {
       queryClient.invalidateQueries({ queryKey: ['me', 'access'] });
     },
     onError: () => {
-      toast.error('Failed to submit exam results. Please try again.');
+      toast.error(t('exam.submitFailed'));
     }
   });
 };

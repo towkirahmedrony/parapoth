@@ -1,10 +1,10 @@
 /**
  * Application translation dictionary for Porokh (পরোখ).
  *
- * Scope note: this phase localizes the homepage (dashboard home), Settings,
- * Progress, History and the shared navigation chrome. Other routes (auth,
- * exam, question review, results, admin) keep their existing Bengali copy
- * until they are migrated in a later phase.
+ * Scope note: this dictionary is the single source of user-facing copy for
+ * every route in the student app. Bengali is the source-of-truth key set and
+ * English must mirror it; bilingual database content is selected separately
+ * via the `name_bn`/`name_en` pair rather than translated at runtime.
  *
  * Keys are stable and namespaced by feature (`nav.*`, `home.*`,
  * `settings.*`, `progress.*`, `history.*`). `bn` is the source of truth for
@@ -67,6 +67,7 @@ const bn = {
   'common.close': 'বন্ধ করুন',
   'common.search': 'খুঁজুন',
   'common.all': 'সকল',
+  'common.vs': 'বনাম',
 
   'nav.home': 'হোম',
   'nav.modelTest': 'মডেল টেস্ট',
@@ -433,6 +434,8 @@ const bn = {
   'exam.challengeSuccess': 'চ্যালেঞ্জ সফলভাবে পাঠানো হয়েছে!',
   'exam.challengeError': 'চ্যালেঞ্জ পাঠাতে সমস্যা হয়েছে',
   'exam.selectSubjectError': 'অনুগ্রহ করে একটি বিষয় নির্বাচন করুন',
+  'exam.untitledSubject': 'শিরোনামহীন বিষয়',
+  'exam.questionImageAlt': 'প্রশ্নের ছবি',
   'exam.userMissing': 'ইউজার তথ্য পাওয়া যাচ্ছে না',
   'exam.reportShort': 'রিপোর্ট',
   'exam.timeLeft': 'বাকি সময়',
@@ -461,6 +464,8 @@ const bn = {
   'leaderboard.them': 'তারা',
   'leaderboard.totalXp': 'মোট XP',
   'leaderboard.joinSquad': 'স্কোয়াডে যোগ দিন',
+  'leaderboard.joinPrompt': 'প্রতিযোগিতা করতে একটি স্কোয়াডে যোগ দিন',
+  'leaderboard.lobbyPlaceholder': 'আপনার স্কোয়াডের লড়াই এখানে দেখা যাবে।',
   'questionBank.filter': 'ফিল্টার',
   'questionBank.reset': 'রিসেট',
   'questionBank.search': 'খুঁজুন...',
@@ -581,6 +586,9 @@ const bn = {
   'premium.pay_success': 'পেমেন্ট সফল! প্রিমিয়াম চালু হয়েছে।',
   'premium.pay_failed': 'পেমেন্ট যাচাই করা যায়নি। আবার চেষ্টা করুন।',
   'premium.my_plan': 'আমার প্ল্যান',
+  'premium.copy_number': 'নম্বর কপি করুন',
+  'premium.number_copied': 'নম্বর কপি হয়েছে!',
+  'premium.copy_failed': 'নম্বর কপি করা যায়নি',
   'premium.source_subscription': 'সাবস্ক্রিপশন',
   'premium.source_grant_user': 'অ্যাডমিনের বিশেষ অ্যাক্সেস',
   'premium.source_grant_all': 'সবার জন্য ফ্রি',
@@ -870,6 +878,9 @@ const bn = {
   'profile.sectionPersonal': 'ব্যক্তিগত তথ্য',
   'profile.sectionAcademic': 'একাডেমিক তথ্য',
   'profile.infoName': 'নাম',
+  'profile.anonymousUser': 'নামহীন ব্যবহারকারী',
+  'profile.avatarAlt': 'প্রোফাইল ছবি',
+  'profile.ratingLabel': 'রেটিং',
   'profile.fieldUsername': 'ইউজারনেম',
   'profile.fieldFullName': 'সম্পূর্ণ নাম',
   'profile.fieldEmail': 'ইমেইল',
@@ -890,6 +901,7 @@ const bn = {
   'profile.boardInfo': 'বোর্ড',
   'profile.fieldBatch': 'ব্যাচ (বছর)',
   'profile.batchInfo': 'ব্যাচ',
+  'profile.batchValue': 'ব্যাচ {year}',
   'profile.batchPlaceholder': 'যেমন: ২০২৬',
   'profile.fieldStudyGoal': 'শিক্ষার লক্ষ্য',
   'profile.studyGoalPlaceholder': 'যেমন: বুয়েট (BUET)',
@@ -898,6 +910,7 @@ const bn = {
   'profile.updateError': 'প্রোফাইল আপডেট করতে সমস্যা হয়েছে।',
   'profile.unexpectedError': 'অপ্রত্যাশিত একটি সমস্যা হয়েছে।',
   'profile.userNotFound': 'দুঃখিত, এই ইউজারকে খুঁজে পাওয়া যায়নি।',
+  'profile.loadError': 'প্রোফাইল লোড করা যায়নি। আবার চেষ্টা করুন।',
   'profile.goToMarketplace': 'মার্কেটপ্লেসে যান',
   'profile.photoUploadError': 'ছবি আপলোড করতে সমস্যা হয়েছে।',
   'profile.uploading': 'আপলোড হচ্ছে...',
@@ -1103,6 +1116,7 @@ const en: Record<AppMessageKey, string> = {
   'common.close': 'Close',
   'common.search': 'Search',
   'common.all': 'All',
+  'common.vs': 'VS',
 
   'nav.home': 'Home',
   'nav.modelTest': 'Model Test',
@@ -1475,6 +1489,8 @@ const en: Record<AppMessageKey, string> = {
   'exam.challengeSuccess': 'Challenge sent successfully!',
   'exam.challengeError': 'Could not send the challenge',
   'exam.selectSubjectError': 'Please select a subject',
+  'exam.untitledSubject': 'Untitled subject',
+  'exam.questionImageAlt': 'Question image',
   'exam.userMissing': 'User information is unavailable',
   'exam.reportShort': 'Report',
   'exam.timeLeft': 'Time left',
@@ -1503,6 +1519,8 @@ const en: Record<AppMessageKey, string> = {
   'leaderboard.them': 'THEM',
   'leaderboard.totalXp': 'Total XP',
   'leaderboard.joinSquad': 'Join a squad',
+  'leaderboard.joinPrompt': 'Join a squad to compete',
+  'leaderboard.lobbyPlaceholder': 'Your squad battle will appear here.',
   'questionBank.filter': 'Filters',
   'questionBank.reset': 'Reset',
   'questionBank.search': 'Search...',
@@ -1623,6 +1641,9 @@ const en: Record<AppMessageKey, string> = {
   'premium.pay_success': 'Payment successful! Premium is active.',
   'premium.pay_failed': 'We couldn\'t verify the payment. Please try again.',
   'premium.my_plan': 'My Plan',
+  'premium.copy_number': 'Copy number',
+  'premium.number_copied': 'Number copied to clipboard!',
+  'premium.copy_failed': 'Failed to copy number',
   'premium.source_subscription': 'Subscription',
   'premium.source_grant_user': 'Special access from admin',
   'premium.source_grant_all': 'Free for everyone',
@@ -1905,6 +1926,9 @@ const en: Record<AppMessageKey, string> = {
   'profile.sectionPersonal': 'Personal information',
   'profile.sectionAcademic': 'Academic information',
   'profile.infoName': 'Name',
+  'profile.anonymousUser': 'Anonymous user',
+  'profile.avatarAlt': 'Profile photo',
+  'profile.ratingLabel': 'Rating',
   'profile.fieldUsername': 'Username',
   'profile.fieldFullName': 'Full name',
   'profile.fieldEmail': 'Email',
@@ -1925,6 +1949,7 @@ const en: Record<AppMessageKey, string> = {
   'profile.boardInfo': 'Board',
   'profile.fieldBatch': 'Batch (year)',
   'profile.batchInfo': 'Batch',
+  'profile.batchValue': 'Batch {year}',
   'profile.batchPlaceholder': 'e.g. 2026',
   'profile.fieldStudyGoal': 'Study goal',
   'profile.studyGoalPlaceholder': 'e.g. BUET',
@@ -1933,6 +1958,7 @@ const en: Record<AppMessageKey, string> = {
   'profile.updateError': 'Could not update the profile.',
   'profile.unexpectedError': 'An unexpected error occurred.',
   'profile.userNotFound': 'Sorry, this user could not be found.',
+  'profile.loadError': 'Could not load the profile. Please try again.',
   'profile.goToMarketplace': 'Go to marketplace',
   'profile.photoUploadError': 'Could not upload the photo.',
   'profile.uploading': 'Uploading...',

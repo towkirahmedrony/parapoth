@@ -3,17 +3,18 @@ import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Layers } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
 import { Chapter } from '../types/content';
+import { pickLang } from '@/shared/i18n/localize';
 
 interface ChapterSelectorProps {
   isLoading: boolean;
-  chapters: Pick<Chapter, 'id' | 'name_bn'>[];
+  chapters: Pick<Chapter, 'id' | 'name_bn' | 'name_en'>[];
   selectedChapter: string;
   selectedSubject: string;
   onSelect: (val: string) => void;
 }
 
 export const ChapterSelector: React.FC<ChapterSelectorProps> = memo(({ isLoading, chapters, selectedChapter, selectedSubject, onSelect }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   return (
     <div className="mb-6 w-full group">
       <label className="text-sm md:text-base font-semibold mb-2.5 flex items-center gap-2 text-text-primary">
@@ -32,7 +33,7 @@ export const ChapterSelector: React.FC<ChapterSelectorProps> = memo(({ isLoading
             <option value="all" className="bg-surface text-text-primary">📚 {t('exam.fullBook')}</option>
             {chapters.map(chap => (
               <option key={chap.id} value={chap.id} className="bg-surface text-text-primary">
-                {chap.name_bn}
+                {pickLang(language, chap.name_bn, chap.name_en)}
               </option>
             ))}
           </select>

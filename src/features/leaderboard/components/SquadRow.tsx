@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { Squad } from '../types/groupLeaderboard';
+import { localizeDigits } from '@/shared/i18n/messages';
 
 interface SquadRowProps {
   squad: Squad;
@@ -8,7 +9,7 @@ interface SquadRowProps {
 }
 
 export const SquadRow: React.FC<SquadRowProps> = ({ squad, isPinned = false }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const getMedal = (rank: number): React.ReactNode => {
     if (rank === 1) return '🥇';
     if (rank === 2) return '🥈';
@@ -39,9 +40,9 @@ export const SquadRow: React.FC<SquadRowProps> = ({ squad, isPinned = false }) =
       
       <div className="text-right">
         <div className="font-bold text-text-primary">
-          {(squad.total_xp ?? 0).toLocaleString()}
+          {localizeDigits((squad.total_xp ?? 0).toLocaleString('en-US'), language)}
         </div>
-        <div className="text-xs text-text-secondary">XP</div>
+        <div className="text-xs text-text-secondary">{t('leaderboard.xp')}</div>
       </div>
     </div>
   );
