@@ -16,6 +16,7 @@ import MathDisplay from '@/shared/components/content/MathDisplay';
 import toast from 'react-hot-toast';
 import { ExamConfig, ExamQuestion, Question } from '../types/exam';
 import { practiceService, resolvePracticeError } from '@/features/practice/services/practiceService';
+import { buildQuestionReportData } from '../utils/questionReport';
 import {
   clampQuestionIndex,
   findFirstUnansweredQuestionIndex,
@@ -234,6 +235,18 @@ const Arena: React.FC = () => {
   const practiceMode = attemptStateQuery.data?.practice_mode ?? null;
   const isQuizMode =
     practiceMode === 'wrong_from_history' || practiceMode === 'wrong_global';
+
+  const reportQuestionData = useMemo(() => {
+    if (!reportingQuestionId) return null;
+
+    const question = questions.find(
+      (item) => String(item.id) === String(reportingQuestionId)
+    );
+
+    return question
+      ? buildQuestionReportData(question, language)
+      : { questionId: reportingQuestionId };
+  }, [questions, reportingQuestionId, language]);
   const quizQuestion = questions[quizIndex] ?? questions[0];
   const quizReveal = quizQuestion ? quizReveals[quizQuestion.id] ?? null : null;
   const quizAllAnswered =
@@ -804,12 +817,12 @@ const Arena: React.FC = () => {
           </button>
         </div>
 
-        {isReportModalOpen && reportingQuestionId && (
+        {isReportModalOpen && reportingQuestionId && reportQuestionData && (
           <ReportModal
             isOpen={isReportModalOpen}
             onClose={() => setIsReportModalOpen(false)}
             type="question_issue"
-            questionData={{ questionId: reportingQuestionId }}
+            questionData={reportQuestionData}
             onSubmit={async (data) => {
               await reportMutation.mutateAsync(data);
               setIsReportModalOpen(false);
@@ -925,12 +938,12 @@ const Arena: React.FC = () => {
         </button>
       </div>
 
-      {isReportModalOpen && reportingQuestionId && (
+      {isReportModalOpen && reportingQuestionId && reportQuestionData && (
         <ReportModal
           isOpen={isReportModalOpen}
           onClose={() => setIsReportModalOpen(false)}
           type="question_issue"
-          questionData={{ questionId: reportingQuestionId }}
+          questionData={reportQuestionData}
           onSubmit={async (data) => {
             await reportMutation.mutateAsync(data);
             setIsReportModalOpen(false);

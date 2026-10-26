@@ -16,7 +16,7 @@ export interface AnalysisQuestionCardProps {
   showCorrectAnswers?: boolean;
   initialBookmarked?: boolean;
   onReport?: (questionId: string) => void;
-  onBookmark?: (questionId: string, isNowBookmarked: boolean) => void;
+  onBookmark?: (questionId: string, isNowBookmarked: boolean) => Promise<unknown> | void;
 }
 
 const normalizeId = (value: string | number | null | undefined): string =>
@@ -41,11 +41,14 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   const { language, t } = useLanguage();
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(initialBookmarked);
+  const [isBookmarkUpdating, setIsBookmarkUpdating] = useState<boolean>(false);
 
-  // Sync with parent if initial prop changes
+  // Sync with parent unless an optimistic update is still in flight.
   useEffect(() => {
-    setIsBookmarked(initialBookmarked);
-  }, [initialBookmarked]);
+    if (!isBookmarkUpdating) {
+      setIsBookmarked(initialBookmarked);
+    }
+  }, [initialBookmarked, isBookmarkUpdating]);
   
   const correctOption = useMemo(
     () => question.options?.find((opt) => isCorrectFlag(opt)) ?? null,
@@ -134,11 +137,22 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
 
   const imageUrl = question.image_url || question.media_library?.file_url;
 
-  const handleBookmark = useCallback(() => {
+  const handleBookmark = useCallback(async () => {
+    if (isBookmarkUpdating) return;
+
     const newState = !isBookmarked;
     setIsBookmarked(newState);
-    if (onBookmark) onBookmark(question.id, newState);
-  }, [onBookmark, question.id, isBookmarked]);
+    setIsBookmarkUpdating(true);
+
+    try {
+      await onBookmark?.(question.id, newState);
+    } catch {
+      // Roll back the optimistic state when the server rejects the change.
+      setIsBookmarked(!newState);
+    } finally {
+      setIsBookmarkUpdating(false);
+    }
+  }, [onBookmark, question.id, isBookmarked, isBookmarkUpdating]);
 
   return (
     <div className={`rounded-xl overflow-hidden transition-all shadow-sm md:shadow-md border bg-card-bg ${statusConfig.borderClass}`}>
@@ -157,8 +171,12 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 border-r border-border-color pr-3 mr-1">
             <button 
-              onClick={handleBookmark} 
-              className={`p-1.5 rounded-full transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-focus-ring ${
+              type="button"
+              onClick={() => void handleBookmark()}
+              disabled={isBookmarkUpdating}
+              aria-pressed={isBookmarked}
+              aria-busy={isBookmarkUpdating}
+              className={`p-1.5 rounded-full transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-focus-ring disabled:opacity-50 ${
                 isBookmarked 
                   ? 'bg-accent text-text-primary' 
                   : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'

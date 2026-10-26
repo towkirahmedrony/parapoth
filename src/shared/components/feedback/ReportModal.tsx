@@ -3,6 +3,8 @@ import { X, AlertTriangle, MessageSquare, CheckCircle, Bug, FileQuestion } from 
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import type { AppMessageKey } from '@/shared/i18n/messages';
+import QuestionText from '@/shared/components/content/QuestionText';
+import MathDisplay from '@/shared/components/content/MathDisplay';
 
 export type ReportType = 'app_bug' | 'question_issue';
 
@@ -24,10 +26,17 @@ const QUESTION_ISSUES = [
   { value: 'confusing', labelKey: 'report.question_confusing' },
 ] as const satisfies readonly { value: string; labelKey: AppMessageKey }[];
 
+export interface QuestionReportOption {
+  id?: string;
+  text: string;
+}
+
 export interface QuestionMetaData {
   questionId: string;
   examId?: string;
   questionText?: string;
+  questionOptions?: QuestionReportOption[];
+  imageUrl?: string | null;
 }
 
 export interface ReportPayload {
@@ -104,7 +113,6 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
         created_at: new Date().toISOString(),
         ...(type === 'question_issue' && questionData ? {
           target_question_id: questionData.questionId,
-          target_exam_id: questionData.examId || null,
         } : {})
       };
 
@@ -156,15 +164,41 @@ const ReportModal: React.FC<ReportModalProps> = memo(({
         <div className="p-5 space-y-4">
           
           {/* Context Info */}
-          {isQuestion && questionData && (
+          {isQuestion && (
             <div className="rounded-lg p-3 flex items-start gap-3 bg-accent/10 border border-accent/20">
               <AlertTriangle className="flex-shrink-0 mt-0.5 text-accent" size={16} aria-hidden="true" />
-              <div className="text-xs space-y-1 text-text-primary">
+              <div className="min-w-0 flex-1 space-y-2 text-xs text-text-primary">
                 <p className="font-semibold">{t('report.contextIntro')}</p>
-                {questionData.questionText && (
-                  <p className="line-clamp-2 italic opacity-80">"{questionData.questionText}"</p>
+                {questionData?.questionText ? (
+                  <div className="max-h-48 overflow-y-auto rounded-md border border-border-color bg-surface px-3 py-2 text-[13px] leading-relaxed">
+                    <QuestionText text={questionData.questionText} />
+                  </div>
+                ) : (
+                  <p className="italic text-text-secondary">
+                    {t('report.questionUnavailable')}
+                  </p>
                 )}
-                <p className="text-[10px] uppercase tracking-wider text-text-secondary">ID: {questionData.questionId}</p>
+                {questionData?.imageUrl && (
+                  <img
+                    src={questionData.imageUrl}
+                    alt={t('exam.questionImageAlt')}
+                    className="max-h-40 w-full rounded-md border border-border-color bg-surface object-contain"
+                  />
+                )}
+                {questionData?.questionOptions && questionData.questionOptions.length > 0 && (
+                  <ol className="space-y-1.5">
+                    {questionData.questionOptions.map((option, index) => (
+                      <li key={option.id || `${option.text}-${index}`} className="flex items-start gap-2">
+                        <span className="mt-0.5 min-w-[1.25rem] rounded bg-badge-bg px-1 py-0.5 text-center text-[10px] font-bold font-mono text-badge-text">
+                          {String.fromCharCode(65 + index)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <MathDisplay content={option.text} />
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </div>
             </div>
           )}

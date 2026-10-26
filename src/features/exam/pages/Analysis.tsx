@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, memo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AnalysisQuestionCard from '../components/AnalysisQuestionCard';
 import ReportModal, {
   QuestionMetaData,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import type { AppMessageKey } from '@/shared/i18n/messages';
+import { buildQuestionReportData } from '../utils/questionReport';
 
 type TranslateFn = (key: AppMessageKey) => string;
 
@@ -125,9 +126,10 @@ const getStatusCardClass = (item: ResultDetailItem) => {
 };
 
 const Analysis: React.FC = () => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
 
   const stateResult = (location.state as ExamResultPayload) || null;
@@ -224,11 +226,20 @@ const Analysis: React.FC = () => {
   });
 
   const bookmarkMutation = useMutation({
-    mutationFn: async (questionId: string) => {
-      const response = await apiClient.post('/exams/bookmark', { questionId });
+    mutationFn: async (payload: { questionId: string; bookmarked: boolean }) => {
+      const response = await apiClient.post('/exams/bookmark', payload);
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData<string[]>(['exams', 'bookmarks'], (current) => {
+        const next = new Set(current ?? []);
+        if (variables.bookmarked) {
+          next.add(variables.questionId);
+        } else {
+          next.delete(variables.questionId);
+        }
+        return Array.from(next);
+      });
       toast.success(data?.message || t('exam.bookmarkUpdated'));
     },
     onError: () => {
@@ -236,14 +247,37 @@ const Analysis: React.FC = () => {
     },
   });
 
+  const bookmarksQuery = useQuery({
+    queryKey: ['exams', 'bookmarks'],
+    queryFn: async () => {
+      const response = await apiClient.get('/exams/bookmark');
+      const ids = response?.data?.data?.question_ids;
+      return Array.isArray(ids)
+        ? ids.filter((questionId): questionId is string => typeof questionId === 'string')
+        : [];
+    },
+    enabled: Boolean(result),
+    staleTime: 30 * 1000,
+  });
+
   const handleReport = useCallback((questionId: string) => {
-    setReportQuestionData({ questionId });
+    const details = getSafeDetailsJson(result);
+    const questions = Array.isArray(details.questions)
+      ? (details.questions as Question[])
+      : [];
+    const question = questions.find(
+      (item) => String(item?.id) === String(questionId)
+    );
+
+    setReportQuestionData(
+      question ? buildQuestionReportData(question, language) : { questionId }
+    );
     setIsReportModalOpen(true);
-  }, []);
+  }, [result, language]);
 
   const handleBookmark = useCallback(
-    (questionId: string) => {
-      bookmarkMutation.mutate(questionId);
+    async (questionId: string, bookmarked: boolean) => {
+      await bookmarkMutation.mutateAsync({ questionId, bookmarked });
     },
     [bookmarkMutation]
   );
@@ -326,9 +360,12 @@ const Analysis: React.FC = () => {
         ? detailsJson.answers
         : {};
 
-  const bookmarkedIds: string[] = Array.isArray(detailsJson.bookmarked_ids)
+  const resultBookmarkedIds: string[] = Array.isArray(detailsJson.bookmarked_ids)
     ? detailsJson.bookmarked_ids
     : [];
+  const bookmarkedIds = new Set(
+    bookmarksQuery.isSuccess ? bookmarksQuery.data : resultBookmarkedIds
+  );
 
   const detailsByQuestionId = new Map<string, ResultDetailItem>(
     resultDetails.map((detail) => [String(detail.question_id), detail])
@@ -414,7 +451,7 @@ const Analysis: React.FC = () => {
               userAnswerId={getSelectedAnswerId(q.id)}
               status={detailsByQuestionId.get(String(q.id))?.status}
               showCorrectAnswers={showCorrectAnswers}
-              initialBookmarked={bookmarkedIds.includes(q.id)}
+              initialBookmarked={bookmarkedIds.has(q.id)}
               onReport={handleReport}
               onBookmark={handleBookmark}
             />
@@ -496,7 +533,12 @@ const Analysis: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => handleBookmark(item.question_id)}
+                      onClick={() => {
+                        void handleBookmark(
+                          item.question_id,
+                          !bookmarkedIds.has(item.question_id)
+                        ).catch(() => undefined);
+                      }}
                       className="px-4 py-2 rounded-xl border border-border-color bg-card-bg text-sm font-semibold active:scale-95 transition-all"
                     >
                       {t('analysis.bookmark')}
