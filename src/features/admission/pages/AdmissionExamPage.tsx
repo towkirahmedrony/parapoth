@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { beginExamActivity } from '@/features/app-update/examActivity';
 import { localizeDigits } from '@/shared/i18n/messages';
 import QuestionCard from '@/features/exam/components/QuestionCard';
 import ExamTimer from '@/features/exam/components/ExamTimer';
@@ -92,6 +93,15 @@ const AdmissionExamPage: React.FC = () => {
 
   const submittedRef = useRef(false);
   const timeLeftRef = useRef(0);
+
+  // Admission attempts block OTA activation until the submission is confirmed.
+  useEffect(() => {
+    if (!attempt || questions.length === 0) return undefined;
+    return beginExamActivity(
+      `admission:${attempt.id}`,
+      isSubmitting ? 'submission_pending' : 'exam_active'
+    );
+  }, [attempt, isSubmitting, questions.length]);
   const endTimeRef = useRef<number | null>(null);
   const initialSecondsRef = useRef(0);
   const lastSavedRef = useRef('');

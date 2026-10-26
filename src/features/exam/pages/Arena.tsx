@@ -9,6 +9,7 @@ import ReportModal, { ReportPayload as ModalReportPayload } from '@/shared/compo
 import ConfirmModal from '@/shared/components/feedback/ConfirmModal';
 import { apiClient } from '@/shared/lib/apiClient';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { beginExamActivity } from '@/features/app-update/examActivity';
 import type { AppMessageKey } from '@/shared/i18n/messages';
 import { getLocalized, pickLang } from '@/shared/i18n/localize';
 import MathDisplay from '@/shared/components/content/MathDisplay';
@@ -219,6 +220,16 @@ const Arena: React.FC = () => {
         : (arenaQuestionsQuery.data ?? []),
     [isAttemptMode, attemptQuestionsQuery.data, arenaQuestionsQuery.data]
   );
+
+  // Keep OTA activation paused for the whole attempt, including submission.
+  const examActivityId = `practice:${attemptId ?? sessionId ?? 'arena'}`;
+  useEffect(() => {
+    if (questions.length === 0) return undefined;
+    return beginExamActivity(
+      examActivityId,
+      isSubmitting ? 'submission_pending' : 'exam_active'
+    );
+  }, [examActivityId, isSubmitting, questions.length]);
 
   const practiceMode = attemptStateQuery.data?.practice_mode ?? null;
   const isQuizMode =

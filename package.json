@@ -7,14 +7,21 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/features/exam/utils/examSubmission.test.ts src/features/admission/lib/admissionAdapter.test.ts src/features/progress/services/analyticsGuard.test.ts src/features/practice/utils/practice.test.ts src/features/auth/utils/passwordRecovery.test.ts src/features/auth/utils/passwordRecoveryUrl.test.ts src/features/auth/utils/username.test.ts src/features/auth/utils/changePasswordUtils.test.ts src/features/auth/utils/passwordRecoverySession.test.ts src/features/auth/utils/authSessionSync.test.ts src/features/dashboard/utils/namecard.test.ts src/shared/i18n/languagePreference.test.ts src/features/question-bank/services/questionBankMapper.test.ts src/shared/i18n/messages.test.ts src/features/groups/utils/groupSlug.test.ts",
+    "test": "tsx --test src/features/exam/utils/examSubmission.test.ts src/features/exam/offline/offlineExam.test.ts src/features/admission/lib/admissionAdapter.test.ts src/features/progress/services/analyticsGuard.test.ts src/features/practice/utils/practice.test.ts src/features/auth/utils/passwordRecovery.test.ts src/features/auth/utils/passwordRecoveryUrl.test.ts src/features/auth/utils/username.test.ts src/features/auth/utils/changePasswordUtils.test.ts src/features/auth/utils/passwordRecoverySession.test.ts src/features/auth/utils/authSessionSync.test.ts src/features/dashboard/utils/namecard.test.ts src/shared/i18n/languagePreference.test.ts src/features/question-bank/services/questionBankMapper.test.ts src/shared/i18n/messages.test.ts src/features/groups/utils/groupSlug.test.ts src/features/app-update/version.test.ts src/features/app-update/stateMachine.test.ts src/features/app-update/activationGate.test.ts src/features/app-update/schema.test.ts src/features/app-update/controller.test.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "bump:patch": "npm version patch",
     "bump:minor": "npm version minor",
-    "bump:major": "npm version major"
+    "bump:major": "npm version major",
+    "native:sync": "node scripts/sync-native-version.mjs && node node_modules/@capacitor/cli/bin/capacitor sync android",
+    "native:open": "node node_modules/@capacitor/cli/bin/capacitor open android",
+    "native:version": "node scripts/sync-native-version.mjs",
+    "ota:version": "node node_modules/tsx/dist/cli.mjs scripts/ota-version.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capgo/capacitor-updater": "^8.54.0",
     "@supabase/supabase-js": "^2.101.1",
     "@tanstack/query-sync-storage-persister": "^5.97.0",
     "@tanstack/react-query": "^5.96.2",
@@ -44,6 +51,8 @@
     "vconsole": "^3.15.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@capgo/cli": "^8.97.2",
     "@tailwindcss/typography": "^0.5.19",
     "@types/dompurify": "^3.0.5",
     "@types/node": "^25.3.5",
