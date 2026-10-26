@@ -33,3 +33,32 @@ export const normalizeAttemptAnswers = (value: unknown): Record<string, string> 
 
   return answers;
 };
+
+export const clampQuestionIndex = (value: unknown, total: number): number => {
+  const max = Math.max(0, Math.trunc(Number(total) || 0) - 1);
+  const index = Math.trunc(Number(value));
+
+  if (!Number.isFinite(index)) return 0;
+
+  return Math.min(Math.max(0, index), max);
+};
+
+export const findFirstUnansweredQuestionIndex = (
+  questions: { id: string }[],
+  answers: Record<string, string>,
+  startIndex = 0
+): number | null => {
+  if (!Array.isArray(questions) || questions.length === 0) return null;
+
+  const start = clampQuestionIndex(startIndex, questions.length);
+
+  for (let index = start; index < questions.length; index += 1) {
+    if (!answers[questions[index].id]) return index;
+  }
+
+  for (let index = 0; index < start; index += 1) {
+    if (!answers[questions[index].id]) return index;
+  }
+
+  return null;
+};

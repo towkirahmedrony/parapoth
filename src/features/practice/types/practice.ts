@@ -65,3 +65,17 @@ export interface AttemptQuestionsResponse {
   server_time: string;
   questions: Question[];
 }
+
+export interface PracticeAnswerReveal {
+  is_correct: boolean;
+  correct_option: {
+    id: string;
+    text_bn?: string | null;
+    text_en?: string | null;
+    image_url?: string | null;
+  } | null;
+  explanation: {
+    bn: string;
+    en: string;
+  } | null;
+}

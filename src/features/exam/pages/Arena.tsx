@@ -10,12 +10,18 @@ import ConfirmModal from '@/shared/components/feedback/ConfirmModal';
 import { apiClient } from '@/shared/lib/apiClient';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import type { AppMessageKey } from '@/shared/i18n/messages';
+import { getLocalized, pickLang } from '@/shared/i18n/localize';
+import MathDisplay from '@/shared/components/content/MathDisplay';
 import toast from 'react-hot-toast';
 import { ExamConfig, ExamQuestion, Question } from '../types/exam';
-import { practiceService } from '@/features/practice/services/practiceService';
-import { normalizeAttemptAnswers } from '@/features/practice/utils/practice';
-import type { PracticeMode } from '@/features/practice/types/practice';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { practiceService, resolvePracticeError } from '@/features/practice/services/practiceService';
+import {
+  clampQuestionIndex,
+  findFirstUnansweredQuestionIndex,
+  normalizeAttemptAnswers,
+} from '@/features/practice/utils/practice';
+import type { PracticeAnswerReveal, PracticeMode } from '@/features/practice/types/practice';
+import { AlertCircle, CheckCircle, ChevronRight, SkipForward, XCircle } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
 import {
   buildSubmissionStorageKey,
@@ -80,7 +86,7 @@ const Arena: React.FC = () => {
   const navigate = useNavigate();
   const { subjectSlug, attemptId } = useParams<{ subjectSlug?: string; attemptId?: string }>();
   const isAttemptMode = Boolean(attemptId);
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const queryClient = useQueryClient();
 
   const passedConfig = location.state?.config as ExtendedExamConfig | undefined;
@@ -99,8 +105,12 @@ const Arena: React.FC = () => {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportingQuestionId, setReportingQuestionId] = useState<string | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizReveals, setQuizReveals] = useState<Record<string, PracticeAnswerReveal>>({});
+  const [quizSaving, setQuizSaving] = useState(false);
 
   const hasSubmittedRef = useRef(false);
+  const quizInitializedRef = useRef<string | null>(null);
   const targetEndTimeRef = useRef<number | null>(null);
   const timeLeftRef = useRef(initialDurationSeconds);
   const lastSavedDraftRef = useRef('');
@@ -167,6 +177,14 @@ const Arena: React.FC = () => {
     [isAttemptMode, attemptQuestionsQuery.data, arenaQuestionsQuery.data]
   );
 
+  const practiceMode = attemptStateQuery.data?.practice_mode ?? null;
+  const isQuizMode =
+    practiceMode === 'wrong_from_history' || practiceMode === 'wrong_global';
+  const quizQuestion = questions[quizIndex] ?? questions[0];
+  const quizReveal = quizQuestion ? quizReveals[quizQuestion.id] ?? null : null;
+  const quizAllAnswered =
+    isQuizMode && questions.length > 0 && questions.every((question) => Boolean(userAnswers[question.id]));
+
   const isLoading = isAttemptMode
     ? attemptStateQuery.isPending ||
       (Boolean(attemptStateQuery.data?.id) && attemptQuestionsQuery.isLoading)
@@ -209,6 +227,28 @@ const Arena: React.FC = () => {
   }, [isAttemptMode, attemptStateQuery.data, initialDurationSeconds]);
 
   useEffect(() => {
+    if (!isQuizMode || !attemptId || questions.length === 0) return;
+    if (quizInitializedRef.current === attemptId) return;
+
+    const draft = normalizeAttemptAnswers(attemptStateQuery.data?.answers_draft);
+    const start = clampQuestionIndex(
+      attemptStateQuery.data?.current_question_index,
+      questions.length
+    );
+    const firstUnanswered = findFirstUnansweredQuestionIndex(questions, draft, start);
+
+    setQuizIndex(firstUnanswered ?? start);
+    quizInitializedRef.current = attemptId;
+  }, [
+    isQuizMode,
+    attemptId,
+    questions,
+    attemptStateQuery.data?.answers_draft,
+    attemptStateQuery.data?.current_question_index,
+  ]);
+
+  useEffect(() => {
+    if (isQuizMode) return;
     if (isLoading || questions.length === 0) return;
 
     if (!targetEndTimeRef.current) {
@@ -229,12 +269,12 @@ const Arena: React.FC = () => {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [isLoading, questions.length, initialDurationSeconds, isAttemptMode]);
+  }, [isLoading, questions.length, initialDurationSeconds, isAttemptMode, isQuizMode]);
 
   // Autosave is best-effort and attempt-scoped. It can never extend the
   // deadline; the backend rejects writes after it.
   useEffect(() => {
-    if (!isAttemptMode || !attemptId || hasSubmittedRef.current) return;
+    if (!isAttemptMode || !attemptId || hasSubmittedRef.current || isQuizMode) return;
 
     if (Object.keys(userAnswers).length === 0) return;
 
@@ -243,7 +283,7 @@ const Arena: React.FC = () => {
 
     const timer = window.setTimeout(() => {
       practiceService
-        .saveDraftAnswers(attemptId, userAnswers)
+        .saveDraftAnswers(attemptId, userAnswers, quizIndex)
         .then(() => {
           lastSavedDraftRef.current = serialized;
         })
@@ -254,7 +294,7 @@ const Arena: React.FC = () => {
     }, 800);
 
     return () => window.clearTimeout(timer);
-  }, [userAnswers, isAttemptMode, attemptId]);
+  }, [userAnswers, isAttemptMode, attemptId, isQuizMode, quizIndex]);
 
   const submitExamMutation = useMutation({
     mutationFn: async (payload: ReturnType<typeof buildSubmitPayload>) => {
@@ -301,7 +341,13 @@ const Arena: React.FC = () => {
 
     hasSubmittedRef.current = true;
 
-    const timeTaken = initialDurationSeconds - Math.max(0, timeLeftRef.current);
+    const startedAtMs = attemptStateQuery.data?.started_at
+      ? Date.parse(attemptStateQuery.data.started_at)
+      : Number.NaN;
+    const timeTaken =
+      isQuizMode && Number.isFinite(startedAtMs)
+        ? Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000))
+        : initialDurationSeconds - Math.max(0, timeLeftRef.current);
     const questionIds = questions.map((q) => q.id);
 
     const payloadForBackend = buildSubmitPayload({
@@ -316,14 +362,53 @@ const Arena: React.FC = () => {
     });
 
     submitExam(payloadForBackend);
-  }, [questions, userAnswers, initialDurationSeconds, examId, isAttemptMode, attemptId, submissionId, submitExam]);
+  }, [
+    questions,
+    userAnswers,
+    initialDurationSeconds,
+    examId,
+    isAttemptMode,
+    attemptId,
+    submissionId,
+    submitExam,
+    isQuizMode,
+    attemptStateQuery.data?.started_at,
+  ]);
 
   useEffect(() => {
+    if (isQuizMode) return;
     if (timeLeft <= 0 && questions.length > 0 && !hasSubmittedRef.current) {
       setIsConfirmModalOpen(false);
       processSubmission();
     }
-  }, [timeLeft, questions.length, processSubmission]);
+  }, [timeLeft, questions.length, processSubmission, isQuizMode]);
+
+  const quizAnswerMutation = useMutation({
+    mutationFn: ({
+      questionId,
+      optionId,
+    }: {
+      questionId: string;
+      optionId: string;
+    }) => practiceService.answerPracticeQuestion(attemptId ?? '', questionId, optionId),
+    onSuccess: (reveal, variables) => {
+      setQuizReveals((prev) => ({
+        ...prev,
+        [variables.questionId]: reveal,
+      }));
+    },
+    onError: (error, variables) => {
+      setUserAnswers((prev) => {
+        if (prev[variables.questionId] !== variables.optionId) return prev;
+        const next = { ...prev };
+        delete next[variables.questionId];
+        return next;
+      });
+      toast.error(resolvePracticeError(error, t('practice.quiz.answerFailed')));
+    },
+  });
+
+  const isQuizChecking = isQuizMode && quizAnswerMutation.isPending;
 
   const handleOptionSelect = useCallback((questionId: string, optionId: string) => {
     if (hasSubmittedRef.current) return;
@@ -332,7 +417,50 @@ const Arena: React.FC = () => {
       ...prev,
       [questionId]: String(optionId),
     }));
-  }, []);
+
+    if (isQuizMode && !quizReveals[questionId] && !quizAnswerMutation.isPending) {
+      quizAnswerMutation.mutate({ questionId, optionId: String(optionId) });
+    }
+  }, [isQuizMode, quizReveals, quizAnswerMutation]);
+
+  const saveQuizPosition = useCallback(
+    async (nextIndex: number) => {
+      if (!attemptId) return false;
+
+      setQuizSaving(true);
+
+      try {
+        await practiceService.saveDraftAnswers(attemptId, userAnswers, nextIndex);
+        lastSavedDraftRef.current = JSON.stringify(userAnswers);
+        setQuizIndex(nextIndex);
+        return true;
+      } catch (error) {
+        toast.error(resolvePracticeError(error, t('practice.quiz.saveFailed')));
+        return false;
+      } finally {
+        setQuizSaving(false);
+      }
+    },
+    [attemptId, userAnswers, t]
+  );
+
+  const handleQuizAdvance = useCallback(async () => {
+    if (quizIndex >= questions.length - 1) {
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
+    await saveQuizPosition(quizIndex + 1);
+  }, [quizIndex, questions.length, saveQuizPosition]);
+
+  const handleQuizSkip = useCallback(async () => {
+    if (quizIndex >= questions.length - 1) {
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
+    await saveQuizPosition(quizIndex + 1);
+  }, [quizIndex, questions.length, saveQuizPosition]);
 
   const handleReportClick = useCallback((questionId: string) => {
     setReportingQuestionId(questionId);
@@ -388,13 +516,241 @@ const Arena: React.FC = () => {
   const answeredCount = Object.keys(userAnswers).length;
   const progressPercentage = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
   const isSubmitting = submitExamMutation.isPending || hasSubmittedRef.current;
-  const practiceMode = attemptStateQuery.data?.practice_mode ?? null;
   const headerTitle =
     isAttemptMode && practiceMode
       ? t(PRACTICE_TITLES[practiceMode])
       : isAttemptMode
         ? t('practice.attemptFallbackTitle')
         : t('exam.modelTestLive');
+
+  if (isQuizMode && quizQuestion) {
+    const quizAnsweredCount = Object.keys(userAnswers).filter((questionId) =>
+      questions.some((question) => question.id === questionId)
+    ).length;
+    const quizProgress = (quizAnsweredCount / questions.length) * 100;
+    const quizCorrectOption = quizQuestion.options.find(
+      (option) => option.id === quizReveal?.correct_option?.id
+    );
+    const quizCorrectLabel = quizCorrectOption
+      ? pickLang(language, quizCorrectOption.text_bn, quizCorrectOption.text_en) ||
+        quizCorrectOption.text ||
+        quizCorrectOption.id
+      : quizReveal?.correct_option
+        ? pickLang(
+            language,
+            quizReveal.correct_option.text_bn,
+            quizReveal.correct_option.text_en
+          ) || quizReveal.correct_option.id
+        : '';
+    const quizExplanation = getLocalized(quizReveal?.explanation, language);
+    const isLastQuestion = quizIndex >= questions.length - 1;
+    const quizActionLabel = isLastQuestion
+      ? t('practice.quiz.submit')
+      : quizReveal
+        ? t('practice.quiz.next')
+        : t('practice.quiz.skip');
+
+    return (
+      <div className="min-h-screen pb-32 lg:pb-10 bg-app text-text-primary">
+        <ExamHeader
+          title={headerTitle}
+          onBack={() => navigate(-1)}
+          rightContent={
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-primary">
+                {quizIndex + 1}
+                <span className="opacity-60 font-normal text-text-secondary">
+                  {' / '}
+                  {questions.length}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsConfirmModalOpen(true)}
+                disabled={quizAnsweredCount === 0 || isSubmitting || isQuizChecking}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-40"
+              >
+                {t('practice.quiz.submit')}
+              </button>
+            </div>
+          }
+        />
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+            <div className="lg:col-span-8 space-y-5">
+              <LiveQuestionCard
+                question={quizQuestion}
+                index={quizIndex}
+                selectedOptionId={userAnswers[quizQuestion.id]}
+                onSelectOption={handleOptionSelect}
+                onReport={handleReportClick}
+                revealed={Boolean(quizReveal)}
+                correctOptionId={quizReveal?.correct_option?.id ?? null}
+              />
+
+              {quizReveal && (
+                <div
+                  className={`rounded-2xl border p-5 md:p-6 ${
+                    quizReveal.is_correct
+                      ? 'border-emerald-500/40 bg-emerald-500/5'
+                      : 'border-red-500/40 bg-red-500/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-bold mb-3">
+                    {quizReveal.is_correct ? (
+                      <CheckCircle size={20} className="text-emerald-600" />
+                    ) : (
+                      <XCircle size={20} className="text-red-600" />
+                    )}
+                    <span
+                      className={
+                        quizReveal.is_correct ? 'text-emerald-700' : 'text-red-700'
+                      }
+                    >
+                      {quizReveal.is_correct
+                        ? t('practice.quiz.correct')
+                        : t('practice.quiz.wrong')}
+                    </span>
+                  </div>
+
+                  {quizCorrectLabel && (
+                    <p className="text-sm md:text-[15px] text-text-primary mb-3">
+                      <span className="font-semibold">
+                        {t('practice.quiz.correctAnswer')}:{' '}
+                      </span>
+                      <MathDisplay content={quizCorrectLabel} />
+                    </p>
+                  )}
+
+                  {quizExplanation ? (
+                    <div className="rounded-xl bg-surface border border-border-color p-4 text-sm md:text-[15px] leading-relaxed text-text-secondary">
+                      <p className="mb-1 text-xs font-bold uppercase tracking-wider text-text-primary opacity-70">
+                        {t('practice.quiz.explanation')}
+                      </p>
+                      <MathDisplay content={quizExplanation} />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-text-secondary opacity-70">
+                      {t('practice.quiz.noExplanation')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="hidden lg:block lg:col-span-4">
+              <div className="sticky top-24 space-y-5">
+                <div className="p-6 rounded-2xl border shadow-sm bg-card-bg border-card-border">
+                  <h3 className="font-bold text-lg mb-4 text-text-primary">
+                    {t('practice.quiz.progressTitle')}
+                  </h3>
+                  <div className="flex justify-between text-sm mb-2 text-text-primary opacity-80">
+                    <span>{t('practice.quiz.answered')}</span>
+                    <span className="font-bold">
+                      {quizAnsweredCount} / {questions.length}
+                    </span>
+                  </div>
+                  <div className="w-full h-3 rounded-full overflow-hidden bg-surface border border-border-color">
+                    <div
+                      className="h-full transition-all duration-500 rounded-full bg-primary"
+                      style={{ width: `${quizProgress}%` }}
+                    />
+                  </div>
+                  <p className="mt-4 text-xs leading-relaxed text-text-secondary opacity-70">
+                    {t('practice.quiz.helper')}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={quizReveal ? handleQuizAdvance : handleQuizSkip}
+                  disabled={quizSaving || isSubmitting || isQuizChecking}
+                  className="w-full flex items-center justify-center gap-2 font-bold py-4 rounded-xl disabled:opacity-50 transition-all shadow-md hover:shadow-lg active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  {quizReveal ? <ChevronRight size={20} /> : <SkipForward size={20} />}
+                  {isQuizChecking ? t('practice.quiz.checking') : quizActionLabel}
+                </button>
+
+                {quizReveal && !isLastQuestion && (
+                  <button
+                    type="button"
+                    onClick={handleQuizSkip}
+                    disabled={quizSaving || isSubmitting}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-border-color py-3 text-sm font-semibold text-text-secondary disabled:opacity-50"
+                  >
+                    <SkipForward size={16} />
+                    {t('practice.quiz.skip')}
+                  </button>
+                )}
+
+                {quizAllAnswered && !isLastQuestion && (
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmModalOpen(true)}
+                    disabled={isSubmitting || isQuizChecking}
+                    className="w-full rounded-xl border border-border-color py-3 text-sm font-semibold text-text-secondary disabled:opacity-50"
+                  >
+                    {t('practice.quiz.submit')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:hidden fixed bottom-0 left-0 w-full p-4 z-40 backdrop-blur-xl border-t bg-surface-elevated border-border-color">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-full h-1.5 rounded-full overflow-hidden bg-surface border border-border-color">
+              <div
+                className="h-full transition-all duration-500 bg-primary"
+                style={{ width: `${quizProgress}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold whitespace-nowrap text-text-primary">
+              {quizIndex + 1} / {questions.length}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={quizReveal ? handleQuizAdvance : handleQuizSkip}
+            disabled={quizSaving || isSubmitting || isQuizChecking}
+            className="w-full flex items-center justify-center gap-2 font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {quizReveal ? <ChevronRight size={18} /> : <SkipForward size={18} />}
+            {isQuizChecking ? t('practice.quiz.checking') : quizActionLabel}
+          </button>
+        </div>
+
+        {isReportModalOpen && reportingQuestionId && (
+          <ReportModal
+            isOpen={isReportModalOpen}
+            onClose={() => setIsReportModalOpen(false)}
+            type="question_issue"
+            questionData={{ questionId: reportingQuestionId }}
+            onSubmit={async (data) => {
+              await reportMutation.mutateAsync(data);
+              setIsReportModalOpen(false);
+            }}
+          />
+        )}
+
+        {isConfirmModalOpen && (
+          <ConfirmModal
+            isOpen={isConfirmModalOpen}
+            title={t('exam.submitConfirmTitle')}
+            message={t('exam.submitConfirmMessage', { count: quizAnsweredCount })}
+            onConfirm={() => {
+              setIsConfirmModalOpen(false);
+              processSubmission();
+            }}
+            onCancel={() => setIsConfirmModalOpen(false)}
+            isLoading={submitExamMutation.isPending}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-32 lg:pb-10 bg-app text-text-primary">

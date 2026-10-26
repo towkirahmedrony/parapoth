@@ -4,6 +4,7 @@ import type {
   AttemptQuestion,
   AttemptQuestionsResponse,
   MistakePool,
+  PracticeAnswerReveal,
   PracticeAttempt,
   PracticeStartResult,
 } from '../types/practice';
@@ -135,15 +136,32 @@ export const practiceService = {
 
   async saveDraftAnswers(
     attemptId: string,
-    answers: Record<string, string>
+    answers: Record<string, string>,
+    currentQuestionIndex = 0
   ): Promise<void> {
     await apiClient.patch(
       `/exams/user/attempts/${encodeURIComponent(attemptId)}/answers`,
       {
         answers,
-        current_question_index: 0,
+        current_question_index: currentQuestionIndex,
       }
     );
+  },
+
+  async answerPracticeQuestion(
+    attemptId: string,
+    questionId: string,
+    selectedOption: string
+  ): Promise<PracticeAnswerReveal> {
+    const response = await apiClient.post(
+      `/exams/user/practice/${encodeURIComponent(attemptId)}/answer`,
+      {
+        question_id: questionId,
+        selected_option: selectedOption,
+      }
+    );
+
+    return unwrap<PracticeAnswerReveal>(response.data);
   },
 };
 

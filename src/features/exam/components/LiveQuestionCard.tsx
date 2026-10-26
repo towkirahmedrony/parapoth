@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
-import { CheckCircle2, Flag } from 'lucide-react';
+import { CheckCircle2, Flag, XCircle } from 'lucide-react';
 import { Question, ExamQuestion } from '../types/exam';
 import MathDisplay from '@/shared/components/content/MathDisplay';
 import { pickLang } from '@/shared/i18n/localize';
@@ -11,6 +11,8 @@ interface LiveQuestionCardProps {
   selectedOptionId?: string;
   onSelectOption: (questionId: string, optionId: string) => void;
   onReport: (questionId: string) => void;
+  revealed?: boolean;
+  correctOptionId?: string | null;
 }
 
 const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
@@ -19,6 +21,8 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
   selectedOptionId,
   onSelectOption,
   onReport,
+  revealed = false,
+  correctOptionId = null,
 }) => {
   const { language } = useLanguage();
   const isLocked = !!selectedOptionId;
@@ -98,23 +102,31 @@ const LiveQuestionCard: React.FC<LiveQuestionCardProps> = memo(({
         <div className="grid grid-cols-1 gap-3 pl-0 md:pl-12 lg:pl-12 ml-0 md:ml-1">
           {question.options.map((option) => {
             const isSelected = selectedOptionId === option.id;
-            
+            const isCorrectOption = revealed && correctOptionId === option.id;
+            const isWrongSelection = revealed && isSelected && !isCorrectOption;
+
             return (
               <button
                 key={option.id}
-                onClick={() => !isLocked && onSelectOption(question.id, option.id)}
-                disabled={isLocked}
-                className={`relative w-full text-left p-4 md:px-5 md:py-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${!isLocked && 'hover:bg-surface-elevated active:scale-[0.99]'} ${isLocked && !isSelected ? 'opacity-40 cursor-not-allowed' : ''} ${isSelected ? 'bg-surface-elevated border-border-color ring-1 ring-focus-ring' : 'bg-transparent border-border-color'}`}
+                onClick={() => !isLocked && !revealed && onSelectOption(question.id, option.id)}
+                disabled={isLocked || revealed}
+                className={`relative w-full text-left p-4 md:px-5 md:py-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${!isLocked && !revealed && 'hover:bg-surface-elevated active:scale-[0.99]'} ${isLocked && !isSelected && !isCorrectOption ? 'opacity-40 cursor-not-allowed' : ''} ${isCorrectOption ? 'border-emerald-500/60 bg-emerald-500/10' : isWrongSelection ? 'border-red-500/60 bg-red-500/10' : isSelected ? 'bg-surface-elevated border-border-color ring-1 ring-focus-ring' : 'bg-transparent border-border-color'}`}
               >
                 <div className="flex items-center gap-3 md:gap-4 w-full">
-                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-200 ${isSelected ? 'bg-primary border-transparent' : 'bg-transparent border-border-color'}`}>
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-200 ${isCorrectOption ? 'bg-emerald-500 border-transparent' : isWrongSelection ? 'bg-red-500 border-transparent' : isSelected ? 'bg-primary border-transparent' : 'bg-transparent border-border-color'}`}>
+                    {isSelected && !isCorrectOption && !isWrongSelection && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
                   </div>
-                  <span className={`text-[15px] md:text-[16px] font-['Hind_Siliguri'] leading-snug ${isSelected ? 'text-text-primary font-semibold' : 'text-text-secondary font-normal'}`}>
+                  <span className={`text-[15px] md:text-[16px] font-['Hind_Siliguri'] leading-snug ${isCorrectOption ? 'text-emerald-700 font-semibold' : isWrongSelection ? 'text-red-700 line-through opacity-80' : isSelected ? 'text-text-primary font-semibold' : 'text-text-secondary font-normal'}`}>
                     <MathDisplay content={pickLang(language, option.text_bn, option.text_en) || option.text} />
                   </span>
                 </div>
-                {isSelected && (
+                {isCorrectOption && (
+                  <CheckCircle2 size={20} className="animate-in zoom-in flex-shrink-0 ml-3 rounded-full text-emerald-600" />
+                )}
+                {isWrongSelection && (
+                  <XCircle size={20} className="animate-in zoom-in flex-shrink-0 ml-3 rounded-full text-red-600" />
+                )}
+                {isSelected && !revealed && (
                   <CheckCircle2 size={20} className="animate-in zoom-in flex-shrink-0 ml-3 shadow-sm rounded-full text-text-primary" />
                 )}
               </button>

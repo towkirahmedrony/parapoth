@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_grants: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          features: string[] | null
+          grant_type: string
+          granted_by: string | null
+          id: string
+          reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          scope: string
+          source: string
+          starts_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          features?: string[] | null
+          grant_type: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope: string
+          source?: string
+          starts_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          features?: string[] | null
+          grant_type?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scope?: string
+          source?: string
+          starts_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       achievements_master: {
         Row: {
           condition_type: string | null
@@ -112,6 +168,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      admin_auth_sessions: {
+        Row: {
+          auth_session_id: string
+          created_at: string
+          id: string
+          last_seen_at: string
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_session_id: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_session_id?: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       admin_login_history: {
         Row: {
@@ -592,6 +678,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookmarks_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "student_question_catalog"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookmarks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -605,6 +698,7 @@ export type Database = {
           created_at: string | null
           curriculum_version: string | null
           description: string | null
+          description_en: string | null
           id: string
           is_active: boolean | null
           is_premium: boolean | null
@@ -620,6 +714,7 @@ export type Database = {
           created_at?: string | null
           curriculum_version?: string | null
           description?: string | null
+          description_en?: string | null
           id: string
           is_active?: boolean | null
           is_premium?: boolean | null
@@ -635,6 +730,7 @@ export type Database = {
           created_at?: string | null
           curriculum_version?: string | null
           description?: string | null
+          description_en?: string | null
           id?: string
           is_active?: boolean | null
           is_premium?: boolean | null
@@ -875,6 +971,7 @@ export type Database = {
       }
       exam_history: {
         Row: {
+          attempt_id: string | null
           correct_count: number | null
           created_at: string | null
           details_json: Json | null
@@ -884,9 +981,11 @@ export type Database = {
           id: string
           ip_address: string | null
           is_timeout: boolean | null
+          practice_mode: string | null
           rank: number | null
           score: number
           skipped_count: number | null
+          source_history_id: string | null
           status: string | null
           submitted_at: string | null
           time_taken: number | null
@@ -896,6 +995,7 @@ export type Database = {
           wrong_count: number | null
         }
         Insert: {
+          attempt_id?: string | null
           correct_count?: number | null
           created_at?: string | null
           details_json?: Json | null
@@ -905,9 +1005,11 @@ export type Database = {
           id?: string
           ip_address?: string | null
           is_timeout?: boolean | null
+          practice_mode?: string | null
           rank?: number | null
           score: number
           skipped_count?: number | null
+          source_history_id?: string | null
           status?: string | null
           submitted_at?: string | null
           time_taken?: number | null
@@ -917,6 +1019,7 @@ export type Database = {
           wrong_count?: number | null
         }
         Update: {
+          attempt_id?: string | null
           correct_count?: number | null
           created_at?: string | null
           details_json?: Json | null
@@ -926,9 +1029,11 @@ export type Database = {
           id?: string
           ip_address?: string | null
           is_timeout?: boolean | null
+          practice_mode?: string | null
           rank?: number | null
           score?: number
           skipped_count?: number | null
+          source_history_id?: string | null
           status?: string | null
           submitted_at?: string | null
           time_taken?: number | null
@@ -939,10 +1044,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "exam_history_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "exam_progress"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "exam_history_exam_id_fkey"
             columns: ["exam_id"]
             isOneToOne: false
             referencedRelation: "exam_papers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_history_source_history_id_fkey"
+            columns: ["source_history_id"]
+            isOneToOne: false
+            referencedRelation: "exam_history"
             referencedColumns: ["id"]
           },
           {
@@ -997,6 +1116,13 @@ export type Database = {
             referencedRelation: "questions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "exam_history_details_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "student_question_catalog"
+            referencedColumns: ["id"]
+          },
         ]
       }
       exam_paper_questions: {
@@ -1037,6 +1163,13 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_paper_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "student_question_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -1133,28 +1266,58 @@ export type Database = {
       exam_progress: {
         Row: {
           answers_draft: Json | null
+          awarded_xp: number
           current_question_index: number | null
+          deadline_at: string | null
+          exam_history_id: string | null
           exam_id: string | null
           id: string
+          kind: string
           last_updated_at: string | null
+          practice_mode: string | null
+          question_ids: Json
+          source_history_id: string | null
+          started_at: string | null
+          status: string
+          submitted_at: string | null
           time_remaining: number | null
           user_id: string | null
         }
         Insert: {
           answers_draft?: Json | null
+          awarded_xp?: number
           current_question_index?: number | null
+          deadline_at?: string | null
+          exam_history_id?: string | null
           exam_id?: string | null
           id?: string
+          kind?: string
           last_updated_at?: string | null
+          practice_mode?: string | null
+          question_ids?: Json
+          source_history_id?: string | null
+          started_at?: string | null
+          status?: string
+          submitted_at?: string | null
           time_remaining?: number | null
           user_id?: string | null
         }
         Update: {
           answers_draft?: Json | null
+          awarded_xp?: number
           current_question_index?: number | null
+          deadline_at?: string | null
+          exam_history_id?: string | null
           exam_id?: string | null
           id?: string
+          kind?: string
           last_updated_at?: string | null
+          practice_mode?: string | null
+          question_ids?: Json
+          source_history_id?: string | null
+          started_at?: string | null
+          status?: string
+          submitted_at?: string | null
           time_remaining?: number | null
           user_id?: string | null
         }
@@ -1164,6 +1327,13 @@ export type Database = {
             columns: ["exam_id"]
             isOneToOne: false
             referencedRelation: "exam_papers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_progress_source_history_id_fkey"
+            columns: ["source_history_id"]
+            isOneToOne: false
+            referencedRelation: "exam_history"
             referencedColumns: ["id"]
           },
           {
@@ -1196,6 +1366,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_quotas: {
+        Row: {
+          created_at: string
+          feature: string
+          free_daily_limit: number
+          is_enabled: boolean
+          title_bn: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          free_daily_limit: number
+          is_enabled?: boolean
+          title_bn: string
+          title_en: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          free_daily_limit?: number
+          is_enabled?: boolean
+          title_bn?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       flagged_messages: {
         Row: {
           action_taken: string | null
@@ -1205,6 +1405,8 @@ export type Database = {
           group_id: string | null
           id: string
           offense_type: string
+          reason: string | null
+          reported_by: string | null
           resolved_by: string | null
           sender_id: string | null
           status: string | null
@@ -1217,6 +1419,8 @@ export type Database = {
           group_id?: string | null
           id?: string
           offense_type: string
+          reason?: string | null
+          reported_by?: string | null
           resolved_by?: string | null
           sender_id?: string | null
           status?: string | null
@@ -1229,6 +1433,8 @@ export type Database = {
           group_id?: string | null
           id?: string
           offense_type?: string
+          reason?: string | null
+          reported_by?: string | null
           resolved_by?: string | null
           sender_id?: string | null
           status?: string | null
@@ -1246,6 +1452,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flagged_messages_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1302,41 +1515,129 @@ export type Database = {
           },
         ]
       }
+      group_battle_participants: {
+        Row: {
+          battle_id: string
+          correct_count: number
+          exam_history_id: string | null
+          id: string
+          joined_at: string
+          rank: number | null
+          score: number
+          status: string
+          submitted_at: string | null
+          time_taken: number | null
+          user_id: string
+          wrong_count: number
+          xp_awarded: number
+        }
+        Insert: {
+          battle_id: string
+          correct_count?: number
+          exam_history_id?: string | null
+          id?: string
+          joined_at?: string
+          rank?: number | null
+          score?: number
+          status?: string
+          submitted_at?: string | null
+          time_taken?: number | null
+          user_id: string
+          wrong_count?: number
+          xp_awarded?: number
+        }
+        Update: {
+          battle_id?: string
+          correct_count?: number
+          exam_history_id?: string | null
+          id?: string
+          joined_at?: string
+          rank?: number | null
+          score?: number
+          status?: string
+          submitted_at?: string | null
+          time_taken?: number | null
+          user_id?: string
+          wrong_count?: number
+          xp_awarded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_battle_participants_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "group_battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_battle_participants_exam_history_id_fkey"
+            columns: ["exam_history_id"]
+            isOneToOne: false
+            referencedRelation: "exam_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_battle_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_battles: {
         Row: {
+          chapter_id: string | null
           created_at: string | null
+          duration_minutes: number
           end_time: string | null
           exam_id: string | null
           group_id: string | null
           id: string
           initiated_by: string | null
+          participant_count: number
+          question_ids: Json
           scores_snapshot: Json | null
           start_time: string | null
           status: string | null
+          subject_id: string | null
+          title: string | null
           winner_id: string | null
         }
         Insert: {
+          chapter_id?: string | null
           created_at?: string | null
+          duration_minutes?: number
           end_time?: string | null
           exam_id?: string | null
           group_id?: string | null
           id?: string
           initiated_by?: string | null
+          participant_count?: number
+          question_ids?: Json
           scores_snapshot?: Json | null
           start_time?: string | null
           status?: string | null
+          subject_id?: string | null
+          title?: string | null
           winner_id?: string | null
         }
         Update: {
+          chapter_id?: string | null
           created_at?: string | null
+          duration_minutes?: number
           end_time?: string | null
           exam_id?: string | null
           group_id?: string | null
           id?: string
           initiated_by?: string | null
+          participant_count?: number
+          question_ids?: Json
           scores_snapshot?: Json | null
           start_time?: string | null
           status?: string | null
+          subject_id?: string | null
+          title?: string | null
           winner_id?: string | null
         }
         Relationships: [
@@ -1487,27 +1788,33 @@ export type Database = {
       }
       group_leaderboard_cache: {
         Row: {
+          avg_xp: number
           group_id: string
           id: number
           last_updated_at: string | null
+          member_count: number
           period_type: string
           previous_rank: number | null
           rank: number
           total_xp: number
         }
         Insert: {
+          avg_xp?: number
           group_id: string
           id?: number
           last_updated_at?: string | null
+          member_count?: number
           period_type: string
           previous_rank?: number | null
           rank: number
           total_xp: number
         }
         Update: {
+          avg_xp?: number
           group_id?: string
           id?: number
           last_updated_at?: string | null
+          member_count?: number
           period_type?: string
           previous_rank?: number | null
           rank?: number
@@ -1528,6 +1835,7 @@ export type Database = {
           banned_until: string | null
           contribution_xp: number | null
           group_id: string | null
+          group_type: string
           id: string
           joined_at: string | null
           last_nudge_received: string | null
@@ -1539,6 +1847,7 @@ export type Database = {
           banned_until?: string | null
           contribution_xp?: number | null
           group_id?: string | null
+          group_type?: string
           id?: string
           joined_at?: string | null
           last_nudge_received?: string | null
@@ -1550,6 +1859,7 @@ export type Database = {
           banned_until?: string | null
           contribution_xp?: number | null
           group_id?: string | null
+          group_type?: string
           id?: string
           joined_at?: string | null
           last_nudge_received?: string | null
@@ -1681,6 +1991,7 @@ export type Database = {
           serial_order: number | null
           target_rules: Json | null
           title: string
+          title_en: string | null
           type: string | null
         }
         Insert: {
@@ -1694,6 +2005,7 @@ export type Database = {
           serial_order?: number | null
           target_rules?: Json | null
           title: string
+          title_en?: string | null
           type?: string | null
         }
         Update: {
@@ -1707,6 +2019,7 @@ export type Database = {
           serial_order?: number | null
           target_rules?: Json | null
           title?: string
+          title_en?: string | null
           type?: string | null
         }
         Relationships: []
@@ -2408,7 +2721,7 @@ export type Database = {
           is_2fa_enabled: boolean | null
           is_email_verified: boolean
           is_phone_verified: boolean | null
-          language_preference: string | null
+          language_preference: string
           last_active_at: string | null
           last_streak_reset_at: string | null
           mastery: Json | null
@@ -2456,7 +2769,7 @@ export type Database = {
           is_2fa_enabled?: boolean | null
           is_email_verified?: boolean
           is_phone_verified?: boolean | null
-          language_preference?: string | null
+          language_preference?: string
           last_active_at?: string | null
           last_streak_reset_at?: string | null
           mastery?: Json | null
@@ -2504,7 +2817,7 @@ export type Database = {
           is_2fa_enabled?: boolean | null
           is_email_verified?: boolean
           is_phone_verified?: boolean | null
-          language_preference?: string | null
+          language_preference?: string
           last_active_at?: string | null
           last_streak_reset_at?: string | null
           mastery?: Json | null
@@ -2695,6 +3008,13 @@ export type Database = {
             referencedRelation: "questions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "question_institution_references_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "student_question_catalog"
+            referencedColumns: ["id"]
+          },
         ]
       }
       question_tags: {
@@ -2719,6 +3039,13 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_tags_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "student_question_catalog"
             referencedColumns: ["id"]
           },
           {
@@ -2751,7 +3078,7 @@ export type Database = {
           embedding_updated_at: string | null
           embedding_version: string | null
           exam_references: Json | null
-          explanation: string | null
+          explanation: Json | null
           explanation_media_id: string | null
           id: string
           is_active: boolean | null
@@ -2789,7 +3116,7 @@ export type Database = {
           embedding_updated_at?: string | null
           embedding_version?: string | null
           exam_references?: Json | null
-          explanation?: string | null
+          explanation?: Json | null
           explanation_media_id?: string | null
           id?: string
           is_active?: boolean | null
@@ -2827,7 +3154,7 @@ export type Database = {
           embedding_updated_at?: string | null
           embedding_version?: string | null
           exam_references?: Json | null
-          explanation?: string | null
+          explanation?: Json | null
           explanation_media_id?: string | null
           id?: string
           is_active?: boolean | null
@@ -2988,48 +3315,108 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_logs: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          outcome: string
+          request_id: string | null
+          resource_id: string | null
+          resource_type: string
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          outcome: string
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type: string
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          outcome?: string
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       study_groups: {
         Row: {
           created_at: string | null
           created_by: string | null
           current_streak: number | null
+          description: string | null
           group_level: number | null
+          group_type: string
           icon: string | null
           id: string
           is_active: boolean | null
           join_code: string
           last_activity_date: string | null
+          max_members: number
+          member_count: number
           name: string
+          slug: string
           total_xp: number | null
           updated_at: string | null
+          visibility: string
         }
         Insert: {
           created_at?: string | null
           created_by?: string | null
           current_streak?: number | null
+          description?: string | null
           group_level?: number | null
+          group_type?: string
           icon?: string | null
           id?: string
           is_active?: boolean | null
           join_code: string
           last_activity_date?: string | null
+          max_members?: number
+          member_count?: number
           name: string
+          slug: string
           total_xp?: number | null
           updated_at?: string | null
+          visibility?: string
         }
         Update: {
           created_at?: string | null
           created_by?: string | null
           current_streak?: number | null
+          description?: string | null
           group_level?: number | null
+          group_type?: string
           icon?: string | null
           id?: string
           is_active?: boolean | null
           join_code?: string
           last_activity_date?: string | null
+          max_members?: number
+          member_count?: number
           name?: string
+          slug?: string
           total_xp?: number | null
           updated_at?: string | null
+          visibility?: string
         }
         Relationships: [
           {
@@ -3114,6 +3501,7 @@ export type Database = {
           created_at: string | null
           curriculum_version: string | null
           description: string | null
+          description_en: string | null
           icon_url: string | null
           id: string
           is_active: boolean | null
@@ -3129,6 +3517,7 @@ export type Database = {
           created_at?: string | null
           curriculum_version?: string | null
           description?: string | null
+          description_en?: string | null
           icon_url?: string | null
           id: string
           is_active?: boolean | null
@@ -3144,6 +3533,7 @@ export type Database = {
           created_at?: string | null
           curriculum_version?: string | null
           description?: string | null
+          description_en?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean | null
@@ -3264,6 +3654,54 @@ export type Database = {
           },
         ]
       }
+      usage_events: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          metadata: Json
+          reference_id: string
+          refunded_at: string | null
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          id?: string
+          metadata?: Json
+          reference_id: string
+          refunded_at?: string | null
+          usage_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          metadata?: Json
+          reference_id?: string
+          refunded_at?: string | null
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_events_feature_fkey"
+            columns: ["feature"]
+            isOneToOne: false
+            referencedRelation: "feature_quotas"
+            referencedColumns: ["feature"]
+          },
+          {
+            foreignKeyName: "usage_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_coupon_usages: {
         Row: {
           coupon_code: string
@@ -3359,6 +3797,7 @@ export type Database = {
       }
       user_devices: {
         Row: {
+          created_at: string
           device_id: string
           device_name: string | null
           fcm_token: string | null
@@ -3367,9 +3806,11 @@ export type Database = {
           is_trusted: boolean | null
           last_active_at: string | null
           os_or_browser: string | null
-          user_id: string | null
+          updated_at: string
+          user_id: string
         }
         Insert: {
+          created_at?: string
           device_id: string
           device_name?: string | null
           fcm_token?: string | null
@@ -3378,9 +3819,11 @@ export type Database = {
           is_trusted?: boolean | null
           last_active_at?: string | null
           os_or_browser?: string | null
-          user_id?: string | null
+          updated_at?: string
+          user_id: string
         }
         Update: {
+          created_at?: string
           device_id?: string
           device_name?: string | null
           fcm_token?: string | null
@@ -3389,7 +3832,8 @@ export type Database = {
           is_trusted?: boolean | null
           last_active_at?: string | null
           os_or_browser?: string | null
-          user_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -3529,6 +3973,13 @@ export type Database = {
             columns: ["target_question_id"]
             isOneToOne: false
             referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reports_target_question_id_fkey"
+            columns: ["target_question_id"]
+            isOneToOne: false
+            referencedRelation: "student_question_catalog"
             referencedColumns: ["id"]
           },
           {
@@ -3718,6 +4169,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "wrong_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "student_question_catalog"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "wrong_answers_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -3736,6 +4194,41 @@ export type Database = {
           type: string | null
         }
         Relationships: []
+      }
+      student_question_catalog: {
+        Row: {
+          body: Json | null
+          chapter_id: string | null
+          difficulty_level: string | null
+          id: string | null
+          options: Json | null
+          subject_id: string | null
+          topic_id: string | null
+          type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_topic_analytics: {
         Row: {
@@ -3784,10 +4277,72 @@ export type Database = {
         Args: { p_referral_code: string; p_user_id: string }
         Returns: Json
       }
+      assign_user_role: {
+        Args: {
+          p_is_active?: boolean
+          p_role: string
+          p_target_user_id: string
+        }
+        Returns: {
+          assigned_by: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_roles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      award_group_xp: {
+        Args: { p_group_id: string; p_user_id: string; p_xp: number }
+        Returns: undefined
+      }
       bulk_soft_delete_by_chapter: {
         Args: { chapter_target_id: string }
         Returns: undefined
       }
+      cancel_group_battle: { Args: { p_battle_id: string }; Returns: undefined }
+      consume_quota: {
+        Args: { p_feature: string; p_reference_id: string; p_user_id: string }
+        Returns: Json
+      }
+      count_mistake_pool: { Args: { p_user_id: string }; Returns: number }
+      create_group_battle: {
+        Args: {
+          p_chapter_id?: string
+          p_duration_minutes?: number
+          p_group_id: string
+          p_question_ids: Json
+          p_start_time?: string
+          p_subject_id?: string
+          p_title: string
+        }
+        Returns: string
+      }
+      create_study_group: {
+        Args: {
+          p_description?: string
+          p_group_type?: string
+          p_icon?: string
+          p_max_members?: number
+          p_name: string
+          p_slug?: string
+          p_visibility?: string
+        }
+        Returns: string
+      }
+      delete_group_message: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
+      finalize_due_group_battles: { Args: never; Returns: number }
+      finalize_group_battle: { Args: { p_battle_id: string }; Returns: Json }
       finalize_pvp_match: { Args: { match_id: string }; Returns: undefined }
       find_duplicate_questions: {
         Args: { similarity_threshold: number }
@@ -3799,56 +4354,34 @@ export type Database = {
           similarity: number
         }[]
       }
-      get_adaptive_random_questions: {
-        Args: { p_limit: number; p_user_id: string }
-        Returns: {
-          answer: Json | null
-          approved_at: string | null
-          approved_by: string | null
-          audit_notes: string | null
-          avg_time_spent: number | null
-          body: Json
-          chapter_id: string | null
-          comprehension_id: string | null
-          confidence_score: number | null
-          content_hash: string | null
-          correct_attempts: number | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          difficulty_level: string | null
-          embedding: string | null
-          embedding_updated_at: string | null
-          embedding_version: string | null
-          exam_references: Json | null
-          explanation: string | null
-          explanation_media_id: string | null
-          id: string
-          is_active: boolean | null
-          is_embedding_stale: boolean | null
-          media_id: string | null
-          options: Json | null
-          revision: number | null
-          search_vector: unknown
-          source_type: string | null
-          status: string | null
-          subject_id: string | null
-          tags: string[] | null
-          topic_id: string | null
-          total_attempts: number | null
-          type: string
-          updated_at: string | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "questions"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+      generate_group_slug: { Args: { p_name: string }; Returns: string }
       get_current_streak: { Args: { p_user_id: string }; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
       get_email_by_username: { Args: { p_username: string }; Returns: string }
+      get_group_join_code: { Args: { p_group_id: string }; Returns: string }
+      get_group_preview: {
+        Args: { p_group_id?: string; p_slug?: string }
+        Returns: Json
+      }
+      get_history_question_set: {
+        Args: { p_history_id: string; p_user_id: string }
+        Returns: {
+          available: boolean
+          pos: number
+          question_id: string
+        }[]
+      }
+      get_history_time_limit: {
+        Args: { p_history_id: string; p_user_id: string }
+        Returns: number
+      }
+      get_history_wrong_questions: {
+        Args: { p_history_id: string; p_user_id: string }
+        Returns: {
+          available: boolean
+          question_id: string
+        }[]
+      }
       get_longest_streak: {
         Args: { p_user_id: string }
         Returns: {
@@ -3856,6 +4389,77 @@ export type Database = {
           streak_end_date: string
           streak_start_date: string
         }[]
+      }
+      get_mistake_pool: {
+        Args: { p_user_id: string }
+        Returns: {
+          last_wrong_at: string
+          question_id: string
+        }[]
+      }
+      get_mixed_adaptive_questions: {
+        Args: { p_limit: number; p_subject_id?: string; p_user_id: string }
+        Returns: {
+          body: Json
+          category: string
+          chapter_id: string
+          comprehension_id: string
+          difficulty_level: string
+          id: string
+          media_id: string
+          options: Json
+          subject_id: string
+          topic_id: string
+          type: string
+        }[]
+      }
+      get_my_quota_status: { Args: never; Returns: Json }
+      get_quota_status: { Args: { p_user_id: string }; Returns: Json }
+      get_student_practice_questions: {
+        Args: { p_limit?: number }
+        Returns: {
+          body: Json | null
+          chapter_id: string | null
+          difficulty_level: string | null
+          id: string | null
+          options: Json | null
+          subject_id: string | null
+          topic_id: string | null
+          type: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "student_question_catalog"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_student_question_bank: {
+        Args: {
+          p_chapter_id?: string
+          p_sort?: string
+          p_subject_id?: string
+          p_topic_id?: string
+        }
+        Returns: Json[]
+      }
+      get_student_question_bank_v2: {
+        Args: {
+          p_bookmarked_only?: boolean
+          p_chapter_id?: string
+          p_institution_eiin?: string
+          p_institution_type?: string
+          p_limit?: number
+          p_mistakes_only?: boolean
+          p_offset?: number
+          p_premium_only?: boolean
+          p_search?: string
+          p_sort?: string
+          p_subject_id?: string
+          p_topic_id?: string
+          p_year?: string
+        }
+        Returns: Json[]
       }
       get_student_subject_analytics: {
         Args: { p_user_id: string }
@@ -3876,6 +4480,7 @@ export type Database = {
           topic_name: string
         }[]
       }
+      get_user_access: { Args: { p_user_id: string }; Returns: Json }
       get_user_heatmap: {
         Args: { p_user_id: string }
         Returns: {
@@ -3885,8 +4490,29 @@ export type Database = {
           xp_earned: number
         }[]
       }
+      group_can_manage: { Args: { p_group_id: string }; Returns: boolean }
+      group_cfg_int: {
+        Args: { p_default: number; p_key: string }
+        Returns: number
+      }
+      has_permission: { Args: { p_action: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_group_member: { Args: { _group_id: string }; Returns: boolean }
+      join_group: {
+        Args: { p_group_id: string; p_join_code?: string }
+        Returns: string
+      }
+      join_group_battle: { Args: { p_battle_id: string }; Returns: Json }
+      join_group_by_code: { Args: { p_join_code: string }; Returns: string }
+      join_group_with_code: {
+        Args: { p_group_id: string; p_join_code: string }
+        Returns: undefined
+      }
+      kick_group_member: {
+        Args: { p_ban_hours?: number; p_group_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      leave_group: { Args: { p_group_id: string }; Returns: undefined }
       match_questions:
         | {
             Args: {
@@ -3896,7 +4522,7 @@ export type Database = {
             }
             Returns: {
               body: Json
-              explanation: string
+              explanation: Json
               id: string
               similarity: number
             }[]
@@ -3910,13 +4536,68 @@ export type Database = {
             }
             Returns: {
               body: Json
-              explanation: string
+              explanation: Json
               id: string
               similarity: number
             }[]
           }
+      pick_mistake_questions: {
+        Args: { p_count: number; p_user_id: string }
+        Returns: {
+          question_id: string
+        }[]
+      }
+      practiceable_question_ids: {
+        Args: { p_ids: string[]; p_premium: boolean }
+        Returns: {
+          id: string
+        }[]
+      }
+      record_group_battle_score: {
+        Args: {
+          p_battle_id: string
+          p_correct_count: number
+          p_exam_history_id?: string
+          p_score: number
+          p_time_taken: number
+          p_user_id: string
+          p_wrong_count: number
+        }
+        Returns: undefined
+      }
       refresh_global_index: { Args: never; Returns: undefined }
+      refresh_group_leaderboard: { Args: never; Returns: undefined }
       refresh_vector_index: { Args: never; Returns: undefined }
+      refund_quota: {
+        Args: { p_feature: string; p_reference_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      register_admin_auth_session: { Args: never; Returns: string }
+      report_group_message: {
+        Args: {
+          p_message_id: string
+          p_offense_type?: string
+          p_reason?: string
+        }
+        Returns: undefined
+      }
+      review_join_request: {
+        Args: { p_approve: boolean; p_group_id: string; p_user_id: string }
+        Returns: string
+      }
+      revoke_admin_auth_session: {
+        Args: { p_session_record_id: string }
+        Returns: undefined
+      }
+      revoke_current_admin_auth_session: { Args: never; Returns: undefined }
+      set_role_permission: {
+        Args: { p_action: string; p_enabled: boolean; p_role: string }
+        Returns: undefined
+      }
+      set_user_account_status: {
+        Args: { p_status: string; p_target_user_id: string }
+        Returns: undefined
+      }
       submit_payment_claim: {
         Args: {
           p_amount: number
@@ -3961,12 +4642,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3990,11 +4671,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4015,11 +4696,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4040,11 +4721,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4057,11 +4738,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4077,4 +4758,3 @@ export const Constants = {
     },
   },
 } as const
-
