@@ -43,7 +43,8 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - uses: android-actions/setup-android@v3
+      # ubuntu-latest ships a full Android SDK (android-36 + build-tools) with
+      # licenses already accepted, so no separate SDK setup step is required.
 
       - run: npm ci
       - run: npm run typecheck
