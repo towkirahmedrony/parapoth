@@ -1,0 +1,103 @@
+name: OTA release
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Capgo channel
+        required: true
+        default: production-android
+        type: choice
+        options:
+          - production-android
+          - staging-android
+      base_version:
+        description: Web base version (blank = package.json version)
+        required: false
+        type: string
+      min_native_version:
+        description: Minimum installed native version (blank = base version)
+        required: false
+        type: string
+      rollout:
+        description: Rollout percentage 1-100 (blank = channel default)
+        required: false
+        type: string
+      publish:
+        description: Actually upload to Capgo (leave off for a build-only dry run)
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ota-${{ github.event.inputs.channel || 'production-android' }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production-android
+    env:
+      OTA_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
+      VITE_OTA_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
+      POROKH_OTA_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
+      OTA_BASE_VERSION: ${{ github.event.inputs.base_version }}
+      OTA_MIN_NATIVE_VERSION: ${{ github.event.inputs.min_native_version }}
+      CAPGO_PUBLIC_KEY: ${{ vars.CAPGO_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Compute bundle version
+        id: version
+        run: |
+          set -euo pipefail
+          version="$(npm run --silent ota:version)"
+          if [ -z "$version" ]; then
+            echo "No bundle version was produced" >&2
+            exit 1
+          fi
+          echo "bundle=$version" >> "$GITHUB_OUTPUT"
+          echo "Bundle version: $version"
+
+      - name: Upload to Capgo
+        if: ${{ inputs.publish }}
+        env:
+          CAPGO_API_KEY: ${{ secrets.CAPGO_API_KEY }}
+          BUNDLE_VERSION: ${{ steps.version.outputs.bundle }}
+          ROLLOUT: ${{ github.event.inputs.rollout }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CAPGO_API_KEY:-}" ]; then
+            echo "CAPGO_API_KEY is not configured" >&2
+            exit 1
+          fi
+
+          args=(
+            bundle upload com.parapothexam.porokh
+            --apikey "$CAPGO_API_KEY"
+            --path dist
+            --channel "$OTA_CHANNEL"
+            --bundle "$BUNDLE_VERSION"
+            --comment "Git ${GITHUB_SHA::7}"
+            --fail-on-incompatible
+          )
+
+          if [ -n "${ROLLOUT:-}" ]; then
+            args+=(--rollout "$ROLLOUT")
+          fi
+
+          node node_modules/@capgo/cli/dist/index.js "${args[@]}"

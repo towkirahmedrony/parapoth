@@ -1,0 +1,61 @@
+name: Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: OTA channel baked into this build
+        required: true
+        default: production-android
+        type: choice
+        options:
+          - production-android
+          - staging-android
+  push:
+    tags:
+      - 'android-v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    env:
+      APP_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
+      VITE_OTA_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
+      POROKH_OTA_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run native:sync
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: porokh-${{ env.APP_CHANNEL }}-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
