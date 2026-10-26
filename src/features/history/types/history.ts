@@ -16,6 +16,8 @@ export interface QuestionOption {
   [key: string]: unknown; // Allow extra fields from backend safely
 }
 
+import type { PracticeMode } from '@/features/practice/types/practice';
+
 export interface HistoryItem {
   id: string;
   exam_id?: string | null;
@@ -28,6 +30,11 @@ export interface HistoryItem {
   taken_at?: string;
   submitted_at?: string;
   created_at?: string;
+  status?: string | null;
+  practice_mode?: PracticeMode | null;
+  source_history_id?: string | null;
+  retake_available_count?: number;
+  wrong_available_count?: number;
   details_json?: { 
     exam_title?: string; 
     [key: string]: unknown;
