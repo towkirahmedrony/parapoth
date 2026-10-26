@@ -1,7 +1,8 @@
-// শুধু প্রডাকশন বিল্ডে vConsole চালু করে (ডেভে main.tsx-এর আগের ব্লকই কাজ করে)।
-// বন্ধ করতে Vercel Environment Variables-এ VITE_ENABLE_VCONSOLE=false দিয়ে Redeploy করুন।
+// Production vConsole is opt-in only. It is a debugging tool, not app code,
+// so it must not add a request or runtime cost to normal student sessions.
+// Enable it with VITE_ENABLE_VCONSOLE=true for a specific deployment.
 const enabled =
-  !import.meta.env.DEV && import.meta.env.VITE_ENABLE_VCONSOLE !== 'false';
+  !import.meta.env.DEV && import.meta.env.VITE_ENABLE_VCONSOLE === 'true';
 
 if (enabled) {
   import('vconsole')

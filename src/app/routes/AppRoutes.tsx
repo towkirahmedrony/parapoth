@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Shared Components & Layouts
@@ -6,12 +6,12 @@ import { MainLayout } from '@/shared/components/layout/MainLayout';
 import { PermissionGuard } from '@/features/auth/components/PermissionGuard';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 // ==========================================
 // ১. মূল ৫টি ট্যাব (সরাসরি ইম্পোর্ট - ইনস্ট্যান্ট নেভিগেশনের জন্য)
 // ==========================================
 import Home from '@/features/dashboard/pages/Home';
-import Progress from '@/features/progress/pages/Progress';
 import History from '@/features/history/pages/History';
 import UserProfile from '@/features/profile/pages/UserProfile';
 import Selection from '@/features/exam/pages/Selection';
@@ -19,6 +19,9 @@ import Selection from '@/features/exam/pages/Selection';
 // ==========================================
 // ২. বাকি পেজগুলো (Lazy Loaded - মেমোরি বাঁচানোর জন্য)
 // ==========================================
+// Progress pulls in recharts, so keep it out of the startup entry. The chunk
+// is prefetched shortly after mount to keep the tab feeling instant.
+const Progress = lazy(() => import('@/features/progress/pages/Progress'));
 const Streak = lazy(() => import('@/features/dashboard/pages/Streak'));
 const Marketplace = lazy(() => import('@/features/economy/pages/Marketplace'));
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -117,6 +120,28 @@ const NotFound = () => {
 
 const AppRoutes: React.FC = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const preloadProgress = () => {
+      void import('@/features/progress/pages/Progress');
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (idleWindow.requestIdleCallback) {
+      const id = idleWindow.requestIdleCallback(preloadProgress, { timeout: 4000 });
+      return () => idleWindow.cancelIdleCallback?.(id);
+    }
+
+    const timer = window.setTimeout(preloadProgress, 4000);
+    return () => window.clearTimeout(timer);
+  }, [userId]);
 
   return (
     <Suspense fallback={<FullPageLoader />}>

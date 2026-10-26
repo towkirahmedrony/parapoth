@@ -11,8 +11,6 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
-import VConsole from 'vconsole';
-
 import App from './App';
 import { AuthProvider } from '@/features/auth/context/AuthProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
@@ -24,9 +22,12 @@ import './index.css';
 
 // Enable VConsole only during development.
 // This allows inspecting JavaScript errors directly from a mobile browser.
+// Loaded lazily so the debug console never enters the startup bundle.
 if (import.meta.env.DEV) {
-  new VConsole({ theme: 'light' });
-  console.info('[Debug] VConsole initialized.');
+  void import('vconsole').then(({ default: VConsole }) => {
+    new VConsole({ theme: 'light' });
+    console.info('[Debug] VConsole initialized.');
+  });
 }
 
 interface ErrorBoundaryProps {

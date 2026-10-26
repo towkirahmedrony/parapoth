@@ -136,13 +136,15 @@ export const practiceService = {
 
   async saveDraftAnswers(
     attemptId: string,
-    answers: Record<string, string>,
+    answers: Record<string, string> | undefined,
     currentQuestionIndex = 0
   ): Promise<void> {
     await apiClient.patch(
       `/exams/user/attempts/${encodeURIComponent(attemptId)}/answers`,
       {
-        answers,
+        // Omit the field entirely for position-only saves so the backend keeps
+        // the latest answer draft written by the answer endpoint.
+        ...(answers === undefined ? {} : { answers }),
         current_question_index: currentQuestionIndex,
       }
     );

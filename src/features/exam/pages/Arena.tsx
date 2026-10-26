@@ -65,6 +65,43 @@ type ExtendedExamConfig = ExamConfig & {
   session_id?: string;
 };
 
+type ExamQuestionListProps = {
+  questions: ArenaQuestion[];
+  userAnswers: Record<string, string>;
+  onSelectOption: (questionId: string, optionId: string) => void;
+  onReport: (questionId: string) => void;
+};
+
+/**
+ * Module-level memo keeps the timer tick from re-rendering every question card.
+ * `content-visibility` skips layout/paint work for cards outside the viewport.
+ */
+const ExamQuestionList = memo(function ExamQuestionList({
+  questions,
+  userAnswers,
+  onSelectOption,
+  onReport,
+}: ExamQuestionListProps) {
+  return (
+    <>
+      {questions.map((question, index) => (
+        <div
+          key={question.id}
+          style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}
+        >
+          <LiveQuestionCard
+            question={question}
+            index={index}
+            selectedOptionId={userAnswers[question.id]}
+            onSelectOption={onSelectOption}
+            onReport={onReport}
+          />
+        </div>
+      ))}
+    </>
+  );
+});
+
 const fetchArenaQuestions = async (
   limit: number,
   subjectSlug?: string
@@ -107,13 +144,19 @@ const Arena: React.FC = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [quizIndex, setQuizIndex] = useState(0);
   const [quizReveals, setQuizReveals] = useState<Record<string, PracticeAnswerReveal>>({});
-  const [quizSaving, setQuizSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hasSubmittedRef = useRef(false);
   const quizInitializedRef = useRef<string | null>(null);
   const targetEndTimeRef = useRef<number | null>(null);
   const timeLeftRef = useRef(initialDurationSeconds);
   const lastSavedDraftRef = useRef('');
+  const draftSaveInFlightRef = useRef(false);
+  const queuedDraftRef = useRef<{
+    answers: Record<string, string>;
+    index: number;
+    serialized: string;
+  } | null>(null);
 
   // One idempotency key per examination session. It survives a reload during a
   // slow submission, so a retry is recognised by the backend as the same
@@ -161,7 +204,7 @@ const Arena: React.FC = () => {
   const attemptQuestionsQuery = useQuery({
     queryKey: ['practiceAttemptQuestions', attemptId],
     queryFn: () => practiceService.getAttemptQuestions(attemptId ?? ''),
-    enabled: isAttemptMode && Boolean(attemptId) && Boolean(attemptStateQuery.data?.id),
+    enabled: isAttemptMode && Boolean(attemptId),
     staleTime: Infinity,
     gcTime: 0,
     refetchOnWindowFocus: false,
@@ -248,7 +291,7 @@ const Arena: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (isQuizMode) return;
+    if (isQuizMode || isSubmitting) return;
     if (isLoading || questions.length === 0) return;
 
     if (!targetEndTimeRef.current) {
@@ -269,12 +312,41 @@ const Arena: React.FC = () => {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [isLoading, questions.length, initialDurationSeconds, isAttemptMode, isQuizMode]);
+  }, [isLoading, questions.length, initialDurationSeconds, isAttemptMode, isQuizMode, isSubmitting]);
+
+  const persistDraft = useCallback(
+    async (draft: { answers: Record<string, string>; index: number; serialized: string }) => {
+      if (!attemptId) return;
+      if (draftSaveInFlightRef.current) {
+        queuedDraftRef.current = draft;
+        return;
+      }
+
+      draftSaveInFlightRef.current = true;
+      let pending: typeof draft | null = draft;
+
+      while (pending && !hasSubmittedRef.current) {
+        try {
+          await practiceService.saveDraftAnswers(attemptId, pending.answers, pending.index);
+          lastSavedDraftRef.current = pending.serialized;
+        } catch {
+          // A failed draft save must not interrupt the exam; the next answer
+          // change retries, and submit always carries the full answer map.
+        }
+
+        pending = queuedDraftRef.current;
+        queuedDraftRef.current = null;
+      }
+
+      draftSaveInFlightRef.current = false;
+    },
+    [attemptId]
+  );
 
   // Autosave is best-effort and attempt-scoped. It can never extend the
   // deadline; the backend rejects writes after it.
   useEffect(() => {
-    if (!isAttemptMode || !attemptId || hasSubmittedRef.current || isQuizMode) return;
+    if (!isAttemptMode || !attemptId || hasSubmittedRef.current || isQuizMode || isSubmitting) return;
 
     if (Object.keys(userAnswers).length === 0) return;
 
@@ -282,19 +354,11 @@ const Arena: React.FC = () => {
     if (serialized === lastSavedDraftRef.current) return;
 
     const timer = window.setTimeout(() => {
-      practiceService
-        .saveDraftAnswers(attemptId, userAnswers, quizIndex)
-        .then(() => {
-          lastSavedDraftRef.current = serialized;
-        })
-        .catch(() => {
-          // A failed draft save must not interrupt the exam; the next answer
-          // change retries, and submit always carries the full answer map.
-        });
+      void persistDraft({ answers: userAnswers, index: quizIndex, serialized });
     }, 800);
 
     return () => window.clearTimeout(timer);
-  }, [userAnswers, isAttemptMode, attemptId, isQuizMode, quizIndex]);
+  }, [userAnswers, isAttemptMode, attemptId, isQuizMode, quizIndex, persistDraft, isSubmitting]);
 
   const submitExamMutation = useMutation({
     mutationFn: async (payload: ReturnType<typeof buildSubmitPayload>) => {
@@ -331,6 +395,7 @@ const Arena: React.FC = () => {
       // Keep the student on the page with their answers intact so the
       // submission can be retried.
       hasSubmittedRef.current = false;
+      setIsSubmitting(false);
     },
   });
 
@@ -339,7 +404,10 @@ const Arena: React.FC = () => {
   const processSubmission = useCallback(() => {
     if (hasSubmittedRef.current || questions.length === 0) return;
 
+    // Flip both guards synchronously: the ref blocks duplicate submits and the
+    // state re-renders the buttons/timer before the network request resolves.
     hasSubmittedRef.current = true;
+    setIsSubmitting(true);
 
     const startedAtMs = attemptStateQuery.data?.started_at
       ? Date.parse(attemptStateQuery.data.started_at)
@@ -408,7 +476,11 @@ const Arena: React.FC = () => {
     },
   });
 
-  const isQuizChecking = isQuizMode && quizAnswerMutation.isPending;
+  const {
+    mutate: answerQuizQuestion,
+    isPending: isQuizAnswerPending,
+  } = quizAnswerMutation;
+  const isQuizChecking = isQuizMode && isQuizAnswerPending;
 
   const handleOptionSelect = useCallback((questionId: string, optionId: string) => {
     if (hasSubmittedRef.current) return;
@@ -418,48 +490,46 @@ const Arena: React.FC = () => {
       [questionId]: String(optionId),
     }));
 
-    if (isQuizMode && !quizReveals[questionId] && !quizAnswerMutation.isPending) {
-      quizAnswerMutation.mutate({ questionId, optionId: String(optionId) });
+    if (isQuizMode && !quizReveals[questionId] && !isQuizAnswerPending) {
+      answerQuizQuestion({ questionId, optionId: String(optionId) });
     }
-  }, [isQuizMode, quizReveals, quizAnswerMutation]);
+  }, [isQuizMode, quizReveals, isQuizAnswerPending, answerQuizQuestion]);
 
   const saveQuizPosition = useCallback(
-    async (nextIndex: number) => {
-      if (!attemptId) return false;
+    (nextIndex: number) => {
+      if (!attemptId) return;
 
-      setQuizSaving(true);
-
-      try {
-        await practiceService.saveDraftAnswers(attemptId, userAnswers, nextIndex);
-        lastSavedDraftRef.current = JSON.stringify(userAnswers);
-        setQuizIndex(nextIndex);
-        return true;
-      } catch (error) {
-        toast.error(resolvePracticeError(error, t('practice.quiz.saveFailed')));
-        return false;
-      } finally {
-        setQuizSaving(false);
-      }
+      // Position-only save: answers are already persisted by the answer
+      // endpoint, so this request must never overwrite a newer draft.
+      void practiceService
+        .saveDraftAnswers(attemptId, undefined, nextIndex)
+        .catch((error) => {
+          toast.error(resolvePracticeError(error, t('practice.quiz.saveFailed')));
+        });
     },
-    [attemptId, userAnswers, t]
+    [attemptId, t]
   );
 
-  const handleQuizAdvance = useCallback(async () => {
+  const handleQuizAdvance = useCallback(() => {
     if (quizIndex >= questions.length - 1) {
       setIsConfirmModalOpen(true);
       return;
     }
 
-    await saveQuizPosition(quizIndex + 1);
+    const nextIndex = quizIndex + 1;
+    setQuizIndex(nextIndex);
+    saveQuizPosition(nextIndex);
   }, [quizIndex, questions.length, saveQuizPosition]);
 
-  const handleQuizSkip = useCallback(async () => {
+  const handleQuizSkip = useCallback(() => {
     if (quizIndex >= questions.length - 1) {
       setIsConfirmModalOpen(true);
       return;
     }
 
-    await saveQuizPosition(quizIndex + 1);
+    const nextIndex = quizIndex + 1;
+    setQuizIndex(nextIndex);
+    saveQuizPosition(nextIndex);
   }, [quizIndex, questions.length, saveQuizPosition]);
 
   const handleReportClick = useCallback((questionId: string) => {
@@ -515,7 +585,7 @@ const Arena: React.FC = () => {
 
   const answeredCount = Object.keys(userAnswers).length;
   const progressPercentage = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
-  const isSubmitting = submitExamMutation.isPending || hasSubmittedRef.current;
+  const submissionInProgress = isSubmitting || submitExamMutation.isPending;
   const headerTitle =
     isAttemptMode && practiceMode
       ? t(PRACTICE_TITLES[practiceMode])
@@ -524,9 +594,10 @@ const Arena: React.FC = () => {
         : t('exam.modelTestLive');
 
   if (isQuizMode && quizQuestion) {
-    const quizAnsweredCount = Object.keys(userAnswers).filter((questionId) =>
-      questions.some((question) => question.id === questionId)
-    ).length;
+    const quizAnsweredCount = questions.reduce(
+      (count, question) => count + (userAnswers[question.id] ? 1 : 0),
+      0
+    );
     const quizProgress = (quizAnsweredCount / questions.length) * 100;
     const quizCorrectOption = quizQuestion.options.find(
       (option) => option.id === quizReveal?.correct_option?.id
@@ -567,7 +638,7 @@ const Arena: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsConfirmModalOpen(true)}
-                disabled={quizAnsweredCount === 0 || isSubmitting || isQuizChecking}
+                disabled={quizAnsweredCount === 0 || submissionInProgress || isQuizChecking}
                 className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-40"
               >
                 {t('practice.quiz.submit')}
@@ -665,7 +736,7 @@ const Arena: React.FC = () => {
                 <button
                   type="button"
                   onClick={quizReveal ? handleQuizAdvance : handleQuizSkip}
-                  disabled={quizSaving || isSubmitting || isQuizChecking}
+                  disabled={submissionInProgress || isQuizChecking}
                   className="w-full flex items-center justify-center gap-2 font-bold py-4 rounded-xl disabled:opacity-50 transition-all shadow-md hover:shadow-lg active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   {quizReveal ? <ChevronRight size={20} /> : <SkipForward size={20} />}
@@ -676,7 +747,7 @@ const Arena: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleQuizSkip}
-                    disabled={quizSaving || isSubmitting}
+                    disabled={submissionInProgress}
                     className="w-full flex items-center justify-center gap-2 rounded-xl border border-border-color py-3 text-sm font-semibold text-text-secondary disabled:opacity-50"
                   >
                     <SkipForward size={16} />
@@ -688,7 +759,7 @@ const Arena: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsConfirmModalOpen(true)}
-                    disabled={isSubmitting || isQuizChecking}
+                    disabled={submissionInProgress || isQuizChecking}
                     className="w-full rounded-xl border border-border-color py-3 text-sm font-semibold text-text-secondary disabled:opacity-50"
                   >
                     {t('practice.quiz.submit')}
@@ -714,7 +785,7 @@ const Arena: React.FC = () => {
           <button
             type="button"
             onClick={quizReveal ? handleQuizAdvance : handleQuizSkip}
-            disabled={quizSaving || isSubmitting || isQuizChecking}
+            disabled={submissionInProgress || isQuizChecking}
             className="w-full flex items-center justify-center gap-2 font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all active:scale-95 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             {quizReveal ? <ChevronRight size={18} /> : <SkipForward size={18} />}
@@ -773,16 +844,12 @@ const Arena: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 xl:gap-12">
           <div className="lg:col-span-8 space-y-6 lg:space-y-8">
-            {questions.map((q, idx) => (
-              <LiveQuestionCard
-                key={q.id}
-                question={q}
-                index={idx}
-                selectedOptionId={userAnswers[q.id]}
-                onSelectOption={handleOptionSelect}
-                onReport={handleReportClick}
-              />
-            ))}
+            <ExamQuestionList
+              questions={questions}
+              userAnswers={userAnswers}
+              onSelectOption={handleOptionSelect}
+              onReport={handleReportClick}
+            />
           </div>
 
           <div className="hidden lg:block lg:col-span-4">
@@ -812,11 +879,11 @@ const Arena: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsConfirmModalOpen(true)}
-                disabled={isSubmitting}
+                disabled={submissionInProgress}
                 className="w-full flex items-center justify-center gap-3 font-bold py-4 rounded-xl disabled:opacity-50 transition-all shadow-md hover:shadow-lg active:scale-95 text-lg hover:opacity-90 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <CheckCircle size={22} />
-                {isSubmitting ? t('exam.submittingAnswerSheet') : t('exam.submitAnswerSheet')}
+                {submissionInProgress ? t('exam.submittingAnswerSheet') : t('exam.submitAnswerSheet')}
               </button>
             </div>
           </div>
@@ -840,10 +907,10 @@ const Arena: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsConfirmModalOpen(true)}
-          disabled={isSubmitting}
+          disabled={submissionInProgress}
           className="w-full font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all active:scale-95 shadow-sm text-base hover:opacity-90 bg-primary text-primary-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          {isSubmitting ? t('exam.submittingAnswerSheet') : t('exam.submitAnswerSheet')}
+          {submissionInProgress ? t('exam.submittingAnswerSheet') : t('exam.submitAnswerSheet')}
         </button>
       </div>
 

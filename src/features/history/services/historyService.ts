@@ -4,20 +4,17 @@ import type { HistoryItem } from '../types/history';
 
 interface ExamMetadata {
   id: string;
-  title: string;
-  subject_id: string | null;
-}
-
-interface SubjectMetadata {
-  id: string;
-  name_en: string;
-  name_bn: string;
+  title: string | null;
+  subjects?:
+    | { name_en?: string | null; name_bn?: string | null }
+    | { name_en?: string | null; name_bn?: string | null }[]
+    | null;
 }
 
 /**
- * The history API intentionally returns attempt summaries, not details_json.
- * Resolve presentation metadata from the existing exam -> subject relation,
- * preserving each summary row and all of its result fields unchanged.
+ * The history API now includes exam and subject labels. Older backend builds
+ * may omit them, so resolve the missing labels with one batched query instead
+ * of the previous two serial requests (papers, then subjects).
  */
 export const getExamHistory = async (): Promise<HistoryItem[]> => {
   const { data: response } = await apiClient.get<{ data: HistoryItem[] }>(
@@ -30,43 +27,36 @@ export const getExamHistory = async (): Promise<HistoryItem[]> => {
         wrong_available_count: Math.max(0, Number(item.wrong_available_count ?? 0)),
       }))
     : [];
+
+  const missingMetadata = history.some(
+    (item) => typeof item.exam_id === 'string' && !item.exam_title,
+  );
+  if (!missingMetadata) return history;
+
   const examIds = [...new Set(history.map((item) => item.exam_id).filter(
     (id): id is string => typeof id === 'string' && id.length > 0,
   ))];
   if (examIds.length === 0) return history;
 
-  const { data: exams, error: examsError } = await supabase
+  const { data: exams, error } = await supabase
     .from('exam_papers')
-    .select('id, title, subject_id')
+    .select('id, title, subjects ( name_en, name_bn )')
     .in('id', examIds);
-  if (examsError) return history;
+  if (error) return history;
 
-  const examRows: ExamMetadata[] = exams ?? [];
-  const subjectIds = [...new Set(examRows
-    .map((exam) => exam.subject_id)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0))];
-  const subjectsById = new Map<string, SubjectMetadata>();
-  if (subjectIds.length > 0) {
-    const { data: subjects, error: subjectsError } = await supabase
-      .from('subjects')
-      .select('id, name_en, name_bn')
-      .in('id', subjectIds);
-    if (!subjectsError) {
-      for (const subject of subjects ?? []) subjectsById.set(subject.id, subject);
-    }
-  }
+  const examsById = new Map<string, ExamMetadata>(
+    ((exams ?? []) as ExamMetadata[]).map((exam) => [exam.id, exam]),
+  );
 
-  const examsById = new Map(examRows.map((exam) => [exam.id, exam]));
   return history.map((item) => {
     const exam = item.exam_id ? examsById.get(item.exam_id) : undefined;
-    const subject = exam?.subject_id
-      ? subjectsById.get(exam.subject_id)
-      : undefined;
+    const subject = Array.isArray(exam?.subjects) ? exam.subjects[0] : exam?.subjects;
+
     return {
       ...item,
-      exam_title: exam?.title || item.details_json?.exam_title || null,
-      subject_name_en: subject?.name_en ?? null,
-      subject_name_bn: subject?.name_bn ?? null,
+      exam_title: item.exam_title || exam?.title || item.details_json?.exam_title || null,
+      subject_name_en: item.subject_name_en ?? subject?.name_en ?? null,
+      subject_name_bn: item.subject_name_bn ?? subject?.name_bn ?? null,
     };
   });
 };
