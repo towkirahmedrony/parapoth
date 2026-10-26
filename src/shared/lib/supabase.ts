@@ -5,8 +5,14 @@ import {
   rememberPasswordRecoverySession,
 } from '@/features/auth/utils/passwordRecoverySession';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing Supabase configuration: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set at build time.'
+  );
+}
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 

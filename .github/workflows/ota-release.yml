@@ -57,6 +57,22 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Configure frontend environment
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "::error::VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY repository secrets are required; without them OTA bundles crash on startup with a white screen."
+            exit 1
+          fi
+          {
+            printf 'VITE_SUPABASE_URL=%s\n' "$SUPABASE_URL"
+            printf 'VITE_SUPABASE_ANON_KEY=%s\n' "$SUPABASE_ANON_KEY"
+          } > .env.local
+
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
