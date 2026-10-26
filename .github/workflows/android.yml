@@ -11,9 +11,15 @@ on:
         options:
           - production-android
           - staging-android
+  # Every push to main produces an installable debug APK, so a build is never
+  # waiting on someone remembering to dispatch the workflow by hand.
   push:
+    branches:
+      - main
     tags:
       - 'android-v*'
+    paths-ignore:
+      - '**.md'
 
 permissions:
   contents: read
@@ -26,9 +32,12 @@ jobs:
   build-debug:
     runs-on: ubuntu-latest
     env:
-      APP_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
-      VITE_OTA_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
-      POROKH_OTA_CHANNEL: ${{ github.event.inputs.channel || 'production-android' }}
+      # `inputs` is empty on push events, so the default applies there too.
+      APP_CHANNEL: ${{ inputs.channel || 'production-android' }}
+      VITE_OTA_CHANNEL: ${{ inputs.channel || 'production-android' }}
+      POROKH_OTA_CHANNEL: ${{ inputs.channel || 'production-android' }}
+      # Same per-commit identity the website and the OTA bundle carry.
+      POROKH_BUILD_ID: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
 
@@ -68,6 +77,30 @@ jobs:
       - run: npm run build
       - run: npm run native:sync
 
+      - name: Verify the packaged build manifest
+        run: |
+          set -euo pipefail
+          manifest=android/app/src/main/assets/public/version.json
+          test -f "$manifest" || { echo "::error::$manifest was not produced"; exit 1; }
+          python3 - "$manifest" <<'PY'
+          import json
+          import os
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              manifest = json.load(handle)
+
+          expected = os.environ["POROKH_BUILD_ID"][:12]
+          if manifest.get("buildId") != expected:
+              print(
+                  f"::error::packaged buildId {manifest.get('buildId')} does not match commit {expected}",
+                  file=sys.stderr,
+              )
+              raise SystemExit(1)
+
+          print("packaged manifest", manifest)
+          PY
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
@@ -77,3 +110,24 @@ jobs:
           name: porokh-${{ env.APP_CHANNEL }}-debug
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarise the build
+        run: |
+          set -euo pipefail
+          apk=$(ls android/app/build/outputs/apk/debug/*.apk | head -1)
+          size=$(du -h "$apk" | cut -f1)
+          version_name=$(grep -oP 'versionName "\K[^"]+' android/app/build.gradle)
+          version_code=$(grep -oP 'versionCode \K[0-9]+' android/app/build.gradle)
+          {
+            echo "### Porokh debug APK"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Commit | \`${GITHUB_SHA:0:7}\` |"
+            echo "| Channel | ${APP_CHANNEL} |"
+            echo "| APK | $(basename "$apk") (${size}) |"
+            echo "| versionName / versionCode | ${version_name} / ${version_code} |"
+            echo ""
+            echo "Download it from the **Artifacts** section of this run."
+          } >> "$GITHUB_STEP_SUMMARY"
