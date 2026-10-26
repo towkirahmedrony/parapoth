@@ -11,6 +11,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { CapgoUpdaterAdapter } from './capgoUpdater';
+import { stripReloadMarker } from './cacheRecovery';
 import { createOtaController, type OtaController } from './controller';
 import { subscribeExamActivity } from './examActivity';
 import type {
@@ -23,6 +24,11 @@ type UpdateContextValue = OtaSnapshot & {
   activate: () => Promise<ActivationDecision>;
   checkForUpdate: (manual?: boolean) => Promise<void>;
   dismissNotice: () => void;
+  /** Idempotent: safe to await from a manual action before checking. */
+  initialize: () => Promise<void>;
+  /** Current controller state, for callers that need it right after an await. */
+  getSnapshot: () => OtaSnapshot;
+  restoreBuiltin: () => Promise<boolean>;
 };
 
 const UpdateContext = createContext<UpdateContextValue | null>(null);
@@ -72,6 +78,9 @@ export const UpdateProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener('online', onOnline);
     void controller.initialize();
 
+    // A hard reload appends a cache-busting parameter; drop it once the app is up.
+    stripReloadMarker({ location: window.location, history: window.history });
+
     return () => {
       unsubscribe();
       unsubscribeActivity();
@@ -97,6 +106,12 @@ export const UpdateProvider = ({ children }: { children: ReactNode }) => {
     () => controller.dismissNotice(),
     [controller]
   );
+  const initialize = useCallback(() => controller.initialize(), [controller]);
+  const getSnapshot = useCallback(() => controller.getSnapshot(), [controller]);
+  const restoreBuiltin = useCallback(
+    () => controller.restoreBuiltin(),
+    [controller]
+  );
 
   const value = useMemo<UpdateContextValue>(
     () => ({
@@ -104,8 +119,19 @@ export const UpdateProvider = ({ children }: { children: ReactNode }) => {
       activate,
       checkForUpdate,
       dismissNotice,
+      initialize,
+      getSnapshot,
+      restoreBuiltin,
     }),
-    [snapshot, activate, checkForUpdate, dismissNotice]
+    [
+      snapshot,
+      activate,
+      checkForUpdate,
+      dismissNotice,
+      initialize,
+      getSnapshot,
+      restoreBuiltin,
+    ]
   );
 
   return (

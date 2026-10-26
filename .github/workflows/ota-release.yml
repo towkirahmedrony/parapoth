@@ -1,5 +1,9 @@
 name: OTA release
 
+# Every push to main already redeploys the website on Vercel, so the app must be
+# offered the same build. This workflow therefore runs on push as well; whether
+# it *publishes* is gated by the OTA_AUTO_PUBLISH repository variable so a repo
+# owner keeps explicit control over what reaches installed apps.
 on:
   workflow_dispatch:
     inputs:
@@ -28,6 +32,12 @@ on:
         required: true
         default: false
         type: boolean
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'android/**'
 
 permissions:
   contents: read
@@ -48,6 +58,9 @@ jobs:
       OTA_BASE_VERSION: ${{ github.event.inputs.base_version }}
       OTA_MIN_NATIVE_VERSION: ${{ github.event.inputs.min_native_version }}
       CAPGO_PUBLIC_KEY: ${{ vars.CAPGO_PUBLIC_KEY }}
+      # One identity per commit, shared by the Vercel deployment, the APK build
+      # and this bundle, so the app can tell "same build" from "new build".
+      POROKH_BUILD_ID: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
 
@@ -77,6 +90,46 @@ jobs:
       - run: npm test
       - run: npm run build
 
+      - name: Verify the build manifest
+        run: |
+          set -euo pipefail
+          test -f dist/version.json || { echo "::error::dist/version.json was not generated"; exit 1; }
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('dist/version.json', 'utf8'));
+            if (!m.buildId || !m.version || !m.channel) {
+              console.error('::error::version.json is missing required fields', m);
+              process.exit(1);
+            }
+            if (m.buildId !== process.env.POROKH_BUILD_ID.slice(0, 12)) {
+              console.error('::error::version.json buildId does not match the commit', m.buildId);
+              process.exit(1);
+            }
+            console.log('manifest', m);
+          "
+
+      - name: Resolve publish intent
+        id: intent
+        env:
+          CAPGO_KEY: ${{ secrets.CAPGO_API_KEY }}
+          DISPATCH_PUBLISH: ${{ github.event.inputs.publish }}
+          AUTO_PUBLISH: ${{ vars.OTA_AUTO_PUBLISH }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CAPGO_KEY:-}" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::CAPGO_API_KEY is not configured, so no OTA bundle can be published. Installed apps keep running the frontend that was baked into their APK. Add the repository secret and set CAPGO_PUBLIC_KEY + OTA_AUTO_PUBLISH to enable OTA delivery."
+            exit 0
+          fi
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "publish=${DISPATCH_PUBLISH:-false}" >> "$GITHUB_OUTPUT"
+          elif [ "${AUTO_PUBLISH}" = "true" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Build verified but not published. Set the OTA_AUTO_PUBLISH repository variable to true to publish a bundle for every push to main."
+          fi
+
       - name: Compute bundle version
         id: version
         run: |
@@ -90,17 +143,13 @@ jobs:
           echo "Bundle version: $version"
 
       - name: Upload to Capgo
-        if: ${{ inputs.publish }}
+        if: steps.intent.outputs.publish == 'true'
         env:
           CAPGO_API_KEY: ${{ secrets.CAPGO_API_KEY }}
           BUNDLE_VERSION: ${{ steps.version.outputs.bundle }}
           ROLLOUT: ${{ github.event.inputs.rollout }}
         run: |
           set -euo pipefail
-          if [ -z "${CAPGO_API_KEY:-}" ]; then
-            echo "CAPGO_API_KEY is not configured" >&2
-            exit 1
-          fi
 
           args=(
             bundle upload com.parapothexam.porokh

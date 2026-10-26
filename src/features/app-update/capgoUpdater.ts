@@ -97,6 +97,11 @@ export class CapgoUpdaterAdapter implements OtaUpdaterAdapter {
     await CapacitorUpdater.reset({ toLastSuccessful: true });
   }
 
+  /** Drop back to the bundle that ships inside the APK. Reloads immediately. */
+  async resetToBuiltin(): Promise<void> {
+    await CapacitorUpdater.reset();
+  }
+
   async reload(): Promise<void> {
     await CapacitorUpdater.reload();
   }

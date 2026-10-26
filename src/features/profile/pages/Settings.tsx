@@ -12,6 +12,7 @@ import { useTheme } from '@/shared/hooks/useTheme';
 import type { Theme } from '@/app/providers/ThemeProvider';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LANGUAGE_OPTION_LABELS } from '@/shared/i18n/messages';
+import { ForcedUpdateCard } from '@/features/app-update/ForcedUpdateCard';
 
 const APP_VERSION = 'Porokh v5.0.0 (Supreme)';
 
@@ -268,7 +269,12 @@ export const Settings: React.FC = () => {
           />
         </SettingSection>
 
-        {/* E. About */}
+        {/* E. App updates — real OTA check / hard reload, see app-update/forcedUpdate.ts */}
+        <SettingSection title={t('settings.sectionUpdates')}>
+          <ForcedUpdateCard />
+        </SettingSection>
+
+        {/* F. About */}
         <SettingSection title={t('settings.sectionAbout')}>
           <SettingRow
             icon={Info}

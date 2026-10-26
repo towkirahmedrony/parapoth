@@ -167,6 +167,60 @@ const bn = {
   'settings.privacy': 'প্রাইভেসি পলিসি',
   'settings.help': 'হেল্প ও সাপোর্ট',
 
+  // ------------------------------ App updates -------------------------------
+  'settings.sectionUpdates': 'অ্যাপ আপডেট',
+  'settings.checkUpdates': 'আপডেট চেক করুন / হার্ড রিলোড',
+  'settings.checkUpdatesDescription':
+    'সর্বশেষ সংস্করণ খুঁজে নিন, পুরনো ক্যাশ পরিষ্কার করুন এবং দরকার হলে অ্যাপ রিলোড করুন। আপনার পরীক্ষার ডেটা অক্ষত থাকবে।',
+  'settings.currentBuild': 'চলমান সংস্করণ: {version}',
+  'settings.otaBundle': 'ডাউনলোড করা বান্ডেল: {version}',
+  'settings.builtinBuild': 'অ্যাপের ভেতরে থাকা বান্ডেল: {version}',
+  'settings.checkUpdatesAction': 'এখনই চেক করুন',
+  'settings.confirmTitle': 'আপডেট চেক করবেন?',
+  'settings.confirmBody':
+    'অ্যাপটি নতুন সংস্করণ খুঁজবে এবং প্রয়োজনে রিলোড হবে। ইনডেক্সডবি, অসমাপ্ত পরীক্ষা ও জমা না হওয়া উত্তর মুছে যাবে না।',
+  'settings.confirmYes': 'চেক করুন',
+  'settings.confirmCancel': 'বাতিল',
+  'settings.updateChecking': 'আপডেট চেক করা হচ্ছে…',
+  'settings.updateDownloading': 'ডাউনলোড হচ্ছে… {percent}%',
+  'settings.updateActivating': 'নতুন সংস্করণ চালু হচ্ছে…',
+  'settings.updateReloading': 'নতুন সংস্করণ লোড হচ্ছে…',
+  'settings.upToDateTitle': 'আপনি সর্বশেষ সংস্করণে আছেন',
+  'settings.webAheadBody':
+    'ওয়েবসাইটে নতুন বিল্ড ({version}) আছে, কিন্তু সেটি এখনো অ্যাপের জন্য প্রকাশ করা হয়নি।',
+  'settings.otaStagedTitle': 'আপডেট ডাউনলোড হয়েছে',
+  'settings.otaStagedBody':
+    'সংস্করণ {version} প্রস্তুত। চলমান পরীক্ষা বা সিঙ্ক না হওয়া উত্তর শেষ হলে এটি চালু হবে।',
+  'settings.otaActivatedTitle': 'সংস্করণ {version} চালু হচ্ছে',
+  'settings.reloadDoneTitle': 'রিলোড সম্পন্ন',
+  'settings.reloadDoneBody': 'চলমান সংস্করণ যাচাই করা হয়েছে: {version}',
+  'settings.reloadStaleTitle': 'এখনো পুরনো সংস্করণ চলছে',
+  'settings.reloadStaleBody':
+    'প্রত্যাশিত বিল্ড লোড হয়নি। অ্যাপটি বন্ধ করে আবার খুলুন, অথবা নতুন APK ইনস্টল করুন।',
+  'settings.apkRequiredTitle': 'নতুন APK প্রয়োজন',
+  'settings.apkRequiredBundled':
+    'অ্যাপের ভেতরে থাকা ফাইল ইন-অ্যাপ আপডেট দিয়ে বদলানো যায় না। সংস্করণ {version} ইনস্টল করতে নতুন APK দরকার।',
+  'settings.apkRequiredNative':
+    'এই আপডেটের জন্য অ্যাপের নতুন সংস্করণ দরকার। অনুগ্রহ করে নতুন APK ইনস্টল করুন।',
+  'settings.apkRequiredOta':
+    'অ্যাপ আপডেট সার্ভার এখন সাড়া দিচ্ছে না, তবে ওয়েবসাইটে নতুন বিল্ড ({version}) আছে। নতুন APK ইনস্টল করলে সমস্যা সমাধান হবে।',
+  'settings.downloadApk': 'APK ডাউনলোড করুন',
+  'settings.contactSupport': 'সহায়তা নিন',
+  'settings.blockedExam': 'পরীক্ষা চলছে। আপডেট বা রিলোড এখন নিরাপদ নয়।',
+  'settings.blockedPending':
+    'সিঙ্ক না হওয়া উত্তর বা অসম্পন্ন জমা আছে। সেগুলো শেষ হওয়ার পর আপডেট করুন।',
+  'settings.rejectedBody': 'এই আপডেটটি এই ডিভাইসের জন্য উপযুক্ত নয়।',
+  'settings.offlineTitle': 'ইন্টারনেট সংযোগ নেই',
+  'settings.offlineBody':
+    'অনলাইনে এলে আবার চেষ্টা করুন। অফলাইন পরীক্ষা এখনো কাজ করবে।',
+  'settings.serverErrorTitle': 'আপডেট সার্ভারে সমস্যা হয়েছে',
+  'settings.serverErrorBody':
+    'সার্ভার এখন উত্তর দিচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।',
+  'settings.restoreBuiltin': 'APK-এ থাকা সংস্করণে ফিরে যান',
+  'settings.restoreBuiltinHint':
+    'ডাউনলোড করা সংস্করণে সমস্যা হলে এটি ব্যবহার করুন। পরীক্ষার ডেটা মুছবে না।',
+  'settings.restoreConfirm': 'নিশ্চিত',
+
   // --------------------------------- Progress --------------------------------
   'progress.loadingLabel': 'প্রগ্রেস লোড হচ্ছে',
   'progress.errorTitle': 'ডেটা লোড করতে সমস্যা হয়েছে!',
@@ -1467,6 +1521,60 @@ const en: Record<AppMessageKey, string> = {
   'settings.faq': 'Frequently asked questions',
   'settings.privacy': 'Privacy policy',
   'settings.help': 'Help & support',
+
+  // ------------------------------ App updates -------------------------------
+  'settings.sectionUpdates': 'App updates',
+  'settings.checkUpdates': 'Check for Updates / Hard Reload',
+  'settings.checkUpdatesDescription':
+    'Look for the newest version, clear stale caches and reload the app if needed. Your exam data is kept.',
+  'settings.currentBuild': 'Running version: {version}',
+  'settings.otaBundle': 'Downloaded bundle: {version}',
+  'settings.builtinBuild': 'Bundled in the APK: {version}',
+  'settings.checkUpdatesAction': 'Check now',
+  'settings.confirmTitle': 'Check for updates?',
+  'settings.confirmBody':
+    'The app will look for a newer version and reload if needed. IndexedDB, unfinished exams and unsynced answers are not deleted.',
+  'settings.confirmYes': 'Check',
+  'settings.confirmCancel': 'Cancel',
+  'settings.updateChecking': 'Checking for updates…',
+  'settings.updateDownloading': 'Downloading… {percent}%',
+  'settings.updateActivating': 'Activating the new version…',
+  'settings.updateReloading': 'Loading the new version…',
+  'settings.upToDateTitle': 'You are on the latest version',
+  'settings.webAheadBody':
+    'The website has a newer build ({version}), but it has not been published for the app yet.',
+  'settings.otaStagedTitle': 'Update downloaded',
+  'settings.otaStagedBody':
+    'Version {version} is ready. It will be applied once no exam or unsynced answer is pending.',
+  'settings.otaActivatedTitle': 'Activating version {version}',
+  'settings.reloadDoneTitle': 'Reload complete',
+  'settings.reloadDoneBody': 'Verified running version: {version}',
+  'settings.reloadStaleTitle': 'Still running the old version',
+  'settings.reloadStaleBody':
+    'The expected build did not load. Close and reopen the app, or install the new APK.',
+  'settings.apkRequiredTitle': 'APK update required',
+  'settings.apkRequiredBundled':
+    'The files inside the APK cannot be replaced by an in-app update. Version {version} needs a new APK.',
+  'settings.apkRequiredNative':
+    'This update needs a newer app version. Please install the new APK.',
+  'settings.apkRequiredOta':
+    'The app update server is not responding, but the website has a newer build ({version}). Installing the new APK resolves it.',
+  'settings.downloadApk': 'Download APK',
+  'settings.contactSupport': 'Contact support',
+  'settings.blockedExam': 'An exam is in progress. Updating or reloading now is not safe.',
+  'settings.blockedPending':
+    'There are unsynced answers or an unfinished submission. Update once they are settled.',
+  'settings.rejectedBody': 'This update is not suitable for this device.',
+  'settings.offlineTitle': 'No internet connection',
+  'settings.offlineBody':
+    'Try again when you are online. Offline exams still work.',
+  'settings.serverErrorTitle': 'Update server problem',
+  'settings.serverErrorBody':
+    'The server is not responding right now. Try again in a moment.',
+  'settings.restoreBuiltin': 'Restore the version bundled in the APK',
+  'settings.restoreBuiltinHint':
+    'Use this if the downloaded version is broken. Exam data is not deleted.',
+  'settings.restoreConfirm': 'Confirm',
 
   // --------------------------------- Progress --------------------------------
   'progress.loadingLabel': 'Loading progress',

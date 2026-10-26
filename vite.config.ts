@@ -1,16 +1,45 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 import fs from 'node:fs';
+import path from 'node:path';
+import { buildManifest, resolveBuildIdentity } from './scripts/build-identity';
+
+/**
+ * Publish `dist/version.json` next to `index.html`.
+ *
+ * This file is how a bundled WebView (Capacitor APK / OTA bundle) can tell that
+ * the deployment has moved on. It is written from the same identity that is
+ * compiled into the JS bundle, so the comparison cannot drift.
+ */
+const versionManifestPlugin = (): Plugin => ({
+  name: 'porokh-version-manifest',
+  apply: 'build',
+  closeBundle() {
+    const outDir = path.resolve(process.cwd(), 'dist');
+    const manifest = buildManifest();
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(outDir, 'version.json'),
+      `${JSON.stringify(manifest, null, 2)}\n`
+    );
+    // eslint-disable-next-line no-console
+    console.log(
+      `[version-manifest] version=${manifest.version} buildId=${manifest.buildId}`
+    );
+  },
+});
 
 // package.json থেকে ভার্সন পড়ে নেওয়া হচ্ছে
-const packageJson = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf-8'));
+const buildIdentity = resolveBuildIdentity();
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), versionManifestPlugin()],
   define: {
     // অ্যাপের ভেতরে VITE_APP_VERSION হিসেবে ভার্সনটি ব্যবহার করা যাবে
-    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version)
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(buildIdentity.version),
+    // Build identity compiled into the bundle (see src/features/app-update/buildInfo.ts).
+    __POROKH_BUILD__: JSON.stringify(buildIdentity),
   },
   resolve: {
     alias: {
@@ -35,7 +64,7 @@ export default defineConfig({
           // ডেটা ফেচিং এবং ক্যাশিং
           'query-vendor': [
             '@tanstack/react-query', 
-            '@tanstack/react-query-persist-client', 
+            '@tanstack/react-query-persist-client',
             '@tanstack/query-sync-storage-persister'
           ],
           // ডেটাবেস ও অথেন্টিকেশন

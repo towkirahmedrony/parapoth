@@ -82,6 +82,8 @@ export type OtaController = {
   initialize: () => Promise<void>;
   checkForUpdate: (manual?: boolean) => Promise<void>;
   activate: () => Promise<ActivationDecision>;
+  /** Last-resort recovery: abandon OTA bundles and run the APK's own build. */
+  restoreBuiltin: () => Promise<boolean>;
   evaluateActivation: (auto?: boolean) => Promise<ActivationDecision>;
   handleForeground: () => void;
   handleOnline: () => void;
@@ -817,6 +819,31 @@ export const createOtaController = (
         };
   };
 
+  /**
+   * Drop every OTA bundle and run the build that ships inside the APK.
+   *
+   * This is the escape hatch for a downloaded bundle that is broken but never
+   * failed the boot check. It is never automatic: the user asks for it. Local
+   * exam data lives in IndexedDB and is not part of any bundle, so switching
+   * bundles cannot lose it.
+   */
+  const restoreBuiltin = async (): Promise<boolean> => {
+    if (!adapter.resetToBuiltin) return false;
+
+    staged = null;
+    clearStagedUpdate(kv);
+    clearPendingActivation(kv);
+
+    try {
+      // reset() reloads the WebView; code after it is not reliable on device.
+      await adapter.resetToBuiltin();
+      return true;
+    } catch (error) {
+      patch({ error: messageOf(error) });
+      return false;
+    }
+  };
+
   const confirmBoot = async (): Promise<void> => {
     const pending = readPendingActivation(kv);
     const health = await checkLocalDataHealth(
@@ -1067,9 +1094,7 @@ export const createOtaController = (
   const dismissNotice = (): void => {
     clearBootNotice(kv);
     patch({ notice: null });
-  };
-
-  const dispose = (): void => {
+  };  const dispose = (): void => {
     disposed = true;
     for (const timer of timers) clearTimeout(timer);
     timers.clear();
@@ -1092,6 +1117,7 @@ export const createOtaController = (
     initialize,
     checkForUpdate,
     activate,
+    restoreBuiltin,
     evaluateActivation,
     handleForeground,
     handleOnline,

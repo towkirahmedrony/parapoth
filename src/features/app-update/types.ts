@@ -162,6 +162,8 @@ export interface OtaUpdaterAdapter {
   notifyAppReady(): Promise<void>;
   setBundle(id: string): Promise<void>;
   resetToLastSuccessful(): Promise<void>;
+  /** Optional: drop back to the bundle shipped inside the APK. */
+  resetToBuiltin?(): Promise<void>;
   reload(): Promise<void>;
   subscribeProgress(listener: (progress: DownloadProgress) => void): () => void;
 }
