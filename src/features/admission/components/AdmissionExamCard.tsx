@@ -3,6 +3,7 @@ import {
   Award,
   CalendarDays,
   Clock3,
+  Download,
   Landmark,
   ListChecks,
   PlayCircle,
@@ -15,6 +16,8 @@ import { formatAdmissionCount } from '../lib/admissionLabels';
 interface AdmissionExamCardProps {
   exam: AdmissionExam;
   onStart: (examId: string) => void;
+  onPrepareOffline?: (examId: string) => void;
+  isPreparing?: boolean;
   universityName?: string | null;
 }
 
@@ -28,6 +31,8 @@ const STATUS_STYLES: Record<string, string> = {
 export const AdmissionExamCard: React.FC<AdmissionExamCardProps> = ({
   exam,
   onStart,
+  onPrepareOffline,
+  isPreparing = false,
   universityName,
 }) => {
   const { t, language } = useLanguage();
@@ -131,7 +136,21 @@ export const AdmissionExamCard: React.FC<AdmissionExamCardProps> = ({
         )}
       </div>
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex justify-end gap-2">
+        {onPrepareOffline && (
+          <button
+            type="button"
+            onClick={() => onPrepareOffline(exam.id)}
+            disabled={!isAvailable || isPreparing}
+            className="inline-flex items-center gap-2 rounded-xl border border-border-color bg-surface px-3 py-2.5 text-sm font-semibold text-text-primary transition-all hover:bg-surface-elevated active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            {isPreparing
+              ? t('admission.exam.preparingOffline')
+              : t('admission.exam.prepareOffline')}
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => onStart(exam.id)}

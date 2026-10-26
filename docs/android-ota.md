@@ -35,6 +35,56 @@ Native code, plugins and permissions only change through a new APK/AAB.
 
 No OTA code runs on the website/PWA: `Capacitor.isNativePlatform()` is required.
 
+## Offline exam data, PWA caching and OTA separation
+
+Four storage systems exist and must not be confused:
+
+1. **Offline exam store** (`src/features/exam/offline/`) — a versioned IndexedDB
+   store (`porokh-offline-exam`, version `2`) holding attempts, submissions,
+   answers and complete prepared-exam datasets. The OTA activation gate reads it
+   (`listAttemptsForUser`, `getSubmission`, `getAnswers`) so a kill-and-relaunch
+   cannot lose track of an unfinished attempt. `getOfflineExamStorage()` returns
+   the IndexedDB store in the WebView and a memory fallback elsewhere; it never
+   throws at construction.
+2. **Server-owned exam state** — the authoritative attempt/submission state lives
+   in the backend (`exam_attempts` etc., RLS + server-side ownership checks).
+   The frontend `useExamResume` persists only a convenience snapshot in
+   `localStorage` and always treats the backend attempt API as the source of
+   truth.
+3. **React Query cache** — a generic 24-hour `localStorage` query cache
+   (`PersistQueryClientProvider`). It can rehydrate previously fetched data when
+   connectivity drops, but it is not an offline submission queue.
+4. **PWA service worker** — `public/firebase-messaging-sw.js` handles Firebase
+   Cloud Messaging push only; it is not an app-shell cache and does not conflict
+   with the exam store or OTA.
+5. **OTA (Capgo)** — native-Android-only web bundle updates; unrelated to any
+   PWA asset update.
+
+**Wiring status (verified 2026-10-26):** the offline exam flow is now wired into
+the admission exam path:
+
+- **Prepare** — `AdmissionExamCard` offers "Download offline". Preparation starts
+  (or resumes) the authoritative server attempt via `POST /exams/user/attempts/start`
+  and caches its frozen question set + deadline + metadata in
+  `PreparedExamRecord`; an incomplete download is rejected before being marked
+  ready (`prepareExamForOffline`).
+- **Start/resume offline** — `useAdmissionExamSession` falls back to the prepared
+  dataset when the attempt API is unreachable and the device is offline, reusing
+  the same `QuestionCard` renderer and server-issued deadline (no timer reset).
+- **Durable answers** — every answer change is written to `OfflineExamStorage`
+  (revision-guarded, last-write-wins) so a reload/restart never loses it.
+- **Submission queue** — offline (or network-failed) submissions are queued in
+  `SubmissionRecord(status: 'pending')` and retried with bounded backoff by
+  `syncPendingSubmissions`, which is idempotent because the backend atomically
+  claims the server attempt and returns the existing result on a duplicate.
+- **OTA protection** — the same persisted state (`in_progress` attempt,
+  non-`confirmed` submission, non-`synced` answers) blocks activation via
+  `activationGate.ts`; this is exercised end-to-end in `offlineExamService.test.ts`.
+
+The attempt id is always server-issued, so offline work is never an invented
+client attempt: the server has already authorized it and its deadline at prepare
+time, and offline cannot extend that deadline.
+
 ## Version scheme
 
 ```
@@ -72,7 +122,9 @@ In a normal shell/CI the equivalent npm scripts (`typecheck`, `test`, `build`,
 `native:version`, `native:sync`, `native:open`) work as usual.
 
 A local Android build needs **Java 21** and the Android SDK (Capacitor 8).
-Neither is available in this workspace, so APK/AAB builds are CI-only here.
+Java 21 is available in this workspace; the Android SDK (`sdkmanager`, `adb`)
+and the Gradle wrapper toolchain are not, so APK/AAB builds are CI-only until
+the SDK is installed.
 
 ## Channels and keys
 

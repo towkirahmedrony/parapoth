@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { useOfflineExam } from '@/features/exam/offline/useOfflineExam';
 import { useAdmissionCatalog } from '../hooks/useAdmissionCatalog';
 import {
   filterAdmissionExams,
@@ -34,7 +36,9 @@ const AdmissionExamListPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, language } = useLanguage();
+  const offline = useOfflineExam();
   const { data: catalog, isLoading, isError, refetch } = useAdmissionCatalog();
+  const [preparingId, setPreparingId] = useState<string | null>(null);
 
   const examType = parseAdmissionExamType(examTypeParam);
   const group = catalog ? getAdmissionGroup(catalog, groupSlug) : null;
@@ -113,6 +117,18 @@ const AdmissionExamListPage: React.FC = () => {
       setSearchParams({});
     }
   };
+
+  const handlePrepareOffline = useCallback(
+    (examId: string, title: string) => {
+      setPreparingId(examId);
+      void offline
+        .prepareExam(examId, title)
+        .then(() => toast.success(t('admission.exam.preparedOffline')))
+        .catch(() => toast.error(t('admission.exam.prepareFailed')))
+        .finally(() => setPreparingId(null));
+    },
+    [offline.prepareExam, t]
+  );
 
   if (isError) {
     return (
@@ -226,6 +242,8 @@ const AdmissionExamListPage: React.FC = () => {
               key={exam.id}
               exam={exam}
               universityName={universityName}
+              isPreparing={preparingId === exam.id}
+              onPrepareOffline={(examId) => handlePrepareOffline(examId, exam.title)}
               onStart={(examId) => navigate(`/admission/exam/${examId}`)}
             />
           ))}

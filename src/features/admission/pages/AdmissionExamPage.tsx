@@ -18,6 +18,7 @@ import {
 } from '@/features/exam/utils/examSubmission';
 import { useAdmissionExamPaper } from '../hooks/useAdmissionCatalog';
 import { useAdmissionExamSession } from '../hooks/useAdmissionExamSession';
+import { useOfflineExam } from '@/features/exam/offline/useOfflineExam';
 import { AdmissionExamSkeleton } from '../components/AdmissionSkeleton';
 import { AdmissionQuestionNavigator } from '../components/AdmissionQuestionNavigator';
 import { AdmissionState } from '../components/AdmissionState';
@@ -78,7 +79,9 @@ const AdmissionExamPage: React.FC = () => {
 
   const paperQuery = useAdmissionExamPaper(examId);
   const session = useAdmissionExamSession(examId);
-  const { attempt, questions, submit, saveDraft, isSubmitting } = session;
+  const offline = useOfflineExam();
+  const { attempt, questions, submit, saveDraft, isSubmitting, isOfflineMode } =
+    session;
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -90,6 +93,7 @@ const AdmissionExamPage: React.FC = () => {
   const [autosaveInvalidated, setAutosaveInvalidated] = useState<{
     historyId: string | null;
   } | null>(null);
+  const [submissionQueued, setSubmissionQueued] = useState(false);
 
   const submittedRef = useRef(false);
   const timeLeftRef = useRef(0);
@@ -200,9 +204,12 @@ const AdmissionExamPage: React.FC = () => {
   }, [questions.length]);
 
   // Persist answers as a server-side draft so a refresh resumes the attempt.
+  // Offline, durable answers are already written locally by handleSelectOption;
+  // server autosave is skipped to avoid a network toast storm.
   useEffect(() => {
     if (!attempt || initializedAttemptId !== attempt.id) return;
     if (questions.length === 0) return;
+    if (isOfflineMode) return;
 
     const snapshot = JSON.stringify({ answers, currentIndex });
     if (snapshot === lastSavedRef.current) return;
@@ -245,6 +252,7 @@ const AdmissionExamPage: React.FC = () => {
     initializedAttemptId,
     questions.length,
     saveDraft,
+    isOfflineMode,
   ]);
 
   const processSubmission = useCallback(() => {
@@ -268,12 +276,41 @@ const AdmissionExamPage: React.FC = () => {
     submit(payload, {
       onSuccess: ({ resultId, result }) => {
         clearSubmissionId(submissionStorageKey);
+
+        // Offline submission is queued; there is no result id to navigate to.
+        if (!resultId) {
+          setSubmissionQueued(true);
+          toast.success(t('admission.exam.submissionQueued'));
+          return;
+        }
+
         navigate(`/exam/analysis/${resultId}`, {
           state: result,
           replace: true,
         });
       },
       onError: (error) => {
+        // A network failure while online is queued durably so the work is not
+        // lost; the sync runs automatically when connectivity returns.
+        if (offline.isOnline && !(error as { response?: unknown })?.response) {
+          void offline
+            .queueSubmission(attempt?.id ?? '', answers, questions.map((q) => q.id))
+            .then(() => {
+              setSubmissionQueued(true);
+              toast.success(t('admission.exam.submissionQueued'));
+            })
+            .catch(() => {
+              submittedRef.current = false;
+              toast.error(
+                resolveSubmitErrorMessage(error, {
+                  generic: t('exam.submitFailed'),
+                  network: t('exam.submitNetworkFailed'),
+                })
+              );
+            });
+          return;
+        }
+
         submittedRef.current = false;
         toast.error(
           resolveSubmitErrorMessage(error, {
@@ -293,6 +330,8 @@ const AdmissionExamPage: React.FC = () => {
     submissionStorageKey,
     submit,
     t,
+    offline.isOnline,
+    offline.queueSubmission,
   ]);
 
   useEffect(() => {
@@ -321,8 +360,16 @@ const AdmissionExamPage: React.FC = () => {
         ...previous,
         [questionId]: String(optionId),
       }));
+
+      // Durable local persistence so a reload/restart never loses the answer,
+      // even while offline. Failures surface only through the retry path.
+      if (attempt?.id) {
+        void offline
+          .saveAnswer(attempt.id, questionId, String(optionId))
+          .catch(() => {});
+      }
     },
-    []
+    [attempt?.id, offline.saveAnswer]
   );
 
   if (!examId) {
@@ -511,6 +558,19 @@ const AdmissionExamPage: React.FC = () => {
                 {t('admission.exam.viewResult')}
               </button>
             )}
+          </div>
+        )}
+
+        {submissionQueued && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/5 px-4 py-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300 sm:text-sm">
+            <CheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{t('admission.exam.submissionQueued')}</span>
+          </div>
+        )}
+
+        {isOfflineMode && !submissionQueued && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-xs font-semibold text-amber-700 dark:text-amber-300 sm:text-sm">
+            <span>{t('admission.exam.offlineMode')}</span>
           </div>
         )}
 
