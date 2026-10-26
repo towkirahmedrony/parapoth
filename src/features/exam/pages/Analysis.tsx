@@ -130,10 +130,19 @@ const Analysis: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const [result, setResult] = useState<ExamResultPayload | null>(
-    (location.state as ExamResultPayload) || null
+  const stateResult = (location.state as ExamResultPayload) || null;
+  const stateHasDetails = Boolean(
+    stateResult?.details_json &&
+      ((Array.isArray(stateResult.details_json.questions) &&
+        stateResult.details_json.questions.length > 0) ||
+        (Array.isArray(stateResult.details_json.details) &&
+          stateResult.details_json.details.length > 0))
   );
-  const [isLoading, setIsLoading] = useState(!location.state);
+
+  const [result, setResult] = useState<ExamResultPayload | null>(
+    stateHasDetails ? stateResult : null
+  );
+  const [isLoading, setIsLoading] = useState(!stateHasDetails);
 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportQuestionData, setReportQuestionData] = useState<QuestionMetaData | null>(null);

@@ -3,7 +3,25 @@ import { Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { HistoryItem } from '../types/history';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
-import { LOCALE_BY_LANGUAGE, localizeDigits } from '@/shared/i18n/messages';
+import {
+  LOCALE_BY_LANGUAGE,
+  localizeDigits,
+  type AppMessageKey,
+} from '@/shared/i18n/messages';
+import type { PracticeMode } from '@/features/practice/types/practice';
+import { HistoryPracticeActions } from '@/features/practice/components/HistoryPracticeActions';
+
+const PRACTICE_BADGE_KEYS: Record<PracticeMode, AppMessageKey> = {
+  retake: 'practice.retakeBadge',
+  wrong_from_history: 'practice.wrongFromHistoryBadge',
+  wrong_global: 'practice.wrongGlobalBadge',
+};
+
+const PRACTICE_TITLE_KEYS: Record<PracticeMode, AppMessageKey> = {
+  retake: 'practice.retakeTitle',
+  wrong_from_history: 'practice.wrongTitle',
+  wrong_global: 'practice.globalTitle',
+};
 
 interface Props {
   item: HistoryItem;
@@ -17,8 +35,11 @@ export const HistoryCard: React.FC<Props> = memo(({ item }) => {
   const parsedDate = dateStr ? new Date(dateStr) : null;
   const hasValidDate = !!parsedDate && !Number.isNaN(parsedDate.getTime());
 
+  const practiceMode = item.practice_mode ?? null;
   const title =
-    item.exam_title?.trim() || item.details_json?.exam_title?.trim() || t('history.cardFallbackTitle');
+    item.exam_title?.trim() ||
+    item.details_json?.exam_title?.trim() ||
+    (practiceMode ? t(PRACTICE_TITLE_KEYS[practiceMode]) : t('history.cardFallbackTitle'));
   const subjectName =
     (language === 'bn' ? item.subject_name_bn : item.subject_name_en)?.trim() ||
     (language === 'bn' ? item.subject_name_en : item.subject_name_bn)?.trim();
@@ -53,7 +74,13 @@ export const HistoryCard: React.FC<Props> = memo(({ item }) => {
               })}
             </span>
           )}
+          {practiceMode && (
+            <span className="rounded-full border border-border-color bg-surface-elevated px-2 py-0.5 text-xs font-semibold text-text-secondary">
+              {t(PRACTICE_BADGE_KEYS[practiceMode])}
+            </span>
+          )}
         </div>
+        <HistoryPracticeActions item={item} />
       </div>
       <div className="text-right shrink-0">
         <div className="text-primary text-2xl font-bold">

@@ -23,7 +23,13 @@ export const getExamHistory = async (): Promise<HistoryItem[]> => {
   const { data: response } = await apiClient.get<{ data: HistoryItem[] }>(
     '/history/exams',
   );
-  const history = Array.isArray(response.data) ? response.data : [];
+  const history = Array.isArray(response.data)
+    ? response.data.map((item) => ({
+        ...item,
+        retake_available_count: Math.max(0, Number(item.retake_available_count ?? 0)),
+        wrong_available_count: Math.max(0, Number(item.wrong_available_count ?? 0)),
+      }))
+    : [];
   const examIds = [...new Set(history.map((item) => item.exam_id).filter(
     (id): id is string => typeof id === 'string' && id.length > 0,
   ))];

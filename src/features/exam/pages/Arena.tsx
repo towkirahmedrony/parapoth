@@ -9,8 +9,12 @@ import ReportModal, { ReportPayload as ModalReportPayload } from '@/shared/compo
 import ConfirmModal from '@/shared/components/feedback/ConfirmModal';
 import { apiClient } from '@/shared/lib/apiClient';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import type { AppMessageKey } from '@/shared/i18n/messages';
 import toast from 'react-hot-toast';
-import { ExamConfig, ExamQuestion } from '../types/exam';
+import { ExamConfig, ExamQuestion, Question } from '../types/exam';
+import { practiceService } from '@/features/practice/services/practiceService';
+import { normalizeAttemptAnswers } from '@/features/practice/utils/practice';
+import type { PracticeMode } from '@/features/practice/types/practice';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
 import {
@@ -29,6 +33,14 @@ const defaultConfig: ExamConfig = {
 };
 
 const SUBMIT_ENDPOINT = '/exams/user/submit';
+
+const PRACTICE_TITLES: Record<PracticeMode, AppMessageKey> = {
+  retake: 'practice.retakeTitle',
+  wrong_from_history: 'practice.wrongTitle',
+  wrong_global: 'practice.globalTitle',
+};
+
+type ArenaQuestion = ExamQuestion | Question;
 
 type ArenaQuestionResponse = {
   success?: boolean;
@@ -66,7 +78,8 @@ const fetchArenaQuestions = async (
 const Arena: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { subjectSlug } = useParams<{ subjectSlug: string }>();
+  const { subjectSlug, attemptId } = useParams<{ subjectSlug?: string; attemptId?: string }>();
+  const isAttemptMode = Boolean(attemptId);
   const { t } = useLanguage();
   const queryClient = useQueryClient();
 
@@ -75,7 +88,7 @@ const Arena: React.FC = () => {
     return passedConfig || defaultConfig;
   }, [passedConfig]);
 
-  const examId = config.examId || config.exam_id || undefined;
+  const examId = isAttemptMode ? undefined : config.examId || config.exam_id || undefined;
   const sessionId = config.sessionId || config.session_id || undefined;
 
   const initialDurationSeconds = config.duration * 60;
@@ -90,6 +103,7 @@ const Arena: React.FC = () => {
   const hasSubmittedRef = useRef(false);
   const targetEndTimeRef = useRef<number | null>(null);
   const timeLeftRef = useRef(initialDurationSeconds);
+  const lastSavedDraftRef = useRef('');
 
   // One idempotency key per examination session. It survives a reload during a
   // slow submission, so a retry is recognised by the backend as the same
@@ -97,17 +111,15 @@ const Arena: React.FC = () => {
   const submissionStorageKey = useMemo(
     () =>
       buildSubmissionStorageKey(
-        `${subjectSlug || 'all'}-${config.questionCount}-${config.duration}`
+        isAttemptMode
+          ? `attempt-${attemptId}`
+          : `${subjectSlug || 'all'}-${config.questionCount}-${config.duration}`
       ),
-    [subjectSlug, config.questionCount, config.duration]
+    [isAttemptMode, attemptId, subjectSlug, config.questionCount, config.duration]
   );
   const [submissionId] = useState(() => getOrCreateSubmissionId(submissionStorageKey));
 
-  const {
-    data: questions = [],
-    isLoading,
-    isError,
-  } = useQuery({
+  const arenaQuestionsQuery = useQuery({
     queryKey: [
       'arenaQuestions',
       config.questionCount,
@@ -117,6 +129,7 @@ const Arena: React.FC = () => {
       sessionId || 'no-session-id',
     ],
     queryFn: () => fetchArenaQuestions(config.questionCount, subjectSlug),
+    enabled: !isAttemptMode,
     staleTime: Infinity,
     gcTime: Infinity,
     refetchOnWindowFocus: false,
@@ -124,14 +137,82 @@ const Arena: React.FC = () => {
     retry: 1,
   });
 
+  const attemptStateQuery = useQuery({
+    queryKey: ['practiceAttempt', attemptId],
+    queryFn: () => practiceService.getAttemptState(attemptId ?? ''),
+    enabled: isAttemptMode && Boolean(attemptId),
+    staleTime: Infinity,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
+
+  const attemptQuestionsQuery = useQuery({
+    queryKey: ['practiceAttemptQuestions', attemptId],
+    queryFn: () => practiceService.getAttemptQuestions(attemptId ?? ''),
+    enabled: isAttemptMode && Boolean(attemptId) && Boolean(attemptStateQuery.data?.id),
+    staleTime: Infinity,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
+
+  const questions = useMemo<ArenaQuestion[]>(
+    () =>
+      isAttemptMode
+        ? (attemptQuestionsQuery.data?.questions ?? [])
+        : (arenaQuestionsQuery.data ?? []),
+    [isAttemptMode, attemptQuestionsQuery.data, arenaQuestionsQuery.data]
+  );
+
+  const isLoading = isAttemptMode
+    ? attemptStateQuery.isPending ||
+      (Boolean(attemptStateQuery.data?.id) && attemptQuestionsQuery.isLoading)
+    : arenaQuestionsQuery.isLoading;
+
+  const isError = isAttemptMode
+    ? attemptStateQuery.isError || attemptQuestionsQuery.isError
+    : arenaQuestionsQuery.isError;
+
   useEffect(() => {
     timeLeftRef.current = timeLeft;
   }, [timeLeft]);
+
+  // Attempt mode is authoritative: the deadline and saved draft come from the
+  // server, so a refresh can resume the same attempt and remaining time instead
+  // of starting a fresh local timer.
+  useEffect(() => {
+    if (!isAttemptMode || !attemptStateQuery.data) return;
+
+    const state = attemptStateQuery.data;
+    const deadlineMs = state.deadline_at ? Date.parse(state.deadline_at) : Number.NaN;
+    const fallbackSeconds = Math.max(
+      0,
+      Math.trunc(Number(state.seconds_remaining ?? initialDurationSeconds))
+    );
+    const remaining = Number.isFinite(deadlineMs)
+      ? Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000))
+      : fallbackSeconds;
+
+    targetEndTimeRef.current = Number.isFinite(deadlineMs)
+      ? deadlineMs
+      : Date.now() + remaining * 1000;
+
+    setTimeLeft(remaining);
+    timeLeftRef.current = remaining;
+
+    const draft = normalizeAttemptAnswers(state.answers_draft);
+    setUserAnswers(draft);
+    lastSavedDraftRef.current = JSON.stringify(draft);
+  }, [isAttemptMode, attemptStateQuery.data, initialDurationSeconds]);
 
   useEffect(() => {
     if (isLoading || questions.length === 0) return;
 
     if (!targetEndTimeRef.current) {
+      if (isAttemptMode) return;
       targetEndTimeRef.current = Date.now() + initialDurationSeconds * 1000;
     }
 
@@ -148,7 +229,32 @@ const Arena: React.FC = () => {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [isLoading, questions.length, initialDurationSeconds]);
+  }, [isLoading, questions.length, initialDurationSeconds, isAttemptMode]);
+
+  // Autosave is best-effort and attempt-scoped. It can never extend the
+  // deadline; the backend rejects writes after it.
+  useEffect(() => {
+    if (!isAttemptMode || !attemptId || hasSubmittedRef.current) return;
+
+    if (Object.keys(userAnswers).length === 0) return;
+
+    const serialized = JSON.stringify(userAnswers);
+    if (serialized === lastSavedDraftRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      practiceService
+        .saveDraftAnswers(attemptId, userAnswers)
+        .then(() => {
+          lastSavedDraftRef.current = serialized;
+        })
+        .catch(() => {
+          // A failed draft save must not interrupt the exam; the next answer
+          // change retries, and submit always carries the full answer map.
+        });
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [userAnswers, isAttemptMode, attemptId]);
 
   const submitExamMutation = useMutation({
     mutationFn: async (payload: ReturnType<typeof buildSubmitPayload>) => {
@@ -165,6 +271,8 @@ const Arena: React.FC = () => {
     onSuccess: ({ resultId, result }) => {
       clearSubmissionId(submissionStorageKey);
       queryClient.invalidateQueries({ queryKey: ['history'] });
+      queryClient.invalidateQueries({ queryKey: ['practice'] });
+      queryClient.invalidateQueries({ queryKey: ['progressDashboard'] });
 
       // Navigate only after the backend confirmed persistence.
       navigate(`/exam/analysis/${resultId}`, {
@@ -198,8 +306,9 @@ const Arena: React.FC = () => {
 
     const payloadForBackend = buildSubmitPayload({
       examId,
-      // `session_id` is the backend's idempotency key, so it must identify this
-      // submission attempt rather than describe the exam.
+      // In attempt mode the server-issued id is the only scope trusted by the
+      // backend; `session_id` remains for the legacy untracked path.
+      attemptId: isAttemptMode ? attemptId : undefined,
       sessionId: submissionId,
       answers: userAnswers,
       questionIds,
@@ -207,7 +316,7 @@ const Arena: React.FC = () => {
     });
 
     submitExam(payloadForBackend);
-  }, [questions, userAnswers, initialDurationSeconds, examId, submissionId, submitExam]);
+  }, [questions, userAnswers, initialDurationSeconds, examId, isAttemptMode, attemptId, submissionId, submitExam]);
 
   useEffect(() => {
     if (timeLeft <= 0 && questions.length > 0 && !hasSubmittedRef.current) {
@@ -279,11 +388,18 @@ const Arena: React.FC = () => {
   const answeredCount = Object.keys(userAnswers).length;
   const progressPercentage = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
   const isSubmitting = submitExamMutation.isPending || hasSubmittedRef.current;
+  const practiceMode = attemptStateQuery.data?.practice_mode ?? null;
+  const headerTitle =
+    isAttemptMode && practiceMode
+      ? t(PRACTICE_TITLES[practiceMode])
+      : isAttemptMode
+        ? t('practice.attemptFallbackTitle')
+        : t('exam.modelTestLive');
 
   return (
     <div className="min-h-screen pb-32 lg:pb-10 bg-app text-text-primary">
       <ExamHeader
-        title={t('exam.modelTestLive')}
+        title={headerTitle}
         onBack={() => navigate(-1)}
         rightContent={
           <div className="flex items-center gap-4">

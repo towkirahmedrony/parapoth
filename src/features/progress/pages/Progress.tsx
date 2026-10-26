@@ -7,6 +7,7 @@ import { ChartsSection } from '../components/ChartsSection';
 import { AnalysisSection } from '../components/AnalysisSection';
 import { SubjectReportSection } from '../components/SubjectReportSection';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
+import { MistakePracticeSection } from '@/features/practice/components/MistakePracticeSection';
 
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
@@ -97,6 +98,7 @@ const Progress: React.FC = () => {
     >
       <ProgressHeader user={data.user} />
       <MetricsGrid metrics={data.metrics} />
+      <MistakePracticeSection />
       <ActivityHeatmap data={data.activityHeatmap} />
       <ChartsSection
         performanceChart={data.performanceChart}

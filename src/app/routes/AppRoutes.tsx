@@ -178,6 +178,17 @@ const AppRoutes: React.FC = () => {
           }
         />
 
+        {/* Practice attempts are server-issued, so the attempt id is part of
+            the URL. A refresh resumes the same attempt and deadline. */}
+        <Route
+          path="/exam/attempt/:attemptId"
+          element={
+            <PermissionGuard>
+              <Arena />
+            </PermissionGuard>
+          }
+        />
+
         <Route
           path="/exam/analysis"
           element={
