@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { supabase } from "@/shared/lib/supabase";
+import { buildApiUrl } from "@/shared/lib/apiConfig";
 import { useLanguage } from "@/shared/i18n/LanguageProvider";
 import type { AppMessageKey } from "@/shared/i18n/messages";
 
@@ -68,8 +69,7 @@ export default function LoginForm() {
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
 
       if (!isEmail) {
-        const backendUrl = (import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1').replace(/\/+$/, '');
-        const response = await fetch(`${backendUrl}/auth/username-login`, {
+        const response = await fetch(buildApiUrl('/auth/username-login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: identifier, password: credentials.password }),
@@ -112,8 +112,8 @@ export default function LoginForm() {
     onSuccess: async (data) => {
       if (data?.session?.user?.id) {
         try {
-          const backendUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
-          await fetch(`${backendUrl}/api/v1/auth/save-device`, {
+          const backendUrl = buildApiUrl('/auth/save-device');
+          await fetch(backendUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

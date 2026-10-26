@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/shared/lib/supabase';
+import { buildApiUrl } from '@/shared/lib/apiConfig';
 import { authService } from '../services/authService';
 import type { AppUser, AuthContextType } from '../types/auth';
 import {
@@ -228,9 +229,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       const currentSession = sessionRef.current;
       if (currentSession?.access_token && (roleRef.current === 'admin' || roleRef.current === 'super_admin')) {
-        const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://parapoth-backend.onrender.com/api/v1';
+        const apiBase = buildApiUrl('/auth/logout');
         try {
-          await fetch(`${apiBase}/auth/logout`, {
+          await fetch(apiBase, {
             method: 'POST',
             headers: { Authorization: `Bearer ${currentSession.access_token}` },
           });

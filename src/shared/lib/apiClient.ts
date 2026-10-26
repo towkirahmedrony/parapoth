@@ -1,8 +1,9 @@
 import axios, { InternalAxiosRequestConfig, AxiosError, AxiosResponse } from 'axios';
 import { supabase } from './supabase';
 import { getDeviceId } from '../utils/device';
+import { API_BASE_URL } from './apiConfig';
+import { formatNetworkDiagnostic } from './networkDiagnostics';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
 const apiClient = axios.create({
@@ -73,6 +74,10 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 403 && accessCode === 'ACCOUNT_SUSPENDED') {
       window.dispatchEvent(new CustomEvent('auth:suspended'));
+    }
+
+    if (!error.response && import.meta.env.DEV) {
+      console.warn('[api:network]', formatNetworkDiagnostic({ url: error.config?.url, method: error.config?.method }));
     }
 
     if (error.response?.status === 401) {

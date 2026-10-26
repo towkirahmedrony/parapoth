@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { SUPPORT_CONFIG } from '@/shared/constants/supportConfig';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { localizeDigits } from '@/shared/i18n/messages';
+import { buildApiUrl } from '@/shared/lib/apiConfig';
 
 type Language = 'bn' | 'en';
 
@@ -87,15 +88,7 @@ const TEXTS = {
   }
 } as const;
 
-const getContactApiUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL?.trim();
-
-  if (!apiUrl) {
-    throw new Error('CONTACT_API_NOT_CONFIGURED');
-  }
-
-  return `${apiUrl.replace(/\/+$/, '')}/contact`;
-};
+const getContactApiUrl = () => buildApiUrl('/contact');
 
 const parseErrorMessage = (error: unknown, language: Language) => {
   const t = TEXTS[language];

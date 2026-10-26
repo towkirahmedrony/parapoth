@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { supabase } from '../../lib/supabase';
+import { buildApiUrl } from '../../lib/apiConfig';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -25,11 +26,9 @@ const Header: React.FC = () => {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
 
-        const baseUrl =
-          import.meta.env.VITE_API_URL ||
-          'https://parapoth-backend.onrender.com/api/v1';
+        const baseUrl = buildApiUrl('/growth/stats');
 
-        const response = await fetch(`${baseUrl}/growth/stats`, {
+        const response = await fetch(baseUrl, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

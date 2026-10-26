@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { QUERY_KEYS } from '@/shared/constants/storageKeys';
 import { supabase } from '@/shared/lib/supabase';
+import { buildApiUrl } from '@/shared/lib/apiConfig';
 
 export interface DailyActivity {
   activity_date: string;
@@ -38,15 +39,14 @@ export const useStreak = (targetUserId?: string): UseStreakReturn => {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
         
-        // ২. আপনার ব্যাকএন্ড URL
-        const baseUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
+        const baseUrl = buildApiUrl('/growth');
 
         // ৩. ব্যাকএন্ড থেকে stats এবং heatmap একসাথে ফেচ করা
         const [statsRes, heatmapRes] = await Promise.all([
-          fetch(`${baseUrl}/growth/stats/${effectiveUserId}`, {
+          fetch(`${baseUrl}/stats/${effectiveUserId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch(`${baseUrl}/growth/heatmap/${effectiveUserId}`, {
+          fetch(`${baseUrl}/heatmap/${effectiveUserId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);

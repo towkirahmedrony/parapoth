@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { supabase } from "@/shared/lib/supabase";
+import { buildApiUrl } from "@/shared/lib/apiConfig";
 import { isValidUsername, normalizeUsername } from "../utils/username";
 import { useLanguage } from "@/shared/i18n/LanguageProvider";
 import type { AppMessageKey } from "@/shared/i18n/messages";
@@ -129,8 +130,8 @@ export default function RegisterForm({
       // 🚀 [NEW] IP Address ও Device Info ব্যাকএন্ডে সেভ করার জন্য API Call
       if (data.user) {
         try {
-          const backendUrl = import.meta.env.VITE_API_URL || 'https://parapoth-backend.onrender.com/api/v1';
-          await fetch(`${backendUrl}/api/v1/auth/save-device`, {
+          const backendUrl = buildApiUrl('/auth/save-device');
+          await fetch(backendUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
