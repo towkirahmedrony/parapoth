@@ -69,11 +69,15 @@ export interface HistoryItem {
   } | null;
 }
 
+/** Wrong and skipped answers are both mistakes; the backend labels each one. */
+export type MistakeStatus = 'wrong' | 'skipped';
+
 export interface MistakeItem {
   id: string;
   detail_id?: string | null;
   selected_option: string | null;
   question_id: string;
+  status?: MistakeStatus | null;
   occurred_at?: string | null;
   questions: ReviewQuestion | null;
 }

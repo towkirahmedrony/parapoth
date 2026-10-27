@@ -12,6 +12,7 @@ import { MistakeCard } from '../components/MistakeCard';
 import { BookmarkCard } from '../components/BookmarkCard';
 import { DeleteModal } from '../components/DeleteModal';
 import { EmptyState } from '../components/EmptyState';
+import { resolveTabViewState } from '../utils/historyViewState';
 
 // Types
 type DeleteTargetType = Extract<TabType, 'mistakes' | 'bookmarks'>;
@@ -167,17 +168,23 @@ const History: React.FC = () => {
   // Early return fallback
   if (!user) return null;
 
-  // Keep showing cached rows when a background refetch fails;
-  // only take over the page when there is nothing to display.
-  const activeTabDataEmpty =
+  const activeTabItemCount =
     activeTab === 'history'
-      ? historyData.length === 0
+      ? historyData.length
       : activeTab === 'mistakes'
-        ? mistakeData.length === 0
-        : bookmarkData.length === 0;
+        ? mistakeData.length
+        : bookmarkData.length;
+
+  // A failed request must never render the "no mistakes yet" empty state.
+  // Cached rows stay visible when only a background refetch failed.
+  const tabViewState = resolveTabViewState({
+    isLoading,
+    isError,
+    itemCount: activeTabItemCount,
+  });
 
   // Error state for the active tab (data retrieval failed)
-  if (isError && !isLoading && activeTabDataEmpty) {
+  if (tabViewState === 'error') {
     return (
       <div className={`bg-app text-text-primary max-w-4xl mx-auto p-4 md:p-6 min-h-screen ${textFontClass}`}>
         <HistoryTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -355,7 +362,7 @@ const History: React.FC = () => {
 
       {renderToolbar()}
 
-      {isLoading ? (
+      {tabViewState === 'loading' ? (
         <div
           className="space-y-4 mt-4 animate-pulse"
           role="status"

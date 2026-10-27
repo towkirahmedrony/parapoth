@@ -1,11 +1,21 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/shared/lib/apiClient';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { TabType, MistakeItem, BookmarkItem } from '../types/history';
 import { getExamHistory } from '../services/historyService';
 
 export const useHistory = (activeTab: TabType) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // The cache is persisted for offline use, so it must be scoped to the signed
+  // in student: a second user on the same device must never read the first
+  // user's attempts or mistakes from the cache.
+  const userId = user?.id ?? 'anonymous';
+  const examsKey = ['history', 'exams', userId] as const;
+  const mistakesKey = ['history', 'mistakes', userId] as const;
+  const bookmarksKey = ['history', 'bookmarks', userId] as const;
 
   // 1. History Query
   const {
@@ -14,7 +24,7 @@ export const useHistory = (activeTab: TabType) => {
     isError: isHistoryError,
     refetch: refetchHistory,
   } = useQuery({
-    queryKey: ['history', 'exams'],
+    queryKey: examsKey,
     queryFn: getExamHistory,
     enabled: activeTab === 'history',
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -27,9 +37,14 @@ export const useHistory = (activeTab: TabType) => {
     isError: isMistakeError,
     refetch: refetchMistakes,
   } = useQuery({
-    queryKey: ['history', 'mistakes'],
+    queryKey: mistakesKey,
     queryFn: async () => {
       const { data } = await apiClient.get('/history/mistakes');
+      // A malformed or failed payload must surface as an error, never as an
+      // empty list: an empty list renders "কোনো ভুল নেই".
+      if (!Array.isArray(data?.data)) {
+        throw new Error('Unexpected mistakes response');
+      }
       return data.data as MistakeItem[];
     },
     enabled: activeTab === 'mistakes',
@@ -43,9 +58,12 @@ export const useHistory = (activeTab: TabType) => {
     isError: isBookmarkError,
     refetch: refetchBookmarks,
   } = useQuery({
-    queryKey: ['history', 'bookmarks'],
+    queryKey: bookmarksKey,
     queryFn: async () => {
       const { data } = await apiClient.get('/history/bookmarks');
+      if (!Array.isArray(data?.data)) {
+        throw new Error('Unexpected bookmarks response');
+      }
       return data.data as BookmarkItem[];
     },
     enabled: activeTab === 'bookmarks',
@@ -59,10 +77,10 @@ export const useHistory = (activeTab: TabType) => {
       return id;
     },
     onSuccess: (id) => {
-      queryClient.setQueryData<MistakeItem[]>(['history', 'mistakes'], (old) =>
+      queryClient.setQueryData<MistakeItem[]>(mistakesKey, (old) =>
         old ? old.filter((item) => item.id !== id) : []
       );
-      queryClient.invalidateQueries({ queryKey: ['history', 'mistakes'] });
+      queryClient.invalidateQueries({ queryKey: mistakesKey });
     },
   });
 
@@ -72,10 +90,10 @@ export const useHistory = (activeTab: TabType) => {
       return id;
     },
     onSuccess: (id) => {
-      queryClient.setQueryData<BookmarkItem[]>(['history', 'bookmarks'], (old) =>
+      queryClient.setQueryData<BookmarkItem[]>(bookmarksKey, (old) =>
         old ? old.filter((item) => item.id !== id) : []
       );
-      queryClient.invalidateQueries({ queryKey: ['history', 'bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: bookmarksKey });
       queryClient.invalidateQueries({ queryKey: ['exams', 'bookmarks'] });
       queryClient.invalidateQueries({ queryKey: ['question-bank', 'questions'] });
     },
