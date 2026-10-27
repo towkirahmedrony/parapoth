@@ -206,7 +206,9 @@ jobs:
           esac
           apksigner=$(find "${ANDROID_HOME}/build-tools" -name apksigner -type f | sort -V | tail -1)
           test -x "$apksigner" || { echo "::error::apksigner not found in the Android SDK"; exit 1; }
-          "$apksigner" verify --print-certs "$apk" | tee /tmp/apksigner.txt
+          # --verbose is what prints the "Verified using ... scheme" lines;
+          # without it apksigner only prints "Verifies" plus the certificates.
+          "$apksigner" verify --verbose --print-certs "$apk" | tee /tmp/apksigner.txt
           grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' /tmp/apksigner.txt || {
             echo "::error::APK is not verified with the v2 signature scheme."
             exit 1
