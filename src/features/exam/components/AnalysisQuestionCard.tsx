@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, memo, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, memo, useEffect, useRef } from 'react';
 import { CheckCircle2, XCircle, MinusCircle, ChevronDown, ChevronUp, AlertCircle, Flag, Bookmark } from 'lucide-react';
 import { Question } from '../types/exam';
 import { formatBoardRef } from '../../leaderboard/utils/xpCalculator';
@@ -42,6 +42,32 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(initialBookmarked);
   const [isBookmarkUpdating, setIsBookmarkUpdating] = useState<boolean>(false);
+
+  // Mount the heavy body (KaTeX question text + options) only once the card is
+  // near the viewport. Long exams otherwise create thousands of DOM nodes at
+  // once, which exhausts GPU tile memory on low-end phones.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [bodyReady, setBodyReady] = useState<boolean>(index < 3);
+
+  useEffect(() => {
+    if (bodyReady) return;
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setBodyReady(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setBodyReady(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '900px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [bodyReady]);
 
   // Sync with parent unless an optimistic update is still in flight.
   useEffect(() => {
@@ -155,8 +181,11 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   }, [onBookmark, question.id, isBookmarked, isBookmarkUpdating]);
 
   return (
-    <div className={`rounded-xl overflow-hidden transition-all shadow-sm md:shadow-md border bg-card-bg ${statusConfig.borderClass}`}>
-      <div className="flex justify-between items-center p-3 sm:p-4 border-b border-border-color opacity-90">
+    <div
+      ref={rootRef}
+      className={`rounded-xl overflow-hidden border bg-card-bg [content-visibility:auto] [contain-intrinsic-size:auto_560px] ${statusConfig.borderClass}`}
+    >
+      <div className="flex justify-between items-center p-3 sm:p-4 border-b border-border-color">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold px-2.5 py-1 rounded-md shadow-sm bg-badge-bg text-badge-text">
             Q{index + 1}
@@ -199,6 +228,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
         </div>
       </div>
 
+      {bodyReady ? (
       <div className="p-4 sm:p-5 bg-surface">
         <div className="font-['Hind_Siliguri'] text-[15px] sm:text-base mb-5 leading-relaxed text-text-primary">
           {parsedQuestion.statements.length > 0 ? (
@@ -239,7 +269,7 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
               textClasses = "text-emerald-700";
             } else if (isSelected && showCorrectAnswers) {
               containerClasses = "border-red-500/50 bg-red-500/10";
-              textClasses = "text-red-700 line-through opacity-80";
+              textClasses = "text-red-700/80 line-through";
             } else if (isSelected) {
               containerClasses = "border-focus-ring bg-surface-elevated";
               textClasses = "text-text-primary font-semibold";
@@ -287,6 +317,9 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
         </div>
         )}
       </div>
+      ) : (
+        <div className="min-h-[380px] bg-surface" aria-hidden="true" />
+      )}
     </div>
   );
 });

@@ -186,7 +186,7 @@ function applyResolvedThemeToDom(theme: Theme, config?: GlobalThemeConfig | null
     body.style.backgroundImage = bgImage;
     body.style.backgroundSize = 'cover';
     body.style.backgroundPosition = 'center';
-    body.style.backgroundAttachment = 'fixed';
+    body.style.backgroundAttachment = 'scroll';
     body.style.color = activeColors.textPrimary;
   }
 

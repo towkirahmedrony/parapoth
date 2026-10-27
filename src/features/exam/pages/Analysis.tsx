@@ -387,7 +387,7 @@ const Analysis: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen animate-in fade-in flex flex-col items-center bg-app text-text-primary">
+    <div className="min-h-screen flex flex-col items-center bg-app text-text-primary">
       <div className="w-full pt-6 pb-8 px-4 border-b shadow-sm relative overflow-hidden bg-card-bg border-card-border">
         <div className="absolute top-0 left-0 w-full h-1 opacity-50 bg-primary" />
 
@@ -568,7 +568,7 @@ const Analysis: React.FC = () => {
         <ActionButtons onHome={handleHomeNav} onBack={handleBackNav} />
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 w-full p-4 z-40 backdrop-blur-xl border-t flex justify-center bg-surface border-border-color">
+      <div className="md:hidden fixed bottom-0 left-0 w-full p-4 z-40 border-t flex justify-center bg-surface border-border-color">
         <div className="w-full max-w-3xl flex gap-3">
           <ActionButtons onHome={handleHomeNav} onBack={handleBackNav} />
         </div>
