@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 
 import { supabase } from "@/shared/lib/supabase";
 import { useLanguage } from "@/shared/i18n/LanguageProvider";
 import type { AppMessageKey } from "@/shared/i18n/messages";
-
-const AUTH_CALLBACK_PATH = "/auth/callback";
-
-function getOAuthRedirectUrl() {
-  return `${window.location.origin}${AUTH_CALLBACK_PATH}`;
-}
+import {
+  OAUTH_ERROR_EVENT,
+  buildGoogleOAuthOptions,
+  consumePendingOAuthError,
+  type OAuthErrorMessageKey,
+} from "../utils/oauthCallback";
 
 function getOAuthErrorMessage(error: unknown): AppMessageKey {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
@@ -24,7 +26,35 @@ function getOAuthErrorMessage(error: unknown): AppMessageKey {
 export default function SocialLogin() {
   const { t } = useLanguage();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<AppMessageKey | null>(null);
+  const [errorMessage, setErrorMessage] = useState<AppMessageKey | null>(() =>
+    consumePendingOAuthError()
+  );
+
+  useEffect(() => {
+    const handleOAuthError = (event: Event) => {
+      const messageKey = (event as CustomEvent<OAuthErrorMessageKey>).detail;
+      setErrorMessage(messageKey);
+      setIsGoogleLoading(false);
+    };
+
+    window.addEventListener(OAUTH_ERROR_EVENT, handleOAuthError);
+    return () => window.removeEventListener(OAUTH_ERROR_EVENT, handleOAuthError);
+  }, []);
+
+  // Closing the custom tab without finishing sign-in must release the button.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let removed = false;
+    const listener = Browser.addListener("browserFinished", () => {
+      if (!removed) setIsGoogleLoading(false);
+    });
+
+    return () => {
+      removed = true;
+      void listener.then((handle) => handle.remove()).catch(() => undefined);
+    };
+  }, []);
 
   const handleGoogleLogin = async () => {
     if (isGoogleLoading) return;
@@ -33,18 +63,22 @@ export default function SocialLogin() {
     setIsGoogleLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const isNative = Capacitor.isNativePlatform();
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo: getOAuthRedirectUrl(),
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
+        options: buildGoogleOAuthOptions(window.location.origin, isNative),
       });
 
       if (error) {
         throw error;
+      }
+
+      if (isNative) {
+        if (!data.url) {
+          throw new Error("Google sign-in URL was not returned");
+        }
+
+        await Browser.open({ url: data.url });
       }
     } catch (error) {
       setErrorMessage(getOAuthErrorMessage(error));
