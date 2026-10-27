@@ -1,4 +1,4 @@
-package com.parapothexam.porokh;
+package net.porokh.app;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -110,7 +110,7 @@ if (publishing && checkRegistry && !skipRegistry) {
         'node_modules/@capgo/cli/dist/index.js',
         'bundle',
         'list',
-        'com.parapothexam.porokh',
+        'net.porokh.app',
         '--api-host',
         process.env.CAPGO_API_HOST || 'https://api.capgo.app',
       ],

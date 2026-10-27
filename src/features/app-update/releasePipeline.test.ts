@@ -32,6 +32,14 @@ const otaConfig = JSON.parse(read('ota.config.json')) as {
   schemaVersion?: number;
 };
 
+/**
+ * The Android application id is the Capgo app id, the deep-link scheme and the
+ * Gradle namespace. It is read from capacitor.config.ts so a rename cannot leave
+ * one of those copies behind.
+ */
+const appId = /appId:\s*'([^']+)'/.exec(capacitorConfig)?.[1] ?? '';
+const escape = (value: string): string => value.replace(/\./g, '\\.');
+
 test('the upload signs the bundle with a key-v2 private key', () => {
   assert.match(otaRelease, /--key-v2 "\$CAPGO_PRIVATE_KEY_PATH"/);
   assert.doesNotMatch(
@@ -70,7 +78,34 @@ test('the release is validated and then verified after publication', () => {
   assert.match(otaRelease, /scripts\/check-release\.ts/);
   assert.match(otaRelease, /--publish --registry/);
   assert.match(otaRelease, /Verify the published bundle is retrievable/);
-  assert.match(otaRelease, /bundle list com\.parapothexam\.porokh/);
+  assert.match(otaRelease, new RegExp(`bundle list ${escape(appId)}`));
+});
+
+test('the Android package matches the Capacitor app id everywhere', () => {
+  assert.match(appId, /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/, 'appId must be a valid application id');
+
+  const gradle = read('android/app/build.gradle');
+  assert.match(gradle, new RegExp(`applicationId "${escape(appId)}"`));
+  assert.match(gradle, new RegExp(`namespace = "${escape(appId)}"`));
+  assert.match(
+    read('android/app/src/main/res/values/strings.xml'),
+    new RegExp(`name="package_name">${escape(appId)}<`)
+  );
+  assert.match(
+    read('android/app/src/main/res/values/strings.xml'),
+    new RegExp(`name="custom_url_scheme">${escape(appId)}<`)
+  );
+  assert.match(
+    read('scripts/check-release.ts'),
+    new RegExp(`'${escape(appId)}'`),
+    'the registry check must query the same Capgo app'
+  );
+  assert.ok(
+    fs.existsSync(
+      path.join(root, 'android/app/src/main/java', ...appId.split('.'), 'MainActivity.java')
+    ),
+    `MainActivity must live in ${appId.split('.').join('/')}`
+  );
 });
 
 test('publishing is opt-in and a validation-only run is possible', () => {

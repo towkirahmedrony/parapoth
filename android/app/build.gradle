@@ -15,10 +15,10 @@ def hasReleaseSigning =
     file(releaseKeystorePath).exists()
 
 android {
-    namespace = "com.parapothexam.porokh"
+    namespace = "net.porokh.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.parapothexam.porokh"
+        applicationId "net.porokh.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 10001

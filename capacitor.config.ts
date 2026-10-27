@@ -39,7 +39,7 @@ if (!signature.ok) {
 }
 
 const config: CapacitorConfig = {
-  appId: 'com.parapothexam.porokh',
+  appId: 'net.porokh.app',
   appName: 'Porokh',
   webDir: 'dist',
   android: {

@@ -217,7 +217,7 @@ jobs:
           fi
 
           args=(
-            bundle upload com.parapothexam.porokh
+            bundle upload net.porokh.app
             --path dist
             --channel "$OTA_CHANNEL"
             --bundle "$BUNDLE_VERSION"
@@ -243,7 +243,7 @@ jobs:
           # Read-only: ask the service the same way a device would, and require
           # the bundle just uploaded to come back.
           set +e
-          node node_modules/@capgo/cli/dist/index.js bundle list com.parapothexam.porokh \
+          node node_modules/@capgo/cli/dist/index.js bundle list net.porokh.app \
             > "$RUNNER_TEMP/bundles.txt" 2>&1
           status=$?
           set -e
