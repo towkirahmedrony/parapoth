@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, memo, useEffect, useRef } from 'react';
-import { CheckCircle2, XCircle, MinusCircle, ChevronDown, ChevronUp, AlertCircle, Flag, Bookmark } from 'lucide-react';
+import { CheckCircle2, XCircle, MinusCircle, ChevronDown, AlertCircle, Flag, Bookmark, Sparkles } from 'lucide-react';
 import { Question } from '../types/exam';
 import { formatBoardRef } from '../../leaderboard/utils/xpCalculator';
 import MathDisplay from '@/shared/components/content/MathDisplay';
@@ -7,6 +7,24 @@ import QuestionText from '@/shared/components/content/QuestionText';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { getLocalized, pickLang } from '@/shared/i18n/localize';
 import { parseQuestion } from '@/shared/utils/questionFormat';
+
+const AI_COPY = {
+  bn: {
+    show: 'AI ব্যাখ্যা দেখুন',
+    hide: 'ব্যাখ্যা লুকান',
+    thinking: 'AI উত্তরটি বিশ্লেষণ করছে',
+    title: 'AI ব্যাখ্যা',
+  },
+  en: {
+    show: 'See AI explanation',
+    hide: 'Hide explanation',
+    thinking: 'AI is analysing the answer',
+    title: 'AI explanation',
+  },
+} as const;
+
+// Purely visual "thinking" pause the first time a card's explanation opens.
+const AI_THINK_MS = 800;
 
 export interface AnalysisQuestionCardProps {
   question: Question;
@@ -39,7 +57,9 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
   onBookmark
 }) => {
   const { language, t } = useLanguage();
-  const [showExplanation, setShowExplanation] = useState<boolean>(false);
+  const [aiPhase, setAiPhase] = useState<'closed' | 'thinking' | 'open'>('closed');
+  const hasThoughtRef = useRef<boolean>(false);
+  const aiTimerRef = useRef<number | undefined>(undefined);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(initialBookmarked);
   const [isBookmarkUpdating, setIsBookmarkUpdating] = useState<boolean>(false);
 
@@ -68,6 +88,8 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
     observer.observe(el);
     return () => observer.disconnect();
   }, [bodyReady]);
+
+  useEffect(() => () => window.clearTimeout(aiTimerRef.current), []);
 
   // Sync with parent unless an optimistic update is still in flight.
   useEffect(() => {
@@ -160,6 +182,26 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
     },
     [language, question.explanation, t]
   );
+
+  const copy = String(language).startsWith('en') ? AI_COPY.en : AI_COPY.bn;
+  const hasRealExplanation = explanationText !== t('analysis.explanationFallback');
+
+  const handleAiToggle = useCallback(() => {
+    window.clearTimeout(aiTimerRef.current);
+    if (aiPhase !== 'closed') {
+      setAiPhase('closed');
+      return;
+    }
+    if (hasThoughtRef.current) {
+      setAiPhase('open');
+      return;
+    }
+    setAiPhase('thinking');
+    aiTimerRef.current = window.setTimeout(() => {
+      hasThoughtRef.current = true;
+      setAiPhase('open');
+    }, AI_THINK_MS);
+  }, [aiPhase]);
 
   const imageUrl = question.image_url || question.media_library?.file_url;
 
@@ -292,29 +334,63 @@ const AnalysisQuestionCard: React.FC<AnalysisQuestionCardProps> = memo(({
         </div>
 
         {showCorrectAnswers && (
-        <div className="mt-5 pt-4 border-t border-border-color">
-          <button 
-            onClick={() => setShowExplanation(prev => !prev)} 
-            className="flex items-center justify-center sm:justify-start gap-2 text-sm font-bold transition-all w-full py-2 rounded-lg text-text-secondary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-focus-ring"
-          >
-            {showExplanation ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            {showExplanation ? t('analysis.hideExplanation') : t('analysis.showExplanation')}
-          </button>
+          <div className="mt-5 pt-4 border-t border-border-color">
+            <button
+              type="button"
+              onClick={handleAiToggle}
+              aria-expanded={aiPhase !== 'closed'}
+              className="flex w-full items-center justify-between gap-2 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 to-accent/10 px-4 py-3 text-sm font-bold text-primary transition-colors active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-focus-ring"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles size={18} className="shrink-0" />
+                <span className="font-['Hind_Siliguri']">
+                  {aiPhase === 'closed' ? copy.show : copy.hide}
+                </span>
+              </span>
+              <ChevronDown
+                size={16}
+                className={`shrink-0 transition-transform duration-200 ${aiPhase === 'closed' ? '' : 'rotate-180'}`}
+              />
+            </button>
 
-          {showExplanation && (
-            <div className="mt-3 p-4 sm:p-5 rounded-xl border border-border-color bg-surface-elevated animate-in fade-in slide-in-from-top-2 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                 <AlertCircle size={16} className="text-text-primary" />
-                 <span className="text-xs sm:text-sm uppercase font-bold tracking-wider opacity-80 text-text-primary">
-                    {t('analysis.explanation')}
-                 </span>
+            {aiPhase === 'thinking' && (
+              <div
+                role="status"
+                className="mt-3 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 animate-in fade-in"
+              >
+                <Sparkles size={18} className="shrink-0 text-primary animate-pulse motion-reduce:animate-none" />
+                <span className="font-['Hind_Siliguri'] text-sm text-text-secondary">{copy.thinking}</span>
+                <span className="flex items-center gap-1" aria-hidden="true">
+                  {[0, 150, 300].map((delay) => (
+                    <span
+                      key={delay}
+                      className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce motion-reduce:animate-none"
+                      style={{ animationDelay: `${delay}ms` }}
+                    />
+                  ))}
+                </span>
               </div>
-              <div className="text-sm sm:text-base font-['Hind_Siliguri'] leading-relaxed opacity-90 text-text-secondary">
-                <MathDisplay content={explanationText} className="whitespace-pre-line" />
+            )}
+
+            {aiPhase === 'open' && (
+              <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:p-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                {hasRealExplanation && (
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <Sparkles size={14} />
+                    </span>
+                    <span className="font-['Hind_Siliguri'] text-sm font-bold text-text-primary">{copy.title}</span>
+                    <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-primary">
+                      AI
+                    </span>
+                  </div>
+                )}
+                <div className="text-sm sm:text-base font-['Hind_Siliguri'] leading-relaxed text-text-primary">
+                  <MathDisplay content={explanationText} className="whitespace-pre-line" />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         )}
       </div>
       ) : (
