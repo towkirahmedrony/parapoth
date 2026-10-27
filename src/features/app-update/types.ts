@@ -26,6 +26,8 @@ export type OtaPhase =
 export type OtaBlockReason =
   | 'exam_active'
   | 'exam_route'
+  | 'practice_active'
+  | 'battle_active'
   | 'recovery_in_progress'
   | 'submission_pending'
   | 'pending_answers'
@@ -37,6 +39,7 @@ export type OtaBlockReason =
   | 'channel_mismatch'
   | 'metadata_invalid'
   | 'checksum_invalid'
+  | 'unsigned_bundle'
   | 'activation_not_applied'
   | 'plugin_unavailable';
 
@@ -45,6 +48,8 @@ export type ReleaseMetadata = {
   baseVersion: string;
   /** Capgo channel this bundle was built for, e.g. production-android. */
   channel: string;
+  /** Optional monotonic release revision (`r000042`). Null for legacy bundles. */
+  revision: number | null;
   /** Minimum installed native app version, e.g. 1.2.0. */
   minNativeVersion: string;
   /** Local storage schema the bundle was built against. */
@@ -54,9 +59,12 @@ export type ReleaseMetadata = {
 export type CandidateRelease = {
   version: string;
   url: string;
+  /** Manifest checksum: a signed RSA block when the release is signed. */
   checksum: string;
   sessionKey?: string;
   metadata: ReleaseMetadata;
+  /** True when this build requires (and this release carries) a signature. */
+  signatureRequired?: boolean;
 };
 
 export type ProviderLatest = {
@@ -73,8 +81,13 @@ export type ProviderLatest = {
 export type ProviderBundle = {
   id: string;
   version: string;
+  /** SHA-256 of the installed bundle (plain hex), never the signed manifest value. */
   checksum: string;
   status: 'success' | 'error' | 'pending' | 'downloading';
+  /** ISO timestamp from the plugin; used to decide which bundle to retain. */
+  downloadedAt?: string;
+  /** `builtin` is the copy inside the APK and must never be deleted. */
+  builtin?: boolean;
 };
 
 export type ProviderCurrent = {
@@ -90,9 +103,20 @@ export type DownloadProgress = {
 export type StagedUpdate = {
   id: string;
   version: string;
+  /**
+   * SHA-256 of the verified local bundle (plain hex).
+   *
+   * The signed manifest checksum is deliberately *not* stored here: it is an
+   * RSA block, and comparing it with the local digest was the reason enabling
+   * signing would have rejected every verified download.
+   */
   checksum: string;
+  /** Manifest checksum as served (signed blob or plain digest), for auditing. */
+  manifestChecksum?: string;
   metadata: ReleaseMetadata;
   stagedAt: number;
+  /** True when the release carried a key-v2 signature that the plugin verified. */
+  signed?: boolean;
 };
 
 export type PendingActivation = {
@@ -175,6 +199,8 @@ export type AuthSnapshot = {
 
 export type ExamActivityKind =
   | 'exam_active'
+  | 'practice_active'
+  | 'battle_active'
   | 'recovery'
   | 'submission_pending'
   | 'pending_answers';

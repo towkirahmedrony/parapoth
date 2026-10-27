@@ -19,6 +19,9 @@ const toProviderBundle = (bundle: BundleInfo): ProviderBundle => ({
     bundle.status === 'downloading'
       ? bundle.status
       : 'error',
+  downloadedAt: bundle.downloaded || undefined,
+  // The plugin reports the APK-baked copy with the fixed id `builtin`.
+  builtin: bundle.id === 'builtin',
 });
 
 /**

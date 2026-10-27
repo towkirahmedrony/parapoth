@@ -1,3 +1,5 @@
+import { OFFLINE_SCHEMA_VERSION } from '../exam/offline/schemaVersion';
+
 /**
  * OTA build-time configuration.
  *
@@ -11,10 +13,23 @@ export const OTA_CHANNEL =
   env?.VITE_OTA_CHANNEL?.trim() || 'production-android';
 
 /**
- * Version of the local exam storage format (Phase 1 IndexedDB v1 + localStorage
- * bundle v1). A bundle may only activate against the exact schema it declares.
+ * Local exam storage schema this build can read.
+ *
+ * Re-exported from the storage module rather than hard-coded: the previous
+ * constant claimed `1` while IndexedDB was already at version `2`, which made
+ * the compatibility gate decorative.
  */
-export const OTA_LOCAL_SCHEMA_VERSION = 1;
+export const OTA_LOCAL_SCHEMA_VERSION = OFFLINE_SCHEMA_VERSION;
+
+/**
+ * Whether a release must carry a Capgo key-v2 signature.
+ *
+ * Mirrors `POROKH_OTA_REQUIRE_SIGNATURE` on the native side, so an APK that
+ * embeds a public key also ships a bundle that refuses unsigned releases. The
+ * flag defaults to off for local development; CI turns both on together.
+ */
+export const OTA_REQUIRE_SIGNATURE =
+  (env?.VITE_OTA_REQUIRE_SIGNATURE ?? '').trim().toLowerCase() === 'true';
 
 /** Non-intrusive check cadence. */
 export const OTA_INITIAL_CHECK_DELAY_MS = 4_000;
@@ -33,9 +48,20 @@ export const OTA_MAX_DOWNLOAD_ATTEMPTS = 3;
  */
 export const OTA_ACTIVATION_GRACE_MS = 30_000;
 
+/**
+ * How long a startup health check may be deferred because local storage is
+ * temporarily unavailable (as opposed to provably incompatible).
+ */
+export const OTA_BOOT_HEALTH_RETRY_DELAYS_MS = [0, 250, 1_000];
+
+/** How many OTA bundles to keep on disk: the running one plus one fallback. */
+export const OTA_RETAINED_BUNDLES = 2;
+
 export const OTA_EXAM_ROUTE_PATTERNS: RegExp[] = [
   /^\/exam\/live(?:\/|$)/,
   /^\/exam\/attempt\/[^/]+(?:\/|$)/,
   /^\/exam\/challenge-play\/[^/]+(?:\/|$)/,
   /^\/admission\/exam\/[^/]+(?:\/|$)/,
+  // Live group battles hold answers in memory until submission.
+  /^\/groups\/[^/]+\/battles\/[^/]+(?:\/|$)/,
 ];

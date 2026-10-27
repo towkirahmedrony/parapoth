@@ -1,3 +1,4 @@
+import { OFFLINE_SCHEMA_VERSION } from './schemaVersion';
 import type {
   AnswerRecord,
   ExamAttemptRecord,
@@ -6,11 +7,30 @@ import type {
 } from './types';
 
 /**
+ * Counts of locally stored work that a WebView reload would strand.
+ *
+ * Counted across every user, not just the signed-in one: a queued submission
+ * belongs to the user who created it, and signing out must not make the OTA
+ * gate blind to it.
+ */
+export type PendingOfflineWork = {
+  inProgressAttempts: number;
+  pendingSubmissions: number;
+  pendingAnswers: number;
+};
+
+export const EMPTY_PENDING_WORK: PendingOfflineWork = {
+  inProgressAttempts: 0,
+  pendingSubmissions: 0,
+  pendingAnswers: 0,
+};
+
+/**
  * The offline exam store boundary.
  *
- * The OTA activation gate depends on `init`, `listAttemptsForUser`,
- * `getSubmission` and `getAnswers`. The prepared-exam methods hold the complete
- * downloaded dataset that lets an exam start without connectivity.
+ * The OTA activation gate depends on `init`, `listPendingWork` and
+ * `listAttemptsForUser`. The prepared-exam methods hold the complete downloaded
+ * dataset that lets an exam start without connectivity.
  *
  * `init()` must reject when the store cannot open at the expected schema
  * version; `schema.ts` classifies a version-flavoured failure as schema
@@ -22,6 +42,8 @@ export interface OfflineExamStorage {
   putAttempt(attempt: ExamAttemptRecord): Promise<void>;
   getAttempt(attemptId: string): Promise<ExamAttemptRecord | null>;
   listAttemptsForUser(userId: string): Promise<ExamAttemptRecord[]>;
+  /** Every user's unfinished work, so activation is not auth-dependent. */
+  listPendingWork(): Promise<PendingOfflineWork>;
   removeAttempt(attemptId: string): Promise<void>;
 
   putSubmission(submission: SubmissionRecord): Promise<void>;
@@ -71,6 +93,20 @@ export class MemoryOfflineExamStorage implements OfflineExamStorage {
     return [...this.attempts.values()]
       .filter((attempt) => attempt.userId === userId)
       .map((attempt) => clone(attempt));
+  }
+
+  async listPendingWork(): Promise<PendingOfflineWork> {
+    return {
+      inProgressAttempts: [...this.attempts.values()].filter(
+        (attempt) => attempt.status === 'in_progress'
+      ).length,
+      pendingSubmissions: [...this.submissions.values()].filter(
+        (submission) => submission.status !== 'confirmed'
+      ).length,
+      pendingAnswers: [...this.answers.values()]
+        .flat()
+        .filter((answer) => answer.status !== 'synced').length,
+    };
   }
 
   async removeAttempt(attemptId: string): Promise<void> {
@@ -140,7 +176,12 @@ export class MemoryOfflineExamStorage implements OfflineExamStorage {
 }
 
 const DB_NAME = 'porokh-offline-exam';
-const DB_VERSION = 2;
+/**
+ * The database version *is* the offline schema version. It is sourced from
+ * `schemaVersion.ts` so the OTA gate, the client constant and the publisher all
+ * quote the same number instead of three drifting literals.
+ */
+const DB_VERSION = OFFLINE_SCHEMA_VERSION;
 const STORE_ATTEMPTS = 'attempts';
 const STORE_SUBMISSIONS = 'submissions';
 const STORE_ANSWERS = 'answers';
@@ -239,6 +280,36 @@ export class IndexedDbOfflineExamStorage implements OfflineExamStorage {
     const request = index.getAll(userId);
     const records = await requestResult(request);
     return (records as ExamAttemptRecord[]).map((record) => clone(record));
+  }
+
+  /**
+   * Count unfinished work across every stored user.
+   *
+   * A reload cannot lose data that is already in IndexedDB, but it can strand a
+   * submission that has not been confirmed yet. Counting globally means the
+   * gate still sees that work when the device is signed out.
+   */
+  async listPendingWork(): Promise<PendingOfflineWork> {
+    const attempts = (await requestResult(
+      this.store(STORE_ATTEMPTS, 'readonly').getAll()
+    )) as ExamAttemptRecord[];
+    const submissions = (await requestResult(
+      this.store(STORE_SUBMISSIONS, 'readonly').getAll()
+    )) as SubmissionRecord[];
+    const answers = (await requestResult(
+      this.store(STORE_ANSWERS, 'readonly').getAll()
+    )) as AnswerRecord[];
+
+    return {
+      inProgressAttempts: attempts.filter(
+        (attempt) => attempt.status === 'in_progress'
+      ).length,
+      pendingSubmissions: submissions.filter(
+        (submission) => submission.status !== 'confirmed'
+      ).length,
+      pendingAnswers: answers.filter((answer) => answer.status !== 'synced')
+        .length,
+    };
   }
 
   async removeAttempt(attemptId: string): Promise<void> {

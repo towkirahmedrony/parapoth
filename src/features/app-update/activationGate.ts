@@ -10,7 +10,7 @@ import type {
 
 export type ActivationStorage = Pick<
   OfflineExamStorage,
-  'init' | 'listAttemptsForUser' | 'getSubmission' | 'getAnswers'
+  'init' | 'listPendingWork' | 'listAttemptsForUser'
 >;
 
 export type ActivationGateContext = {
@@ -30,6 +30,10 @@ const runtimeReason = (activity: ExamActivity): OtaBlockReason => {
       return 'submission_pending';
     case 'pending_answers':
       return 'pending_answers';
+    case 'practice_active':
+      return 'practice_active';
+    case 'battle_active':
+      return 'battle_active';
     default:
       return 'exam_active';
   }
@@ -38,22 +42,23 @@ const runtimeReason = (activity: ExamActivity): OtaBlockReason => {
 /**
  * Decide whether an update may reload the WebView right now.
  *
- * This combines two independent signals:
- *  - runtime activity registered by mounted exam pages, and
- *  - the persisted Phase 1 attempt/submission/answer state, so a kill and
- *    relaunch cannot lose track of an unfinished attempt.
+ * Three independent signals:
  *
- * The route is only a last-resort guard, never the sole signal.
+ *  - runtime activity registered by mounted exam, practice and battle pages;
+ *  - the persisted attempt/submission/answer state, counted **across every
+ *    stored user** so signing out cannot hide a queued submission;
+ *  - the current route, as a last-resort guard for a cold start that lands on
+ *    an exam page before its effect has run.
+ *
+ * The route is never the only signal.
  */
 export const evaluateActivationGate = async (
   context: ActivationGateContext
 ): Promise<ActivationDecision> => {
   const reasons = new Set<OtaBlockReason>();
 
-  if (context.activities.length > 0) {
-    for (const activity of context.activities) {
-      reasons.add(runtimeReason(activity));
-    }
+  for (const activity of context.activities) {
+    reasons.add(runtimeReason(activity));
   }
 
   if (
@@ -69,32 +74,40 @@ export const evaluateActivationGate = async (
     context.auth.state === 'authenticated' &&
     !context.auth.userId
   ) {
+    // An authenticated state without an id cannot be reconciled with stored
+    // work, so it is treated as unknown rather than as "nothing pending".
     reasons.add('auth_unknown');
-  } else if (context.auth.state === 'authenticated' && context.auth.userId) {
-    const userId = context.auth.userId;
+  }
 
-    try {
-      await context.storage.init();
-      const attempts = await context.storage.listAttemptsForUser(userId);
+  try {
+    await context.storage.init();
+    const pending = await context.storage.listPendingWork();
 
-      for (const attempt of attempts) {
-        if (attempt.status === 'in_progress') {
-          reasons.add('attempt_unresolved');
-        }
+    if (pending.inProgressAttempts > 0) reasons.add('attempt_unresolved');
+    if (pending.pendingSubmissions > 0) reasons.add('submission_pending');
+    if (pending.pendingAnswers > 0) reasons.add('pending_answers');
 
-        const submission = await context.storage.getSubmission(attempt.attemptId);
-        if (submission && submission.status !== 'confirmed') {
-          reasons.add('submission_pending');
-        }
-
-        const answers = await context.storage.getAnswers(attempt.attemptId);
-        if (answers.some((answer) => answer.status !== 'synced')) {
-          reasons.add('pending_answers');
-        }
+    /**
+     * Defence in depth for stores that cannot count globally: the per-user view
+     * is still checked, so a partial implementation never silently degrades
+     * into "nothing pending".
+     */
+    if (
+      pending.inProgressAttempts === 0 &&
+      pending.pendingSubmissions === 0 &&
+      pending.pendingAnswers === 0 &&
+      context.auth.state === 'authenticated' &&
+      context.auth.userId
+    ) {
+      const attempts = await context.storage.listAttemptsForUser(
+        context.auth.userId
+      );
+      if (attempts.some((attempt) => attempt.status === 'in_progress')) {
+        reasons.add('attempt_unresolved');
       }
-    } catch {
-      reasons.add('storage_unavailable');
     }
+  } catch {
+    reasons.add('storage_unavailable');
   }
 
   return {

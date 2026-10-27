@@ -32,8 +32,30 @@ import type {
 } from '../exam/offline/types.ts';
 
 const CHANNEL = 'production-android';
-const CHECKSUM = 'abc123';
-const RELEASE = buildReleaseVersion('1.1.0', CHANNEL, '1.0.0', 1);
+/** SHA-256 of the bundle *and* the manifest value of an unsigned release. */
+const CHECKSUM = 'a'.repeat(64);
+/** RSA-2048 block a signed release carries instead of a digest. */
+const SIGNED_CHECKSUM = 'b'.repeat(512);
+const SESSION_KEY = 'aXY=:c2Vzc2lvbmtleQ==';
+
+const releaseVersion = (
+  base: string,
+  overrides: {
+    revision?: number;
+    minNative?: string;
+    schema?: number;
+    channel?: string;
+  } = {}
+): string =>
+  buildReleaseVersion({
+    baseVersion: base,
+    channel: overrides.channel ?? CHANNEL,
+    revision: overrides.revision ?? 1,
+    minNativeVersion: overrides.minNative ?? '1.0.0',
+    requiredSchemaVersion: overrides.schema ?? 2,
+  });
+
+const RELEASE = releaseVersion('1.1.0');
 
 const anonymous: AuthSnapshot = { state: 'anonymous', userId: null };
 
@@ -98,10 +120,12 @@ class FakeAdapter implements OtaUpdaterAdapter {
     this.downloadCalls.push(release);
     if (this.downloadError) throw this.downloadError;
 
+    // The plugin reports the digest it computed over the extracted bundle. For a
+    // signed release that is NOT the manifest value (an RSA block).
     const bundle: ProviderBundle = this.downloadResult ?? {
       id: 'bundle-1',
       version: release.version,
-      checksum: release.checksum,
+      checksum: CHECKSUM,
       status: 'success',
     };
 
@@ -163,6 +187,8 @@ const harness = (
     auth?: AuthSnapshot;
     pathname?: string;
     autoActivate?: boolean;
+    requireSignature?: boolean;
+    retainedBundles?: number;
   } = {}
 ): Harness => {
   const adapter = new FakeAdapter();
@@ -178,6 +204,8 @@ const harness = (
     initialCheckDelayMs: -1,
     activationGraceMs: 0,
     autoActivate: options.autoActivate ?? false,
+    requireSignature: options.requireSignature ?? false,
+    retainedBundles: options.retainedBundles,
   });
 
   return { controller, adapter, kv, storage };
@@ -186,12 +214,14 @@ const harness = (
 const setLatest = (
   adapter: FakeAdapter,
   version = RELEASE,
-  checksum = CHECKSUM
+  checksum = CHECKSUM,
+  sessionKey?: string
 ): void => {
   adapter.latest = {
     version,
     url: 'https://example.com/bundle.zip',
     checksum,
+    ...(sessionKey ? { sessionKey } : {}),
   };
 };
 
@@ -445,7 +475,7 @@ test('a staged bundle is rejected when local schema is incompatible', async () =
   const kv = new MemoryOtaKeyValue();
   kv.setItem(
     OTA_STORAGE_KEYS.localSchema,
-    JSON.stringify({ schemaVersion: 2, createdAt: '' })
+    JSON.stringify({ schemaVersion: 3, createdAt: '' })
   );
   const { controller, adapter } = harness({ kv });
   setLatest(adapter);
@@ -517,15 +547,15 @@ test('a failed plugin download uses bounded retry state', async () => {
 test('channel, schema and native incompatibilities are rejected before download', async () => {
   const cases: Array<{ version: string; reason: string }> = [
     {
-      version: buildReleaseVersion('1.1.0', 'staging-android', '1.0.0', 1),
+      version: releaseVersion('1.1.0', { channel: 'staging-android' }),
       reason: 'channel_mismatch',
     },
     {
-      version: buildReleaseVersion('1.1.0', CHANNEL, '1.0.0', 2),
+      version: releaseVersion('1.1.0', { schema: 3 }),
       reason: 'storage_schema_incompatible',
     },
     {
-      version: buildReleaseVersion('1.1.0', CHANNEL, '9.0.0', 1),
+      version: releaseVersion('1.1.0', { minNative: '9.0.0' }),
       reason: 'native_incompatible',
     },
   ];
@@ -550,12 +580,12 @@ test('downgrades are rejected', async () => {
   const { controller, adapter } = harness();
   adapter.currentBundle = {
     id: 'current',
-    version: buildReleaseVersion('1.2.0', CHANNEL, '1.0.0', 1),
+    version: releaseVersion('1.2.0'),
     checksum: 'old',
     status: 'success',
   };
   adapter.builtin = '1.2.0';
-  setLatest(adapter, buildReleaseVersion('1.1.0', CHANNEL, '1.0.0', 1));
+  setLatest(adapter, releaseVersion('1.1.0'));
 
   await controller.initialize();
   await controller.checkForUpdate(true);
@@ -729,9 +759,11 @@ test('a candidate that breaks local storage is rolled back, not confirmed', asyn
   await first.controller.checkForUpdate(true);
   await first.controller.activate();
 
+  // A bundle that wrote a newer schema: this build cannot read it, and no
+  // amount of retrying changes that.
   first.kv.setItem(
     OTA_STORAGE_KEYS.localSchema,
-    JSON.stringify({ schemaVersion: 2, createdAt: '' })
+    JSON.stringify({ schemaVersion: 3, createdAt: '' })
   );
 
   const rebootAdapter = new FakeAdapter();
@@ -778,4 +810,339 @@ test('auto activation runs only when the gate is open and activation is allowed'
   decision = await controller.evaluateActivation(true);
   assert.equal(decision.allowed, true);
   assert.equal(adapter.setCalls.length, 1);
+});
+
+/* ------------------------------------------------------------------ *
+ * Publisher authenticity
+ * ------------------------------------------------------------------ */
+
+test('an unsigned release is rejected before download when signatures are required', async () => {
+  const { controller, adapter } = harness({ requireSignature: true });
+  // A clear release: plain digest, no session key — exactly what an upload
+  // without --key-v2 produces.
+  setLatest(adapter, RELEASE, CHECKSUM);
+
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+
+  assert.equal(controller.getSnapshot().phase, 'rejected');
+  assert.ok(controller.getSnapshot().reasons.includes('unsigned_bundle'));
+  assert.equal(adapter.downloadCalls.length, 0, 'nothing may be downloaded');
+  assert.equal(adapter.setCalls.length, 0);
+});
+
+test('a release with a session key but a plain checksum is still rejected', async () => {
+  const { controller, adapter } = harness({ requireSignature: true });
+  setLatest(adapter, RELEASE, CHECKSUM, SESSION_KEY);
+
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+
+  assert.ok(controller.getSnapshot().reasons.includes('unsigned_bundle'));
+  assert.equal(adapter.downloadCalls.length, 0);
+});
+
+test('a signed release is accepted and staged with the local digest', async () => {
+  const { controller, adapter, kv } = harness({ requireSignature: true });
+  setLatest(adapter, RELEASE, SIGNED_CHECKSUM, SESSION_KEY);
+
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+
+  const snapshot = controller.getSnapshot();
+  assert.equal(snapshot.phase, 'staged');
+  assert.equal(adapter.downloadCalls.length, 1);
+  assert.equal(
+    adapter.downloadCalls[0].checksum,
+    SIGNED_CHECKSUM,
+    'the signed manifest value must be handed to the plugin for verification'
+  );
+
+  const staged = JSON.parse(kv.getItem(OTA_STORAGE_KEYS.staged) ?? '{}');
+  assert.equal(
+    staged.checksum,
+    CHECKSUM,
+    'staged state records the digest of the extracted bundle'
+  );
+  assert.equal(staged.manifestChecksum, SIGNED_CHECKSUM);
+  assert.equal(staged.signed, true);
+});
+
+test('a signed release whose extracted digest is not a digest is rejected', async () => {
+  const { controller, adapter } = harness({ requireSignature: true });
+  setLatest(adapter, RELEASE, SIGNED_CHECKSUM, SESSION_KEY);
+  // A plugin that extracted an undecryptable payload reports a non-digest.
+  adapter.downloadResult = {
+    id: 'bundle-1',
+    version: RELEASE,
+    checksum: 'not-a-digest',
+    status: 'success',
+  };
+
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+
+  assert.equal(controller.getSnapshot().phase, 'rejected');
+  assert.ok(controller.getSnapshot().reasons.includes('checksum_invalid'));
+  assert.ok(adapter.deleted.includes('bundle-1'));
+});
+
+test('without signature enforcement an unsigned release still verifies its checksum', async () => {
+  const { controller, adapter } = harness();
+  setLatest(adapter, RELEASE, CHECKSUM);
+  adapter.downloadResult = {
+    id: 'bundle-1',
+    version: RELEASE,
+    checksum: 'f'.repeat(64),
+    status: 'success',
+  };
+
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+
+  assert.ok(controller.getSnapshot().reasons.includes('checksum_invalid'));
+  assert.ok(adapter.deleted.includes('bundle-1'));
+});
+
+test('a republished older revision is refused as a downgrade', async () => {
+  const { controller, adapter } = harness();
+  adapter.currentBundle = {
+    id: 'current',
+    version: releaseVersion('1.1.0', { revision: 9 }),
+    checksum: 'c'.repeat(64),
+    status: 'success',
+  };
+  adapter.builtin = '1.0.0';
+  setLatest(adapter, releaseVersion('1.1.0', { revision: 8 }));
+
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+
+  assert.equal(controller.getSnapshot().phase, 'rejected');
+  assert.ok(controller.getSnapshot().reasons.includes('metadata_invalid'));
+  assert.equal(adapter.downloadCalls.length, 0);
+});
+
+/* ------------------------------------------------------------------ *
+ * Rollback bundle retention
+ * ------------------------------------------------------------------ */
+
+test('confirmation keeps the running bundle plus one fallback and deletes the rest', async () => {
+  const { controller, adapter, kv } = harness({ retainedBundles: 2 });
+
+  adapter.currentBundle = {
+    id: 'current',
+    version: releaseVersion('1.2.0', { revision: 3 }),
+    checksum: 'c'.repeat(64),
+    status: 'success',
+    downloadedAt: '2026-01-03T00:00:00.000Z',
+  };
+  adapter.bundles = [
+    { id: 'builtin', version: '1.0.0', checksum: '', status: 'success', builtin: true },
+    adapter.currentBundle,
+    {
+      id: 'fallback',
+      version: releaseVersion('1.1.0', { revision: 2 }),
+      checksum: 'b'.repeat(64),
+      status: 'success',
+      downloadedAt: '2026-01-02T00:00:00.000Z',
+    },
+    {
+      id: 'ancient',
+      version: releaseVersion('1.0.1', { revision: 1 }),
+      checksum: 'a'.repeat(64),
+      status: 'success',
+      downloadedAt: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'broken',
+      version: releaseVersion('1.0.2', { revision: 1 }),
+      checksum: 'd'.repeat(64),
+      status: 'error',
+      downloadedAt: '2026-01-01T12:00:00.000Z',
+    },
+  ];
+
+  writePendingActivation(kv, {
+    id: 'current',
+    version: adapter.currentBundle.version,
+    previousVersion: 'builtin',
+    startedAt: Date.now(),
+  });
+
+  await controller.initialize();
+
+  assert.equal(adapter.notifyCalls, 1);
+  assert.ok(adapter.deleted.includes('ancient'), 'old bundles are pruned');
+  assert.ok(adapter.deleted.includes('broken'), 'failed bundles are pruned');
+  assert.ok(!adapter.deleted.includes('fallback'), 'the fallback bundle must survive');
+  assert.ok(!adapter.deleted.includes('current'));
+  assert.ok(!adapter.deleted.includes('builtin'), 'the APK copy must never be deleted');
+});
+
+test('pruning never removes a bundle that is still pending activation', async () => {
+  const { controller, adapter } = harness({ retainedBundles: 1 });
+  adapter.currentBundle = {
+    id: 'current',
+    version: releaseVersion('1.2.0', { revision: 3 }),
+    checksum: 'c'.repeat(64),
+    status: 'success',
+    downloadedAt: '2026-01-03T00:00:00.000Z',
+  };
+  adapter.bundles = [
+    { id: 'builtin', version: '1.0.0', checksum: '', status: 'success', builtin: true },
+    adapter.currentBundle,
+    {
+      id: 'downloading',
+      version: releaseVersion('1.3.0', { revision: 4 }),
+      checksum: '',
+      status: 'downloading',
+    },
+    {
+      id: 'staged',
+      version: releaseVersion('1.3.0', { revision: 5 }),
+      checksum: 'e'.repeat(64),
+      status: 'pending',
+    },
+  ];
+
+  await controller.initialize();
+
+  assert.ok(!adapter.deleted.includes('downloading'));
+  assert.ok(!adapter.deleted.includes('staged'));
+});
+
+/* ------------------------------------------------------------------ *
+ * Boot health: transient vs confirmed failure
+ * ------------------------------------------------------------------ */
+
+test('a transient storage failure at first boot confirms the bundle instead of rolling back', async () => {
+  const storage = new MemoryOfflineExamStorage();
+  const attempts = { count: 0 };
+  const flaky = Object.create(storage) as MemoryOfflineExamStorage;
+  flaky.init = async () => {
+    attempts.count += 1;
+    // Fails on the first two calls, then succeeds — the shape of a WebView that
+    // is still releasing another connection.
+    if (attempts.count <= 2) throw new Error('IndexedDB open blocked');
+    await storage.init();
+  };
+
+  const { controller, adapter, kv } = harness({ storage: flaky });
+  setLatest(adapter);
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+  await controller.activate();
+
+  const rebootAdapter = new FakeAdapter();
+  rebootAdapter.currentBundle = {
+    id: 'bundle-1',
+    version: RELEASE,
+    checksum: CHECKSUM,
+    status: 'success',
+  };
+  rebootAdapter.bundles = [rebootAdapter.currentBundle];
+
+  const reboot = createOtaController({
+    adapter: rebootAdapter,
+    kv,
+    storage: flaky,
+    channel: CHANNEL,
+    getAuth: () => anonymous,
+    initialCheckDelayMs: -1,
+    activationGraceMs: 0,
+    autoActivate: false,
+  });
+
+  await reboot.initialize();
+
+  assert.equal(rebootAdapter.resetCalls, 0, 'a flaky boot must not trigger a rollback');
+  assert.equal(rebootAdapter.reloadCalls, 0);
+  assert.equal(rebootAdapter.notifyCalls, 1, 'the bundle booted, so it must be confirmed');
+  assert.equal(reboot.getSnapshot().phase, 'activated');
+});
+
+test('a schema the build cannot read still rolls back', async () => {
+  const { controller, adapter, kv } = harness();
+  setLatest(adapter);
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+  await controller.activate();
+
+  kv.setItem(
+    OTA_STORAGE_KEYS.localSchema,
+    JSON.stringify({ schemaVersion: 99, createdAt: '' })
+  );
+
+  const rebootAdapter = new FakeAdapter();
+  rebootAdapter.currentBundle = {
+    id: 'bundle-1',
+    version: RELEASE,
+    checksum: CHECKSUM,
+    status: 'success',
+  };
+  rebootAdapter.bundles = [rebootAdapter.currentBundle];
+
+  const reboot = createOtaController({
+    adapter: rebootAdapter,
+    kv,
+    storage: new MemoryOfflineExamStorage(),
+    channel: CHANNEL,
+    getAuth: () => anonymous,
+    initialCheckDelayMs: -1,
+    activationGraceMs: 0,
+    autoActivate: false,
+  });
+
+  await reboot.initialize();
+
+  assert.equal(rebootAdapter.notifyCalls, 0);
+  assert.equal(rebootAdapter.resetCalls, 1);
+  assert.equal(rebootAdapter.reloadCalls, 1);
+  assert.equal(reboot.getSnapshot().phase, 'recovery');
+});
+
+test('activating an update leaves cached questions, answers and submissions readable', async () => {
+  const storage = new MemoryOfflineExamStorage();
+  await storage.putAttempt(attemptRecord({ status: 'submitted' }));
+  await storage.putSubmission(submissionRecord({ status: 'confirmed' }));
+  await storage.putAnswerIfNewer(answerRecord({ status: 'synced', value: 'B' }));
+  await storage.putPreparedExam({
+    key: 'offline:u1:e1',
+    userId: 'u1',
+    examId: 'e1',
+    title: 'Prepared',
+    attemptId: 'a1',
+    deadlineAt: '2026-12-01T00:00:00.000Z',
+    durationSeconds: 600,
+    serverTimeAtSync: '2026-01-01T00:00:00.000Z',
+    clientTimeAtSync: '2026-01-01T00:00:00.000Z',
+    questions: [],
+    questionsVersion: null,
+    complete: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  } as never);
+
+  const { controller, adapter } = harness({
+    storage,
+    auth: { state: 'authenticated', userId: 'u1' },
+  });
+  setLatest(adapter);
+  await controller.initialize();
+  await controller.checkForUpdate(true);
+
+  assert.equal(controller.getSnapshot().phase, 'staged');
+  const decision = await controller.activate();
+  assert.equal(decision.allowed, true);
+  assert.equal(adapter.setCalls.length, 1);
+
+  // The bundle switch changes code, not WebView storage.
+  assert.equal((await storage.getAttempt('a1'))?.status, 'submitted');
+  assert.equal((await storage.getSubmission('a1'))?.status, 'confirmed');
+  assert.deepEqual(
+    (await storage.getAnswers('a1')).map((item) => item.value),
+    ['B']
+  );
+  assert.equal((await storage.getPreparedExam('offline:u1:e1'))?.attemptId, 'a1');
 });

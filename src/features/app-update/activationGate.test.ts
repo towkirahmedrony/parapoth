@@ -226,9 +226,11 @@ test('confirmed submission with synced answers may activate', async () => {
   assert.deepEqual(decision, { allowed: true, reasons: [] });
 });
 
-test('anonymous sessions ignore persisted attempts owned by someone else', async () => {
+test('signed-out sessions still see unfinished work stored for any user', async () => {
+  // A queued submission belongs to whoever created it. Signing out must not
+  // make the gate believe there is nothing left to lose.
   const storage = new MemoryOfflineExamStorage();
-  await storage.putAttempt(attempt({ status: 'in_progress' }));
+  await storage.putAttempt(attempt({ status: 'in_progress', userId: 'someone-else' }));
 
   const decision = await evaluateActivationGate({
     auth: auth(),
@@ -236,7 +238,80 @@ test('anonymous sessions ignore persisted attempts owned by someone else', async
     activities: [],
   });
 
-  assert.equal(decision.allowed, true);
+  assert.equal(decision.allowed, false);
+  assert.deepEqual(decision.reasons, ['attempt_unresolved']);
+});
+
+test('signed-out sessions are blocked by a pending submission from another user', async () => {
+  const storage = new MemoryOfflineExamStorage();
+  await storage.putAttempt(attempt({ status: 'submitted', userId: 'other' }));
+  await storage.putSubmission(
+    submission({ status: 'pending', userId: 'other', attemptId: 'a1' })
+  );
+
+  const decision = await evaluateActivationGate({
+    auth: auth(),
+    storage,
+    activities: [],
+  });
+
+  assert.equal(decision.allowed, false);
+  assert.ok(decision.reasons.includes('submission_pending'));
+});
+
+test('signed-out sessions are blocked by unsynced answers from another user', async () => {
+  const storage = new MemoryOfflineExamStorage();
+  await storage.putAttempt(attempt({ status: 'submitted', userId: 'other' }));
+  await storage.putAnswerIfNewer(
+    answer({ status: 'pending', userId: 'other', attemptId: 'a1' })
+  );
+
+  const decision = await evaluateActivationGate({
+    auth: auth(),
+    storage,
+    activities: [],
+  });
+
+  assert.equal(decision.allowed, false);
+  assert.ok(decision.reasons.includes('pending_answers'));
+});
+
+test('practice and battle activity each block activation with their own reason', async () => {
+  const storage = new MemoryOfflineExamStorage();
+
+  const practice = beginExamActivity('p1', 'practice_active');
+  let decision = await evaluateActivationGate({
+    auth: auth(),
+    storage,
+    activities: getExamActivities(),
+  });
+  assert.equal(decision.allowed, false);
+  assert.deepEqual(decision.reasons, ['practice_active']);
+  practice();
+
+  const battle = beginExamActivity('b1', 'battle_active');
+  decision = await evaluateActivationGate({
+    auth: auth(),
+    storage,
+    activities: getExamActivities(),
+  });
+  assert.equal(decision.allowed, false);
+  assert.deepEqual(decision.reasons, ['battle_active']);
+  battle();
+});
+
+test('a group battle route blocks activation before its page mounts', async () => {
+  const storage = new MemoryOfflineExamStorage();
+
+  const decision = await evaluateActivationGate({
+    auth: auth(),
+    storage,
+    activities: [],
+    pathname: '/groups/g1/battles/b7',
+  });
+
+  assert.equal(decision.allowed, false);
+  assert.ok(decision.reasons.includes('exam_route'));
 });
 
 test('storage failures block activation instead of assuming it is safe', async () => {
@@ -245,8 +320,11 @@ test('storage failures block activation instead of assuming it is safe', async (
       throw new Error('IndexedDB blocked');
     },
     listAttemptsForUser: async () => [],
-    getSubmission: async () => null,
-    getAnswers: async () => [],
+    listPendingWork: async () => ({
+      inProgressAttempts: 0,
+      pendingSubmissions: 0,
+      pendingAnswers: 0,
+    }),
   };
 
   const decision = await evaluateActivationGate({

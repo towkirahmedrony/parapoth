@@ -21,6 +21,7 @@ import {
 } from '../hooks/useGroupQueries';
 import { groupsService } from '../services/groupsService';
 import { resolveGroupErrorMessage } from '../utils/errorMessages';
+import { beginExamActivity } from '@/features/app-update/examActivity';
 import {
   deriveBattleState,
   isFinalizable,
@@ -133,6 +134,19 @@ const GroupBattle: React.FC = () => {
       toast.error(resolveGroupErrorMessage(error, language));
     },
   });
+
+  /**
+   * A battle holds its answers in component state until submission, so an OTA
+   * reload during play would lose them. Registering activity keeps the update
+   * gate closed for exactly as long as the battle can be played and submitted.
+   */
+  useEffect(() => {
+    if (!battleId || !canPlay) return undefined;
+    return beginExamActivity(
+      `battle:${battleId}`,
+      submitMutation.isPending ? 'submission_pending' : 'battle_active'
+    );
+  }, [battleId, canPlay, submitMutation.isPending]);
 
   const finalizeMutation = useMutation({
     mutationFn: () => groupsService.finalizeBattle(battleId as string),

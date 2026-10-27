@@ -16,6 +16,8 @@ import type { OtaBlockReason } from './types';
 const REASON_MESSAGES: Record<OtaBlockReason, AppMessageKey> = {
   exam_active: 'update.blockedExam',
   exam_route: 'update.blockedExam',
+  practice_active: 'update.blockedPractice',
+  battle_active: 'update.blockedBattle',
   recovery_in_progress: 'update.blockedExam',
   submission_pending: 'update.blockedSubmission',
   pending_answers: 'update.blockedAnswers',
@@ -27,12 +29,15 @@ const REASON_MESSAGES: Record<OtaBlockReason, AppMessageKey> = {
   channel_mismatch: 'update.unsupported',
   metadata_invalid: 'update.unsupported',
   checksum_invalid: 'update.unsupported',
+  unsigned_bundle: 'update.blockedSignature',
   plugin_unavailable: 'update.unsupported',
   activation_not_applied: 'update.failedTitle',
 };
 
 const REASON_PRIORITY: OtaBlockReason[] = [
   'pending_answers',
+  'practice_active',
+  'battle_active',
   'submission_pending',
   'attempt_unresolved',
   'exam_active',
@@ -44,6 +49,7 @@ const REASON_PRIORITY: OtaBlockReason[] = [
   'channel_mismatch',
   'metadata_invalid',
   'checksum_invalid',
+  'unsigned_bundle',
   'auth_unknown',
   'activation_not_applied',
   'plugin_unavailable',

@@ -7,12 +7,15 @@ import {
 } from './activationGate';
 import {
   OTA_ACTIVATION_GRACE_MS,
+  OTA_BOOT_HEALTH_RETRY_DELAYS_MS,
   OTA_CHANNEL,
   OTA_FOREGROUND_CHECK_INTERVAL_MS,
   OTA_INITIAL_CHECK_DELAY_MS,
   OTA_LOCAL_SCHEMA_VERSION,
   OTA_MAX_DOWNLOAD_ATTEMPTS,
   OTA_REJECT_COOLDOWN_MS,
+  OTA_REQUIRE_SIGNATURE,
+  OTA_RETAINED_BUNDLES,
   OTA_RETRY_BASE_MS,
   OTA_RETRY_MAX_MS,
 } from './config';
@@ -56,9 +59,11 @@ import {
   compareNumericVersions,
   isHttpsUrl,
   isNativeVersionCompatible,
+  isPlainChecksum,
   isSchemaVersionCompatible,
   parseReleaseVersion,
   sameChecksum,
+  verifyReleaseSignature,
 } from './version';
 
 export type OtaControllerOptions = {
@@ -74,6 +79,10 @@ export type OtaControllerOptions = {
   foregroundCheckIntervalMs?: number;
   activationGraceMs?: number;
   autoActivate?: boolean;
+  /** Refuse releases that do not carry a key-v2 signature. */
+  requireSignature?: boolean;
+  /** Bundles to keep on disk (running + fallback). */
+  retainedBundles?: number;
 };
 
 export type OtaController = {
@@ -137,9 +146,10 @@ export const createOtaController = (
   const adapter = options.adapter;
   const kv = options.kv ?? createOtaKeyValue();
   const storage: ActivationStorage =
-    options.storage ?? (getOfflineExamStorage() as Pick<
+    options.storage ??
+    (getOfflineExamStorage() as Pick<
       OfflineExamStorage,
-      'init' | 'listAttemptsForUser' | 'getSubmission' | 'getAnswers'
+      'init' | 'listAttemptsForUser' | 'listPendingWork'
     >);
   const channel = options.channel ?? OTA_CHANNEL;
   const supportedSchemaVersion =
@@ -156,6 +166,8 @@ export const createOtaController = (
   const activationGraceMs =
     options.activationGraceMs ?? OTA_ACTIVATION_GRACE_MS;
   const autoActivate = options.autoActivate ?? true;
+  const requireSignature = options.requireSignature ?? OTA_REQUIRE_SIGNATURE;
+  const retainedBundles = options.retainedBundles ?? OTA_RETAINED_BUNDLES;
 
   let snapshot = defaultSnapshot(channel);
   let staged: StagedUpdate | null = null;
@@ -282,6 +294,7 @@ export const createOtaController = (
       version: string;
       url: string;
       checksum: string;
+      sessionKey?: string;
       metadata: ReleaseMetadata | null;
     },
     installedNative: string | null,
@@ -297,13 +310,49 @@ export const createOtaController = (
       reasons.push('checksum_invalid');
     }
 
+    /**
+     * Publisher authenticity.
+     *
+     * The checksum in the manifest is delivered by the same endpoint as the
+     * bundle, so on its own it proves only that the download was not corrupted
+     * in transit. A signed release carries the RSA-encrypted checksum plus the
+     * encrypted AES session key; the native layer refuses to finish a download
+     * without them once a public key is present. Checking the shapes here means
+     * an unsigned release is rejected before it is downloaded at all.
+     */
+    if (requireSignature) {
+      const verdict = verifyReleaseSignature({
+        checksum: latest.checksum,
+        sessionKey: latest.sessionKey,
+      });
+      if (!verdict.ok) {
+        reasons.push('unsigned_bundle');
+      }
+    }
+
     if (installedVersion && latest.metadata) {
+      const installedMetadata = parseReleaseVersion(installedVersion);
       const comparison = compareNumericVersions(
         latest.metadata.baseVersion,
-        parseReleaseVersion(installedVersion)?.baseVersion ?? installedVersion
+        installedMetadata?.baseVersion ?? installedVersion
       );
       if (comparison !== null && comparison < 0) {
         reasons.push('metadata_invalid');
+      } else if (comparison === 0 && installedMetadata?.revision !== null && installedMetadata) {
+        /**
+         * Same base version: the release revision decides. Without this a
+         * republished older revision would look like an upgrade, because the
+         * version string alone differs.
+         */
+        const installedRevision = installedMetadata.revision ?? 0;
+        const candidateRevision = latest.metadata.revision ?? 0;
+        if (
+          installedRevision > 0 &&
+          candidateRevision > 0 &&
+          candidateRevision < installedRevision
+        ) {
+          reasons.push('metadata_invalid');
+        }
       }
     }
 
@@ -437,11 +486,28 @@ export const createOtaController = (
       return;
     }
 
-    if (
-      !bundle.checksum ||
-      !candidate.checksum ||
-      !sameChecksum(bundle.checksum, candidate.checksum)
-    ) {
+    /**
+     * The plugin reports the SHA-256 it computed over the *extracted* bundle.
+     *
+     * For a signed release the manifest checksum is an RSA block that the native
+     * download already decrypted and compared before extracting; comparing that
+     * block with a local digest would reject every correctly signed release.
+     * So: always require a real digest locally, and only compare it with the
+     * manifest when the release is unsigned.
+     */
+    const localChecksum = (bundle.checksum ?? '').trim().toLowerCase();
+
+    if (!isPlainChecksum(localChecksum)) {
+      try {
+        await adapter.deleteBundle(bundle.id);
+      } catch {
+        // Best effort cleanup.
+      }
+      await rejectCandidate(candidate.version, ['checksum_invalid']);
+      return;
+    }
+
+    if (!requireSignature && !sameChecksum(localChecksum, candidate.checksum)) {
       try {
         await adapter.deleteBundle(bundle.id);
       } catch {
@@ -458,8 +524,7 @@ export const createOtaController = (
         !listed ||
         listed.status !== 'success' ||
         listed.version !== candidate.version ||
-        (listed.checksum &&
-          !sameChecksum(listed.checksum, candidate.checksum))
+        (listed.checksum && !sameChecksum(listed.checksum, localChecksum))
       ) {
         await adapter.deleteBundle(bundle.id);
         recordDownloadFailure(
@@ -475,9 +540,11 @@ export const createOtaController = (
     const nextStaged: StagedUpdate = {
       id: bundle.id,
       version: candidate.version,
-      checksum: candidate.checksum,
+      checksum: localChecksum,
+      manifestChecksum: candidate.checksum,
       metadata: candidate.metadata,
       stagedAt: now(),
+      signed: requireSignature,
     };
 
     staged = nextStaged;
@@ -601,6 +668,7 @@ export const createOtaController = (
       checksum: latest.checksum,
       sessionKey: latest.sessionKey,
       metadata,
+      signatureRequired: requireSignature,
     };
 
     if (isRejected(latest.version)) {
@@ -844,22 +912,111 @@ export const createOtaController = (
     }
   };
 
-  const confirmBoot = async (): Promise<void> => {
-    const pending = readPendingActivation(kv);
-    const health = await checkLocalDataHealth(
+  /**
+   * Read local-data health, retrying only what can plausibly change.
+   *
+   * A WebView that cannot open IndexedDB *yet* (restore, low memory, another
+   * connection still closing) is not evidence that the new bundle broke
+   * storage. A version mismatch is: no amount of retrying fixes it.
+   */
+  const readHealthWithRetry = async (): Promise<
+    Awaited<ReturnType<typeof checkLocalDataHealth>>
+  > => {
+    let health = await checkLocalDataHealth(
       storage,
       kv,
       supportedSchemaVersion
     );
 
-    if (!pending) {
-      if (health.ok) {
+    const delays = OTA_BOOT_HEALTH_RETRY_DELAYS_MS;
+    for (let attempt = 0; attempt < delays.length && !health.ok && health.transient; attempt += 1) {
+      const wait = delays[attempt];
+      if (wait > 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, wait));
+      }
+      health = await checkLocalDataHealth(storage, kv, supportedSchemaVersion);
+    }
+
+    return health;
+  };
+
+  /**
+   * Keep disk usage bounded without losing the rollback target.
+   *
+   * The plugin used to delete the previous bundle as soon as the new one was
+   * confirmed, which left no local fallback for a regression discovered after
+   * boot. `autoDeletePrevious` is now off and retention is decided here: the
+   * running bundle plus the newest other successful bundle survive; failed
+   * bundles and anything older are removed.
+   */
+  const pruneBundles = async (currentId: string | null): Promise<string[]> => {
+    try {
+      const bundles = await adapter.list();
+      const deleted: string[] = [];
+
+      const others = bundles.filter(
+        (bundle) =>
+          bundle.id !== currentId &&
+          bundle.id !== 'builtin' &&
+          bundle.builtin !== true &&
+          bundle.status !== 'downloading' &&
+          bundle.status !== 'pending'
+      );
+
+      // Failed bundles never occupy a retention slot: they are deleted below
+      // regardless, so counting them here would prune a usable fallback.
+      const byRecency = others
+        .filter((bundle) => bundle.status !== 'error')
+        .sort((a, b) => {
+          const left = Date.parse(a.downloadedAt ?? '') || 0;
+          const right = Date.parse(b.downloadedAt ?? '') || 0;
+          return right - left;
+        });
+
+      const retainable = Math.max(0, retainedBundles - 1);
+      const keep = new Set(
+        byRecency.slice(0, retainable).map((bundle) => bundle.id)
+      );
+
+      for (const bundle of others) {
+        const failed = bundle.status === 'error';
+        if (!failed && keep.has(bundle.id)) continue;
         try {
-          await adapter.notifyAppReady();
+          await adapter.deleteBundle(bundle.id);
+          deleted.push(bundle.id);
         } catch {
-          // The web runtime has no native app-ready handshake.
+          // A bundle that refuses to delete is harmless; retried next boot.
         }
       }
+
+      return deleted;
+    } catch {
+      return [];
+    }
+  };
+
+  const confirmBoot = async (): Promise<void> => {
+    const pending = readPendingActivation(kv);
+    const health = await readHealthWithRetry();
+
+    if (!health.ok) {
+      // Surface the condition even when it does not block anything, so the UI
+      // can explain why updates stay paused.
+      patch({ reasons: [health.reason], error: health.detail ?? null });
+    }
+
+    if (!pending) {
+      /**
+       * No activation is pending, so this bundle is the one that was already
+       * running. Withholding `notifyAppReady` here would only ask the plugin to
+       * roll back to another bundle that faces the same database.
+       */
+      try {
+        await adapter.notifyAppReady();
+      } catch {
+        // The web runtime has no native app-ready handshake.
+      }
+      void pruneBundles((await safeCurrent())?.bundle.id ?? null);
       return;
     }
 
@@ -893,6 +1050,42 @@ export const createOtaController = (
         version: pending.version,
         at: now(),
       });
+      void pruneBundles(current?.bundle.id ?? pending.id);
+      return;
+    }
+
+    /**
+     * A transient storage outage is not proof that the bundle is broken.
+     * Rolling back would delete a good update on the strength of one flaky
+     * boot, so the bundle is confirmed and the condition is reported instead.
+     */
+    if (matches && !health.ok && health.transient) {
+      try {
+        await adapter.notifyAppReady();
+      } catch {
+        // Ignore a missing handshake.
+      }
+
+      clearPendingActivation(kv);
+      if (staged?.version === pending.version) {
+        staged = null;
+        clearStagedUpdate(kv);
+      }
+      patch({
+        phase: 'activated',
+        currentVersion: current?.bundle.version ?? pending.version,
+        activatedVersion: pending.version,
+        stagedVersion: null,
+        reasons: [health.reason],
+        error: health.detail ?? 'local storage was temporarily unavailable',
+      });
+      publishNotice({
+        phase: 'activated',
+        version: pending.version,
+        reasons: [health.reason],
+        at: now(),
+      });
+      void pruneBundles(current?.bundle.id ?? pending.id);
       return;
     }
 

@@ -69,3 +69,9 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Capgo OTA signing keys — never commit private key material
+.capgo_key
+.capgo_key_v2
+.capgo_key_v2.pub
+.capgo_key*
