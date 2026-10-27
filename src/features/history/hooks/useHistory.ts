@@ -59,9 +59,10 @@ export const useHistory = (activeTab: TabType) => {
       return id;
     },
     onSuccess: (id) => {
-      queryClient.setQueryData<MistakeItem[]>(['history', 'mistakes'], (old) => 
+      queryClient.setQueryData<MistakeItem[]>(['history', 'mistakes'], (old) =>
         old ? old.filter((item) => item.id !== id) : []
       );
+      queryClient.invalidateQueries({ queryKey: ['history', 'mistakes'] });
     },
   });
 
@@ -71,9 +72,12 @@ export const useHistory = (activeTab: TabType) => {
       return id;
     },
     onSuccess: (id) => {
-      queryClient.setQueryData<BookmarkItem[]>(['history', 'bookmarks'], (old) => 
+      queryClient.setQueryData<BookmarkItem[]>(['history', 'bookmarks'], (old) =>
         old ? old.filter((item) => item.id !== id) : []
       );
+      queryClient.invalidateQueries({ queryKey: ['history', 'bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['exams', 'bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['question-bank', 'questions'] });
     },
   });
 

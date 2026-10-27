@@ -240,6 +240,8 @@ const Analysis: React.FC = () => {
         }
         return Array.from(next);
       });
+      queryClient.invalidateQueries({ queryKey: ['history', 'bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['question-bank', 'questions'] });
       toast.success(data?.message || t('exam.bookmarkUpdated'));
     },
     onError: () => {

@@ -88,7 +88,11 @@ export function useQuestionBank() {
     mutationFn: ({ questionId, isBookmarked }: { questionId: string; isBookmarked: boolean }) =>
       toggleBookmark(questionId, isBookmarked),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['question-bank', 'questions'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['question-bank', 'questions'] }),
+        queryClient.invalidateQueries({ queryKey: ['history', 'bookmarks'] }),
+        queryClient.invalidateQueries({ queryKey: ['exams', 'bookmarks'] }),
+      ]);
     },
   });
 

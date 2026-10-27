@@ -5,15 +5,36 @@ export type LocalizedText = string | { bn?: string; text?: string; [key: string]
 
 // Type for question options
 export interface QuestionOption {
-  id?: string | number;
+  id?: string | number | null;
   text?: string;
   bn?: string;
+  text_bn?: string | null;
+  text_en?: string | null;
+  image_url?: string | null;
   // Multiple variations of the correctness flag based on possible backend/Supabase schemas
   isCorrect?: boolean;
   is_correct?: boolean;
   correct?: boolean;
   answer?: boolean;
   [key: string]: unknown; // Allow extra fields from backend safely
+}
+
+export interface ReviewQuestion {
+  id: string;
+  subject_id?: string | null;
+  type?: string | null;
+  body?: LocalizedText | Record<string, unknown> | null;
+  options?: QuestionOption[] | null;
+  explanation?: unknown;
+  image_url?: string | null;
+  media_library?: { file_url?: string | null } | null;
+  [key: string]: unknown;
+}
+
+export interface HistorySubject {
+  id?: string | null;
+  name_en?: string | null;
+  name_bn?: string | null;
 }
 
 import type { PracticeMode } from '@/features/practice/types/practice';
@@ -23,9 +44,16 @@ export interface HistoryItem {
   exam_id?: string | null;
   score: number;
   total_marks: number;
+  correct_count?: number | null;
+  wrong_count?: number | null;
+  skipped_count?: number | null;
+  question_count?: number | null;
+  exam_sequence?: number | null;
+  completion_status?: string | null;
   exam_title?: string | null;
   subject_name_en?: string | null;
   subject_name_bn?: string | null;
+  subjects?: HistorySubject[] | null;
   // Date fields matching database schema variations
   taken_at?: string;
   submitted_at?: string;
@@ -43,21 +71,17 @@ export interface HistoryItem {
 
 export interface MistakeItem {
   id: string;
+  detail_id?: string | null;
   selected_option: string | null;
   question_id: string;
-  questions: {
-    id?: string;
-    body: LocalizedText;
-    options: QuestionOption[] | null;
-    explanation?: string | null;
-  };
+  occurred_at?: string | null;
+  questions: ReviewQuestion | null;
 }
 
 export interface BookmarkItem {
   id: string;
   note?: string | null;
-  questions: {
-    id: string;
-    body: LocalizedText;
-  };
+  question_id?: string | null;
+  created_at?: string | null;
+  questions: ReviewQuestion | null;
 }
