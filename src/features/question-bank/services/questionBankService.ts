@@ -245,7 +245,7 @@ export async function getQuestionBankFilters(): Promise<QuestionBankFiltersData>
     supabase.from('subjects').select('id, name_bn, name_en, slug, is_premium, sequence').eq('is_active', true).order('sequence', { ascending: true }),
     supabase.from('chapters').select('id, subject_id, name_bn, name_en, slug, is_premium, sequence').eq('is_active', true).order('sequence', { ascending: true }),
     supabase.from('topics').select('id, chapter_id, name_bn, name_en, slug, is_premium, sequence, total_questions').eq('is_active', true).order('sequence', { ascending: true }),
-    supabase.from('institutions').select('id, name_bn, name_en, type, eiin').in('type', ['board', 'college', 'admission']).eq('is_active', true).order('name_bn', { ascending: true }),
+    supabase.from('institutions').select('id, name_bn, name_en, type, eiin, code').in('type', ['board', 'college', 'admission', 'university']).eq('is_active', true).order('name_bn', { ascending: true }),
   ]);
 
   if (subjectsError) throw subjectsError;
@@ -261,7 +261,9 @@ export async function getQuestionBankFilters(): Promise<QuestionBankFiltersData>
     topics: (topics ?? []) as QuestionBankTopic[],
     boards: allInstitutions.filter((inst) => inst.type === 'board'),
     colleges: allInstitutions.filter((inst) => inst.type === 'college'),
-    admissions: allInstitutions.filter((inst) => inst.type === 'admission'),
+    admissions: allInstitutions.filter(
+      (inst) => inst.type === 'admission' || inst.type === 'university'
+    ),
   };
 }
 

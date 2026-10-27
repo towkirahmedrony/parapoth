@@ -90,7 +90,8 @@ export interface QuestionBankInstitution {
   name_bn: string;
   name_en: string | null;
   type: string;
-  eiin: string | null; // Added EIIN
+  eiin: string | null;
+  code: string | null;
 }
 
 export interface QuestionBankFiltersData {

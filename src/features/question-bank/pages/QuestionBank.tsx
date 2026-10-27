@@ -324,7 +324,7 @@ export default function QuestionBank() {
   const institutionName = useMemo(() => {
     if (!filters.institutionEiin) return '';
     const match = [...boards, ...colleges, ...admissions].find(
-      (inst) => (inst.eiin || inst.id) === filters.institutionEiin
+      (inst) => (inst.eiin || inst.code || inst.id) === filters.institutionEiin
     );
     if (!match) return t('questionBank.unknownValue');
     return localizedText(match.name_bn, match.name_en, language);

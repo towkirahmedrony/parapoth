@@ -170,7 +170,7 @@ export const QuestionFilter: React.FC<QuestionFilterProps> = ({
                 ...(filters.institutionType === 'board' ? boards :
                    filters.institutionType === 'college' ? colleges :
                    admissions).map((item) => ({
-                   value: item.eiin || item.id, // Fallback to ID if EIIN is missing
+                   value: item.eiin || item.code || item.id,
                    label: localizedText(item.name_bn, item.name_en, language),
                 })),
               ]}

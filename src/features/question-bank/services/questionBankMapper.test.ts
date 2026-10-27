@@ -208,17 +208,58 @@ test('bookmark, mistake, premium, year and institution filters work', () => {
   assert.deepEqual(applyClientSideFilters(list, filters({ institutionEiin: 'nope' })), []);
 });
 
-test('source type filter maps "board" to the stored board_exam value', () => {
+test('source type filter maps UI kinds to the stored source_type values', () => {
   const board = mapQuestion(row({ id: 'b', source_type: 'board_exam' }), emptyMeta);
+  const college = mapQuestion(row({ id: 'c', source_type: 'college_test' }), emptyMeta);
+  const admission = mapQuestion(row({ id: 'a', source_type: 'admission' }), emptyMeta);
   const textbook = mapQuestion(row({ id: 't', source_type: 'textbook' }), emptyMeta);
+  const list = [board, college, admission, textbook];
 
   assert.deepEqual(
-    applyClientSideFilters([board, textbook], filters({ institutionType: 'board' })).map((q) => q.id),
+    applyClientSideFilters(list, filters({ institutionType: 'board' })).map((q) => q.id),
     ['b']
   );
   assert.deepEqual(
-    applyClientSideFilters([board, textbook], filters({ institutionType: 'textbook' })).map((q) => q.id),
+    applyClientSideFilters(list, filters({ institutionType: 'college' })).map((q) => q.id),
+    ['c']
+  );
+  assert.deepEqual(
+    applyClientSideFilters(list, filters({ institutionType: 'admission' })).map((q) => q.id),
+    ['a']
+  );
+  assert.deepEqual(
+    applyClientSideFilters(list, filters({ institutionType: 'textbook' })).map((q) => q.id),
     ['t']
+  );
+});
+
+test('institution filter matches both EIIN and canonical institution code', () => {
+  const byEiin = mapQuestion(
+    row({ id: 'e', exam_references: [{ eiin: '123' }] }),
+    emptyMeta
+  );
+  const byCode = mapQuestion(
+    row({ id: 'c', exam_references: [{ code: 'BOARD_DHAKA' }] }),
+    emptyMeta
+  );
+  const unrelated = mapQuestion(
+    row({ id: 'u', exam_references: [{ eiin: '999' }] }),
+    emptyMeta
+  );
+
+  assert.deepEqual(
+    applyClientSideFilters(
+      [byEiin, byCode, unrelated],
+      filters({ institutionEiin: '123' })
+    ).map((q) => q.id),
+    ['e']
+  );
+  assert.deepEqual(
+    applyClientSideFilters(
+      [byEiin, byCode, unrelated],
+      filters({ institutionEiin: 'BOARD_DHAKA' })
+    ).map((q) => q.id),
+    ['c']
   );
 });
 

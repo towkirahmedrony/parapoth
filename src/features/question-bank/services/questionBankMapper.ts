@@ -263,13 +263,21 @@ export function applyClientSideFilters(
 
   if (filters.institutionType) {
     const expectedSource =
-      filters.institutionType === 'board' ? 'board_exam' : filters.institutionType;
+      filters.institutionType === 'board'
+        ? 'board_exam'
+        : filters.institutionType === 'college'
+          ? 'college_test'
+          : filters.institutionType;
     result = result.filter((item) => item.sourceType === expectedSource);
   }
 
   if (filters.institutionEiin) {
     result = result.filter((question) =>
-      question.examReferences.some((ref) => ref.eiin === filters.institutionEiin)
+      question.examReferences.some(
+        (ref) =>
+          ref.eiin === filters.institutionEiin ||
+          ref.code === filters.institutionEiin
+      )
     );
   }
 
