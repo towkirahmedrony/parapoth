@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+// Release signing material comes from the environment, never from the repo, so
+// the same project still builds unsigned on a machine without the keystore.
+// CI provisions POROKH_KEYSTORE_FILE from the ANDROID_KEYSTORE_BASE64 secret.
+def releaseKeystorePath = System.getenv("POROKH_KEYSTORE_FILE")
+def releaseKeystorePassword = System.getenv("POROKH_KEYSTORE_PASSWORD")
+def releaseKeyAlias = System.getenv("POROKH_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("POROKH_KEY_PASSWORD")
+def hasReleaseSigning =
+    releaseKeystorePath &&
+    releaseKeystorePassword &&
+    releaseKeyAlias &&
+    releaseKeyPassword &&
+    file(releaseKeystorePath).exists()
+
 android {
     namespace = "com.parapothexam.porokh"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +30,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                // Without this a CI run silently produces app-release-unsigned.apk.
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
