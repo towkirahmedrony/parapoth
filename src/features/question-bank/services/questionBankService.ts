@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/lib/supabase';
 import type {
+  QuestionAnswerKey,
   QuestionBankChapter,
   QuestionBankFilterState,
   QuestionBankFiltersData,
@@ -15,6 +16,7 @@ import {
   buildStats,
   dedupeQuestions,
   isRpcRow,
+  mapAnswerKey,
   mapQuestion,
   resolvePagination,
 } from './questionBankMapper';
@@ -69,6 +71,10 @@ type V1Args = {
   p_sort: string;
 };
 
+type AnswerKeyArgs = {
+  p_question_ids: string[];
+};
+
 /**
  * Minimal typed view of the Supabase client for the two RPCs this feature
  * needs. The generated `Database` type has no entry for either function, so the
@@ -77,6 +83,10 @@ type V1Args = {
 type QuestionBankRpcClient = {
   rpc(fn: 'get_student_question_bank_v2', args: V2Args): Promise<RpcResult>;
   rpc(fn: 'get_student_question_bank', args: V1Args): Promise<RpcResult>;
+  rpc(
+    fn: 'get_student_question_bank_answers',
+    args: AnswerKeyArgs
+  ): Promise<RpcResult>;
 };
 
 type RpcError = { code?: string; message?: string; details?: string; hint?: string };
@@ -233,6 +243,30 @@ export async function fetchQuestionPage(
     capped: rows.length >= LEGACY_ROW_CAP,
     stats: buildStats(questions),
   };
+}
+
+/**
+ * Answer keys are a separate, authenticated-only read. The list payload never
+ * carries them, so the browser only asks for the ids it is already rendering
+ * and never needs a second table read with answer columns.
+ */
+export async function fetchQuestionAnswers(
+  questionIds: string[]
+): Promise<QuestionAnswerKey[]> {
+  const ids = Array.from(
+    new Set(questionIds.map((id) => id.trim()).filter(Boolean))
+  );
+  if (ids.length === 0) return [];
+
+  const { data, error } = await questionBankRpc.rpc(
+    'get_student_question_bank_answers',
+    { p_question_ids: ids }
+  );
+  if (error) throw error;
+
+  return asArray(data)
+    .map(mapAnswerKey)
+    .filter((value): value is QuestionAnswerKey => value !== null);
 }
 
 export async function getQuestionBankFilters(): Promise<QuestionBankFiltersData> {

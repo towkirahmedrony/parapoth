@@ -5,10 +5,13 @@ import {
   applySearch,
   buildStats,
   dedupeQuestions,
+  getExamBadge,
+  getExplanationText,
   getOptionText,
   getQuestionText,
   getSubjectName,
   localizedText,
+  mapAnswerKey,
   mapQuestion,
   resolvePagination,
   sortQuestions,
@@ -77,6 +80,93 @@ test('option order is preserved exactly as stored', () => {
     question.options.map((option) => option.id),
     ['b', 'a']
   );
+});
+
+test('object explanations are localized and legacy strings still render', () => {
+  const localized = mapQuestion(
+    row({ explanation: { bn: 'বাংলা ব্যাখ্যা', en: 'English explanation' } }),
+    emptyMeta
+  );
+
+  assert.equal(getExplanationText(localized, 'bn'), 'বাংলা ব্যাখ্যা');
+  assert.equal(getExplanationText(localized, 'en'), 'English explanation');
+
+  const banglaOnly = mapQuestion(row({ explanation: { bn: 'শুধু বাংলা' } }), emptyMeta);
+  assert.equal(getExplanationText(banglaOnly, 'en'), 'শুধু বাংলা', 'falls back to Bangla');
+
+  const legacyString = mapQuestion(row({ explanation: 'পুরনো ব্যাখ্যা' }), emptyMeta);
+  assert.equal(getExplanationText(legacyString, 'en'), 'পুরনো ব্যাখ্যা');
+
+  assert.equal(mapQuestion(row({ explanation: {} }), emptyMeta).explanation, null);
+  assert.equal(mapQuestion(row({ explanation: null }), emptyMeta).explanation, null);
+});
+
+test('answer-key rows expose only the question id and option ids', () => {
+  assert.deepEqual(
+    mapAnswerKey({
+      id: 'q1',
+      correct_option_ids: [1, 4, 'o5', 4, null, true],
+      explanation: 'must not leak',
+      body: { text_bn: 'must not leak' },
+    }),
+    { questionId: 'q1', correctOptionIds: ['1', '4', 'o5'] }
+  );
+  assert.deepEqual(mapAnswerKey({ id: 'q1', correct_option_ids: '4' }), {
+    questionId: 'q1',
+    correctOptionIds: [],
+  });
+  assert.equal(mapAnswerKey({ correct_option_ids: [1] }), null);
+  assert.equal(mapAnswerKey({ id: '  ' }), null);
+  assert.equal(mapAnswerKey(null), null);
+});
+
+test('exam badges localize known boards and ignore internal tag slugs', () => {
+  const board = mapQuestion(
+    row({
+      exam_references: [{ board: 'Dinajpur Board', year: '2017', source_kind: 'board' }],
+      tags: ['dinajpur_board_2017'],
+    }),
+    emptyMeta
+  );
+
+  assert.deepEqual(getExamBadge(board, 'bn'), { label: 'দিনাজপুর বোর্ড', year: '2017' });
+  assert.deepEqual(getExamBadge(board, 'en'), { label: 'Dinajpur Board', year: '2017' });
+
+  const chattogram = mapQuestion(
+    row({ exam_references: [{ board: 'Chattogram Board', year: '2024' }] }),
+    emptyMeta
+  );
+  assert.deepEqual(getExamBadge(chattogram, 'bn'), {
+    label: 'চট্টগ্রাম বোর্ড',
+    year: '2024',
+  });
+
+  const tagOnly = mapQuestion(
+    row({ exam_references: [], tags: ['sylhet_board_2017'] }),
+    emptyMeta
+  );
+  assert.deepEqual(getExamBadge(tagOnly, 'bn'), { label: 'সিলেট বোর্ড', year: '2017' });
+
+  const college = mapQuestion(
+    row({
+      source_type: 'college_test',
+      exam_references: [
+        { institution_name: 'Cumilla Cadet College', year: '2026', source_kind: 'college' },
+      ],
+      tags: ['cumilla_cadet_college_2026'],
+    }),
+    emptyMeta
+  );
+  assert.deepEqual(getExamBadge(college, 'bn'), {
+    label: 'Cumilla Cadet College',
+    year: '2026',
+  });
+
+  const internalOnly = mapQuestion(
+    row({ exam_references: [], tags: ['some_internal_slug'] }),
+    emptyMeta
+  );
+  assert.equal(getExamBadge(internalOnly, 'bn'), null);
 });
 
 test('answer-key fields from the database are never surfaced', () => {
@@ -166,12 +256,18 @@ test('search matches question text, options, tags and subject names', () => {
     mapQuestion(row({ id: 'a', body: { text_bn: 'নিউটনের সূত্র' } }), emptyMeta),
     mapQuestion(row({ id: 'b', body: { text_en: 'Photosynthesis' } }), emptyMeta),
     mapQuestion(row({ id: 'c', tags: ['2021'] }), emptyMeta),
+    mapQuestion(
+      row({ id: 'd', explanation: { bn: 'ত্বরণ', en: 'acceleration' } }),
+      emptyMeta
+    ),
   ];
 
   assert.deepEqual(applySearch(list, 'নিউটন').map((q) => q.id), ['a']);
   assert.deepEqual(applySearch(list, 'photosyn').map((q) => q.id), ['b']);
   assert.deepEqual(applySearch(list, '2021').map((q) => q.id), ['c']);
-  assert.equal(applySearch(list, '   ').length, 3, 'blank search is a no-op');
+  assert.deepEqual(applySearch(list, 'acceleration').map((q) => q.id), ['d']);
+  assert.deepEqual(applySearch(list, 'ত্বরণ').map((q) => q.id), ['d']);
+  assert.equal(applySearch(list, '   ').length, list.length, 'blank search is a no-op');
   assert.equal(applySearch(list, 'zzz').length, 0);
 });
 

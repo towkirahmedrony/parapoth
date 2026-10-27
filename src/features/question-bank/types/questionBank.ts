@@ -23,7 +23,25 @@ export interface QuestionOption {
   id: string | number;
   text_bn?: string;
   text_en?: string;
+  image_url?: string | null;
+  /** Never populated by the list mapper; answer keys come from their own RPC. */
   isCorrect?: boolean;
+}
+
+export interface QuestionExplanation {
+  bn: string | null;
+  en: string | null;
+}
+
+export interface QuestionExamReference {
+  [key: string]: unknown;
+  year?: string | number;
+  board?: string;
+  institution_name?: string;
+  exam_name?: string;
+  source_kind?: string;
+  eiin?: string;
+  code?: string;
 }
 
 export interface QuestionBankQuestion {
@@ -31,9 +49,9 @@ export interface QuestionBankQuestion {
   type: QuestionType;
   difficultyLevel: DifficultyLevel | null;
   sourceType: SourceType | null;
-  explanation: string | null;
+  explanation: QuestionExplanation | null;
   tags: string[];
-  examReferences: any[]; // Added for EIIN filtering
+  examReferences: QuestionExamReference[];
   body: QuestionBody;
   options: QuestionOption[];
   subjectId: string | null;
@@ -124,6 +142,17 @@ export interface QuestionBankStats {
   mcq: number;
   board: number;
   premium: number;
+}
+
+/** Answer-key row from `get_student_question_bank_answers`. */
+export interface QuestionAnswerKeyRpcRow {
+  id: string;
+  correct_option_ids: unknown;
+}
+
+export interface QuestionAnswerKey {
+  questionId: string;
+  correctOptionIds: string[];
 }
 
 /**

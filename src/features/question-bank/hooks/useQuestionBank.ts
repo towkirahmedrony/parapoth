@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import {
+  fetchQuestionAnswers,
   fetchQuestionPage,
   getQuestionBankFilters,
   toggleBookmark,
@@ -138,6 +139,33 @@ export function useQuestionBank() {
     };
   }, [filters, filtersQuery.data, questionsQuery.data]);
 
+  const answerQuestionIds = useMemo(
+    () =>
+      derived.questions
+        .filter((question) => !question.isLocked)
+        .map((question) => question.id),
+    [derived.questions]
+  );
+
+  const answersQuery = useQuery({
+    queryKey: ['question-bank', 'answers', answerQuestionIds],
+    queryFn: () => fetchQuestionAnswers(answerQuestionIds),
+    enabled: answerQuestionIds.length > 0,
+    staleTime: 1000 * 60 * 10,
+    placeholderData: keepPreviousData,
+  });
+
+  const answerKeys = useMemo(
+    () =>
+      new Map(
+        (answersQuery.data ?? []).map((answer) => [
+          answer.questionId,
+          answer.correctOptionIds,
+        ])
+      ),
+    [answersQuery.data]
+  );
+
   const updateFilter = <K extends keyof QuestionBankFilterState>(
     key: K,
     value: QuestionBankFilterState[K]
@@ -208,6 +236,13 @@ export function useQuestionBank() {
     error: filtersQuery.error || questionsQuery.error,
     refetch: questionsQuery.refetch,
     toggleBookmark: toggleBookmarkMutation.mutateAsync,
+    bookmarkUpdatingId: toggleBookmarkMutation.isPending
+      ? toggleBookmarkMutation.variables?.questionId ?? null
+      : null,
     isBookmarkUpdating: toggleBookmarkMutation.isPending,
+    answerKeys,
+    isAnswersLoading: answersQuery.isLoading,
+    isAnswersFetching: answersQuery.isFetching,
+    answersError: answersQuery.error,
   };
 }

@@ -1,9 +1,12 @@
 import type {
+  QuestionAnswerKey,
   QuestionBankFilterState,
   QuestionBankQuestion,
   QuestionBankRpcRow,
   QuestionBankStats,
   QuestionBody,
+  QuestionExamReference,
+  QuestionExplanation,
   QuestionOption,
 } from '../types/questionBank';
 import {
@@ -34,6 +37,18 @@ const asNumberOr = (value: unknown, fallback: number): number =>
 
 const asArray = (value: unknown): unknown[] =>
   Array.isArray(value) ? value : [];
+
+const asTrimmedString = (value: unknown): string | null => {
+  const text = asStringOrNull(value)?.trim();
+  return text ? text : null;
+};
+
+const pickExamReferences = (value: unknown): QuestionExamReference[] =>
+  asArray(value).reduce<QuestionExamReference[]>((acc, raw) => {
+    const record = asRecord(raw);
+    if (record) acc.push(record as QuestionExamReference);
+    return acc;
+  }, []);
 
 export const isRpcRow = (value: unknown): value is QuestionBankRpcRow => {
   const row = asRecord(value);
@@ -66,11 +81,13 @@ const pickOptions = (options: unknown[]): QuestionOption[] =>
 
     const textBn = asStringOrNull(option.text_bn);
     const textEn = asStringOrNull(option.text_en);
+    const imageUrl = asStringOrNull(option.image_url);
 
     acc.push({
       id,
       ...(textBn ? { text_bn: textBn } : {}),
       ...(textEn ? { text_en: textEn } : {}),
+      ...(imageUrl ? { image_url: imageUrl } : {}),
     });
     return acc;
   }, []);
@@ -91,6 +108,137 @@ export const localizedText = (
   if (language === 'en') return english || bangla;
   return bangla || english;
 };
+
+const BOARD_LABELS: Record<string, { bn: string; en: string }> = {
+  dhaka: { bn: 'ঢাকা বোর্ড', en: 'Dhaka Board' },
+  rajshahi: { bn: 'রাজশাহী বোর্ড', en: 'Rajshahi Board' },
+  dinajpur: { bn: 'দিনাজপুর বোর্ড', en: 'Dinajpur Board' },
+  jashore: { bn: 'যশোর বোর্ড', en: 'Jashore Board' },
+  khulna: { bn: 'খুলনা বোর্ড', en: 'Khulna Board' },
+  barishal: { bn: 'বরিশাল বোর্ড', en: 'Barishal Board' },
+  chattogram: { bn: 'চট্টগ্রাম বোর্ড', en: 'Chattogram Board' },
+  cumilla: { bn: 'কুমিল্লা বোর্ড', en: 'Cumilla Board' },
+  sylhet: { bn: 'সিলেট বোর্ড', en: 'Sylhet Board' },
+  mymensingh: { bn: 'ময়মনসিংহ বোর্ড', en: 'Mymensingh Board' },
+  madrasah: { bn: 'মাদ্রাসা বোর্ড', en: 'Madrasah Board' },
+  technical: { bn: 'কারিগরি শিক্ষা বোর্ড', en: 'Technical Education Board' },
+};
+
+const BOARD_ALIASES: Record<string, string> = {
+  dhaka: 'dhaka',
+  'ঢাকা': 'dhaka',
+  rajshahi: 'rajshahi',
+  'রাজশাহী': 'rajshahi',
+  dinajpur: 'dinajpur',
+  'দিনাজপুর': 'dinajpur',
+  jashore: 'jashore',
+  jessore: 'jashore',
+  'যশোর': 'jashore',
+  khulna: 'khulna',
+  'খুলনা': 'khulna',
+  barishal: 'barishal',
+  barisal: 'barishal',
+  'বরিশাল': 'barishal',
+  chattogram: 'chattogram',
+  chittagong: 'chattogram',
+  'চট্টগ্রাম': 'chattogram',
+  cumilla: 'cumilla',
+  comilla: 'cumilla',
+  'কুমিল্লা': 'cumilla',
+  sylhet: 'sylhet',
+  'সিলেট': 'sylhet',
+  mymensingh: 'mymensingh',
+  'ময়মনসিংহ': 'mymensingh',
+  'ময়মনসিংহ': 'mymensingh',
+  madrasah: 'madrasah',
+  'মাদ্রাসা': 'madrasah',
+  technical: 'technical',
+  bteb: 'technical',
+  'কারিগরি': 'technical',
+  'কারিগরিশিক্ষা': 'technical',
+};
+
+const normalizeBoardKey = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/\bboard\b/g, '')
+    .replace(/\beducation\b/g, '')
+    .replace(/বোর্ড/g, '')
+    .replace(/শিক্ষা/g, '')
+    .replace(/[^a-z\u0980-\u09ff]/g, '');
+
+const resolveBoardLabel = (
+  value: string,
+  language: QuestionLanguage
+): string | null => {
+  const key = BOARD_ALIASES[normalizeBoardKey(value)];
+  if (!key) return null;
+
+  const labels = BOARD_LABELS[key];
+  return language === 'en' ? labels.en : labels.bn;
+};
+
+const isReadableName = (value: string): boolean =>
+  /\s/.test(value) || /[\u0980-\u09ff]/.test(value);
+
+const readYear = (value: unknown): string | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return asTrimmedString(value);
+};
+
+/**
+ * Exam metadata is stored in two generations: structured `exam_references` and
+ * legacy tags such as `sylhet_board_2017`. Never render the raw slug; only use
+ * a tag when it resolves to a known board, and otherwise fall back to a
+ * human-readable structured reference.
+ */
+export function getExamBadge(
+  question: QuestionBankQuestion,
+  language: QuestionLanguage
+): { label: string; year: string | null } | null {
+  for (const reference of question.examReferences) {
+    const board = asTrimmedString(reference.board);
+    if (board) {
+      const label =
+        resolveBoardLabel(board, language) ??
+        (isReadableName(board) ? board : null);
+      if (label) return { label, year: readYear(reference.year) };
+    }
+
+    const institution = asTrimmedString(reference.institution_name);
+    if (institution) return { label: institution, year: readYear(reference.year) };
+  }
+
+  for (const tag of question.tags) {
+    const match = /^([a-z][a-z0-9]*)_board_(\d{4})$/i.exec(tag);
+    if (!match) continue;
+
+    const label = resolveBoardLabel(match[1], language);
+    if (label) return { label, year: match[2] };
+  }
+
+  return null;
+}
+
+export function parseExplanation(value: unknown): QuestionExplanation | null {
+  const record = asRecord(value);
+  if (record) {
+    const bn = asTrimmedString(record.bn) ?? asTrimmedString(record.text_bn);
+    const en = asTrimmedString(record.en) ?? asTrimmedString(record.text_en);
+    return bn || en ? { bn, en } : null;
+  }
+
+  const text = asTrimmedString(value);
+  return text ? { bn: text, en: text } : null;
+}
+
+export const getExplanationText = (
+  question: QuestionBankQuestion,
+  language: QuestionLanguage
+): string =>
+  question.explanation
+    ? localizedText(question.explanation.bn, question.explanation.en, language)
+    : '';
 
 export const getQuestionText = (
   question: QuestionBankQuestion,
@@ -118,6 +266,25 @@ export const getTopicName = (
   language: QuestionLanguage
 ): string => localizedText(question.topicNameBn, question.topicNameEn, language);
 
+export function mapAnswerKey(row: unknown): QuestionAnswerKey | null {
+  const record = asRecord(row);
+  const questionId = asTrimmedString(record?.id);
+  if (!questionId) return null;
+
+  const seen = new Set<string>();
+  const correctOptionIds: string[] = [];
+
+  for (const value of asArray(record?.correct_option_ids)) {
+    if (typeof value !== 'string' && typeof value !== 'number') continue;
+    const optionId = String(value).trim();
+    if (!optionId || seen.has(optionId)) continue;
+    seen.add(optionId);
+    correctOptionIds.push(optionId);
+  }
+
+  return { questionId, correctOptionIds };
+}
+
 export function mapQuestion(
   row: QuestionBankRpcRow,
   meta: { bookmarkedIds: Set<string>; wrongIds: Set<string> }
@@ -144,11 +311,9 @@ export function mapQuestion(
     type: row.type ?? 'MCQ',
     difficultyLevel: row.difficulty_level,
     sourceType: row.source_type,
-    explanation: asStringOrNull(row.explanation),
+    explanation: parseExplanation(row.explanation),
     tags: asArray(row.tags).filter((tag): tag is string => typeof tag === 'string'),
-    examReferences: asArray(row.exam_references).filter(
-      (reference): reference is Record<string, unknown> => Boolean(asRecord(reference))
-    ),
+    examReferences: pickExamReferences(row.exam_references),
     body,
     options,
     subjectId: row.subject_id,
@@ -225,7 +390,8 @@ export function applySearch(
     const haystacks = [
       question.body.text_bn,
       question.body.text_en,
-      question.explanation,
+      question.explanation?.bn,
+      question.explanation?.en,
       question.subjectNameBn,
       question.subjectNameEn,
       question.chapterNameBn,

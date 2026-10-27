@@ -1,272 +1,37 @@
 import React, { useMemo, useState } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
-import { localizeDigits, type AppLanguage } from '@/shared/i18n/messages';
+import { localizeDigits } from '@/shared/i18n/messages';
 import {
-  Bookmark,
-  BookmarkCheck,
   BookOpen,
-  ChevronDown,
+  BookOpenCheck,
   ChevronLeft,
-  ChevronUp,
   Filter,
-  Lock,
   RefreshCw,
   Search,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Loader } from '@/shared/components/feedback/Loader';
 import { EmptyState } from '@/shared/components/feedback/EmptyState';
+import QuestionCard from '../components/QuestionCard';
 import { QuestionFilter } from '../components/QuestionFilter';
 import { useQuestionBank } from '../hooks/useQuestionBank';
 import { describeQuestionBankError } from '../services/questionBankErrors';
-import {
-  getChapterName,
-  getOptionText,
-  getQuestionText,
-  getSubjectName,
-  getTopicName,
-  localizedText,
-} from '../services/questionBankMapper';
+import { localizedText } from '../services/questionBankMapper';
 import { LEGACY_ROW_CAP } from '../services/questionBankService';
-import type { QuestionBankQuestion } from '../types/questionBank';
+import {
+  EMPTY_ANSWER_VISIBILITY,
+  expandAllAnswers,
+  isAnswerVisible,
+  toggleAnswerVisibility,
+  type AnswerVisibilityState,
+} from '../utils/answerVisibility';
 
 function InfoBadge(props: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-border-color bg-badge-bg px-2 py-0.5 text-[11px] font-medium text-badge-text">
+    <span className="rounded-full border border-border-color bg-surface px-2 py-0.5 text-[10px] font-medium text-text-secondary">
       {props.children}
     </span>
-  );
-}
-
-function getAccuracy(question: QuestionBankQuestion): number {
-  if (!question.totalAttempts) return 0;
-  return Math.round((question.correctAttempts / question.totalAttempts) * 100);
-}
-
-const formatAddedDate = (value: string | null, language: AppLanguage): string => {
-  if (!value) return '';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '';
-
-  try {
-    return new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(parsed);
-  } catch {
-    return parsed.toISOString().slice(0, 10);
-  }
-};
-
-function QuestionCard(props: {
-  question: QuestionBankQuestion;
-  language: AppLanguage;
-  onBookmarkToggle: (questionId: string, isBookmarked: boolean) => Promise<void>;
-  isBookmarkUpdating: boolean;
-}) {
-  const { question, language, onBookmarkToggle, isBookmarkUpdating } = props;
-  const navigate = useNavigate();
-  const { t } = useLanguage();
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const questionText = getQuestionText(question, language);
-  const accuracy = getAccuracy(question);
-  const addedOn = formatAddedDate(question.createdAt, language);
-
-  const difficultyKey =
-    question.difficultyLevel === 'easy'
-      ? 'questionBank.difficultyEasy'
-      : question.difficultyLevel === 'medium'
-        ? 'questionBank.difficultyMedium'
-        : question.difficultyLevel === 'hard'
-          ? 'questionBank.difficultyHard'
-          : null;
-
-  const subjectName = getSubjectName(question, language);
-  const chapterName = getChapterName(question, language);
-  const topicName = getTopicName(question, language);
-
-  return (
-    <Card className="rounded-3xl border border-card-border bg-card-bg p-4 shadow-sm transition hover:shadow-md">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap gap-1.5">
-              <InfoBadge>{question.type}</InfoBadge>
-              {difficultyKey && <InfoBadge>{t(difficultyKey)}</InfoBadge>}
-              {question.isPremium && <InfoBadge>{t('questionBank.badgePremium')}</InfoBadge>}
-              {question.isWrongAnswered && <InfoBadge>{t('questionBank.badgeWrong')}</InfoBadge>}
-            </div>
-
-            <div className="text-[11px] text-text-secondary">
-              {subjectName || t('questionBank.unknownSubject')}
-              {chapterName ? ` • ${chapterName}` : ''}
-              {topicName ? ` • ${topicName}` : ''}
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            className="h-8 rounded-xl px-2.5 text-xs font-medium"
-            disabled={isBookmarkUpdating}
-            aria-pressed={question.isBookmarked}
-            onClick={() => onBookmarkToggle(question.id, question.isBookmarked)}
-          >
-            {question.isBookmarked ? (
-              <BookmarkCheck className="mr-1.5 h-3.5 w-3.5" />
-            ) : (
-              <Bookmark className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            {question.isBookmarked ? t('questionBank.savedState') : t('questionBank.save')}
-          </Button>
-        </div>
-
-        <div>
-          {question.isLocked ? (
-            // The server returns premium rows redacted; render an explicit
-            // locked state instead of an apparently empty question.
-            <div className="rounded-2xl border border-dashed border-border-color bg-surface p-4">
-              <p className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-                <Lock className="h-4 w-4 text-accent" aria-hidden="true" />
-                {t('questionBank.lockedPreview')}
-              </p>
-              <p className="mt-1 text-[11px] font-medium text-text-secondary">
-                {t('questionBank.lockedHint')}
-              </p>
-              <Button
-                className="mt-3 h-9 rounded-xl px-3 text-xs font-bold"
-                onClick={() => navigate('/premium')}
-              >
-                {t('questionBank.viewPremium')}
-              </Button>
-            </div>
-          ) : (
-            <>
-              <h3 className="line-clamp-3 whitespace-pre-line text-[15px] font-semibold leading-relaxed text-text-primary">
-                {questionText || t('questionBank.noPreview')}
-              </h3>
-
-              {question.body.image_url && (
-                <img
-                  src={question.body.image_url}
-                  alt=""
-                  loading="lazy"
-                  className="mt-2 max-h-48 w-auto rounded-xl border border-border-color"
-                />
-              )}
-
-              {question.options.length > 0 && !isExpanded && (
-                <p className="mt-1.5 text-xs font-medium text-text-secondary">
-                  {t('questionBank.optionsCount', { count: question.options.length })}
-                </p>
-              )}
-
-              {isExpanded && (
-                <div className="mt-3 space-y-3">
-                  {question.options.length > 0 && (
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                        {t('questionBank.optionsTitle')}
-                      </p>
-                      <ol className="space-y-1.5">
-                        {question.options.map((option, index) => (
-                          <li
-                            key={String(option.id ?? index)}
-                            className="rounded-xl border border-border-color bg-surface px-3 py-2 text-[13px] text-text-primary"
-                          >
-                            <span className="mr-1.5 font-semibold text-text-secondary">
-                              {localizeDigits(index + 1, language)}.
-                            </span>
-                            {getOptionText(option, language) || '—'}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-
-                  {question.explanation && (
-                    <div className="rounded-xl border border-border-color bg-surface px-3 py-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                        {t('questionBank.explanation')}
-                      </p>
-                      <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-text-primary">
-                        {question.explanation}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* No answer key is fetched for the question bank, by design. */}
-                  <p className="text-[11px] text-text-secondary">
-                    {t('questionBank.noAnswerKey')}
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {question.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {question.tags.slice(0, 5).map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-text-secondary"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          <div className="rounded-xl bg-surface p-2">
-            <p className="text-[10px] text-text-secondary">{t('questionBank.totalAttemptsLabel')}</p>
-            <p className="mt-0.5 text-[13px] font-bold text-text-primary">
-              {localizeDigits(question.totalAttempts, language)}
-            </p>
-          </div>
-          <div className="rounded-xl bg-surface p-2">
-            <p className="text-[10px] text-text-secondary">{t('questionBank.correctAnswersLabel')}</p>
-            <p className="mt-0.5 text-[13px] font-bold text-text-primary">
-              {localizeDigits(question.correctAttempts, language)}
-            </p>
-          </div>
-          <div className="rounded-xl bg-surface p-2">
-            <p className="text-[10px] text-text-secondary">{t('questionBank.accuracyLabel')}</p>
-            <p className="mt-0.5 text-[13px] font-bold text-text-primary">
-              {localizeDigits(accuracy, language)}%
-            </p>
-          </div>
-          <div className="rounded-xl bg-surface p-2">
-            <p className="text-[10px] text-text-secondary">{t('questionBank.addedOnLabel')}</p>
-            <p className="mt-0.5 truncate text-[13px] font-bold text-text-primary">
-              {addedOn || t('questionBank.unknownValue')}
-            </p>
-          </div>
-        </div>
-
-        {!question.isLocked && (
-          <div className="mt-1">
-            <Button
-              variant="ghost"
-              className="h-10 rounded-xl px-4 text-xs font-bold"
-              aria-expanded={isExpanded}
-              onClick={() => setIsExpanded((current) => !current)}
-            >
-              {isExpanded ? (
-                <ChevronUp className="mr-1.5 h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              {isExpanded ? t('questionBank.hideDetails') : t('questionBank.showDetails')}
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
   );
 }
 
@@ -293,10 +58,16 @@ export default function QuestionBank() {
     error,
     refetch,
     toggleBookmark,
-    isBookmarkUpdating,
+    bookmarkUpdatingId,
+    answerKeys,
+    isAnswersFetching,
   } = useQuestionBank();
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [readingMode, setReadingMode] = useState(false);
+  const [answerState, setAnswerState] = useState<AnswerVisibilityState>(
+    EMPTY_ANSWER_VISIBILITY
+  );
 
   const activeFilterCount = useMemo(() => {
     return [
@@ -332,8 +103,24 @@ export default function QuestionBank() {
 
   const errorKey = error ? describeQuestionBankError(error) : null;
 
+  const toggleReadingMode = () => {
+    const next = !readingMode;
+    setReadingMode(next);
+    if (next) setAnswerState((current) => expandAllAnswers(current));
+  };
+
+  const toggleQuestionAnswer = (questionId: string) => {
+    setAnswerState((current) =>
+      toggleAnswerVisibility(current, questionId, readingMode)
+    );
+  };
+
   return (
-    <div className="min-h-full bg-app px-4 py-4 text-text-primary sm:px-6 lg:px-8">
+    <div
+      className={`min-h-full bg-app px-4 pt-4 text-text-primary sm:px-6 lg:px-8 ${
+        isSubjectSelectionMode ? 'pb-4' : 'pb-16 md:pb-4'
+      }`}
+    >
       <div className="mx-auto max-w-7xl">
         {isSubjectSelectionMode ? (
           <section className="space-y-4">
@@ -371,8 +158,8 @@ export default function QuestionBank() {
             </div>
           </section>
         ) : (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between border-b border-border-color pb-2">
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-2 border-b border-border-color pb-2">
               <Button
                 variant="ghost"
                 onClick={resetFilters}
@@ -381,23 +168,32 @@ export default function QuestionBank() {
                 <ChevronLeft className="mr-1 h-4 w-4" />
                 {t('questionBank.back')}
               </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setIsFilterOpen((current) => !current)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-bold xl:hidden"
+                aria-expanded={isFilterOpen}
+                aria-controls="question-bank-filters"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                {isFilterOpen
+                  ? t('questionBank.closeFilters')
+                  : t('questionBank.openFilters')}
+                {activeFilterCount > 0 && (
+                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/10 px-1 text-[10px] font-bold text-primary">
+                    {localizeDigits(activeFilterCount, language)}
+                  </span>
+                )}
+              </Button>
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
-              <aside className="space-y-4">
-                {!isFilterOpen && (
-                  <div className="xl:hidden">
-                    <Button
-                      onClick={() => setIsFilterOpen(true)}
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl font-bold"
-                    >
-                      <Filter className="h-4 w-4" />
-                      {t('questionBank.openFilters')}
-                    </Button>
-                  </div>
-                )}
-
-                <div className={`${isFilterOpen ? 'block' : 'hidden'} space-y-4 xl:block`}>
+            <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
+              <aside className="space-y-3">
+                <div
+                  id="question-bank-filters"
+                  className={`${isFilterOpen ? 'block' : 'hidden'} xl:block`}
+                >
                   <QuestionFilter
                     filters={filters}
                     chapters={chapters}
@@ -408,88 +204,72 @@ export default function QuestionBank() {
                     onFilterChange={updateFilter}
                     onReset={resetFilters}
                   />
-
-                  <div className="xl:hidden">
-                    <Button
-                      onClick={() => setIsFilterOpen(false)}
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl font-bold"
-                    >
-                      <Filter className="h-4 w-4" />
-                      {t('questionBank.closeFilters')}
-                    </Button>
-                  </div>
                 </div>
               </aside>
 
-              <main className="space-y-4">
-                <Card className="rounded-[20px] border border-card-border bg-card-bg p-3 shadow-sm">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h2 className="text-sm font-bold text-text-primary">
-                        {t('questionBank.results')}
-                      </h2>
-                      <p className="text-[11px] font-medium text-text-secondary">
-                        {t('questionBank.showingCount', {
-                          shown: localizeDigits(questions.length, language),
-                          total: localizeDigits(total, language),
-                        })}
-                        {activeFilterCount > 0
-                          ? ` • ${t('questionBank.filters', {
-                              count: localizeDigits(activeFilterCount, language),
-                            })}`
-                          : ''}
-                      </p>
-                    </div>
+              <main className="min-w-0 space-y-3">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11px] font-medium leading-snug text-text-secondary">
+                  <span className="font-bold text-text-primary">
+                    {t('questionBank.results')}:
+                  </span>
+                  <span>
+                    {t('questionBank.showingCount', {
+                      shown: localizeDigits(questions.length, language),
+                      total: localizeDigits(total, language),
+                    })}
+                    {activeFilterCount > 0
+                      ? ` • ${t('questionBank.filters', {
+                          count: localizeDigits(activeFilterCount, language),
+                        })}`
+                      : ''}
+                  </span>
 
-                    <div className="flex flex-wrap items-center gap-1">
-                      {isFetching && !isFetchingNextPage && (
-                        <span className="text-[11px] font-medium text-text-secondary">
-                          {t('questionBank.loadingMore')}
-                        </span>
-                      )}
-                      {filters.institutionType && (
-                        <InfoBadge>
-                          {t('questionBank.sourceLabel', {
-                            source:
-                              filters.institutionType === 'board'
-                                ? t('questionBank.board')
-                                : filters.institutionType === 'college'
-                                  ? t('questionBank.college')
-                                  : t('questionBank.admission'),
-                          })}
-                        </InfoBadge>
-                      )}
+                  {isFetching && !isFetchingNextPage && (
+                    <span>{t('questionBank.loadingMore')}</span>
+                  )}
 
-                      {filters.institutionEiin && (
-                        <InfoBadge>
-                          {t('questionBank.name')} {institutionName}
-                        </InfoBadge>
-                      )}
+                  {filters.institutionType && (
+                    <InfoBadge>
+                      {t('questionBank.sourceLabel', {
+                        source:
+                          filters.institutionType === 'board'
+                            ? t('questionBank.board')
+                            : filters.institutionType === 'college'
+                              ? t('questionBank.college')
+                              : t('questionBank.admission'),
+                      })}
+                    </InfoBadge>
+                  )}
 
-                      {filters.year && (
-                        <InfoBadge>
-                          {t('questionBank.year')}: {localizeDigits(filters.year, language)}
-                        </InfoBadge>
-                      )}
-                      {filters.bookmarkedOnly && (
-                        <InfoBadge>{t('questionBank.savedFilter')}</InfoBadge>
-                      )}
-                      {filters.mistakesOnly && (
-                        <InfoBadge>{t('questionBank.mistakesFilter')}</InfoBadge>
-                      )}
-                      {filters.premiumOnly && (
-                        <InfoBadge>{t('questionBank.premium')}</InfoBadge>
-                      )}
-                    </div>
-                  </div>
-                </Card>
+                  {filters.institutionEiin && (
+                    <InfoBadge>
+                      {t('questionBank.name')} {institutionName}
+                    </InfoBadge>
+                  )}
+
+                  {filters.year && (
+                    <InfoBadge>
+                      {t('questionBank.year')}:{' '}
+                      {localizeDigits(filters.year, language)}
+                    </InfoBadge>
+                  )}
+                  {filters.bookmarkedOnly && (
+                    <InfoBadge>{t('questionBank.savedFilter')}</InfoBadge>
+                  )}
+                  {filters.mistakesOnly && (
+                    <InfoBadge>{t('questionBank.mistakesFilter')}</InfoBadge>
+                  )}
+                  {filters.premiumOnly && (
+                    <InfoBadge>{t('questionBank.premium')}</InfoBadge>
+                  )}
+                </div>
 
                 {isLoading ? (
-                  <div className="flex min-h-[250px] items-center justify-center rounded-[20px] border border-card-border bg-card-bg">
+                  <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-card-border bg-card-bg">
                     <Loader />
                   </div>
                 ) : errorKey ? (
-                  <Card className="rounded-[20px] border border-border-color bg-card-bg p-6">
+                  <div className="rounded-2xl border border-border-color bg-card-bg p-6">
                     <div className="space-y-3 text-center">
                       <h3 className="text-sm font-bold text-text-primary">
                         {t('questionBank.error')}
@@ -506,7 +286,7 @@ export default function QuestionBank() {
                         {t('questionBank.tryAgain')}
                       </Button>
                     </div>
-                  </Card>
+                  </div>
                 ) : questions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Search className="mb-3 h-10 w-10 text-text-secondary opacity-30" />
@@ -516,16 +296,26 @@ export default function QuestionBank() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {questions.map((question) => (
                       <QuestionCard
                         key={question.id}
                         question={question}
                         language={language}
+                        correctOptionIds={answerKeys.get(question.id) ?? null}
+                        isAnswerVisible={isAnswerVisible(
+                          question.id,
+                          readingMode,
+                          answerState
+                        )}
+                        isAnswerKeyLoading={isAnswersFetching}
+                        isBookmarkUpdating={
+                          bookmarkUpdatingId === question.id
+                        }
+                        onToggleAnswer={toggleQuestionAnswer}
                         onBookmarkToggle={(questionId, isBookmarked) =>
                           toggleBookmark({ questionId, isBookmarked })
                         }
-                        isBookmarkUpdating={isBookmarkUpdating}
                       />
                     ))}
 
@@ -538,7 +328,7 @@ export default function QuestionBank() {
                     )}
 
                     {hasMore && (
-                      <div className="flex justify-center pt-2">
+                      <div className="flex justify-center pt-1">
                         <Button
                           className="h-10 rounded-xl px-5 text-xs font-bold"
                           disabled={isFetchingNextPage}
@@ -557,6 +347,28 @@ export default function QuestionBank() {
           </section>
         )}
       </div>
+
+      {!isSubjectSelectionMode && questions.length > 0 && (
+        <button
+          type="button"
+          className={`fixed bottom-24 right-4 z-40 inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-xs font-bold shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring active:scale-95 motion-reduce:transition-none md:bottom-6 md:right-6 ${
+            readingMode
+              ? 'border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/25 hover:bg-emerald-700'
+              : 'border-card-border bg-card-bg text-text-primary hover:bg-surface'
+          }`}
+          aria-pressed={readingMode}
+          onClick={toggleReadingMode}
+        >
+          {readingMode ? (
+            <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <BookOpen className="h-4 w-4" aria-hidden="true" />
+          )}
+          {readingMode
+            ? t('questionBank.readingModeActive')
+            : t('questionBank.readingMode')}
+        </button>
+      )}
     </div>
   );
 }
