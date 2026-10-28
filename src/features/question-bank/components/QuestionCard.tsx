@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Bookmark,
   BookmarkCheck,
   Check,
+  Eye,
   EyeOff,
+  FileText,
   Lock,
-  Sparkles,
 } from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import {
@@ -28,19 +29,17 @@ import {
   getTopicName,
 } from '../services/questionBankMapper';
 import type { QuestionBankQuestion } from '../types/questionBank';
-import {
-  AI_EXPLANATION_THINK_MS,
-  getAiExplanationAction,
-} from '../utils/aiExplanation';
 
 interface QuestionCardProps {
   question: QuestionBankQuestion;
   language: AppLanguage;
   correctOptionIds: string[] | null;
   isAnswerVisible: boolean;
+  isExplanationVisible: boolean;
   isAnswerKeyLoading?: boolean;
   isBookmarkUpdating: boolean;
   onToggleAnswer: (questionId: string) => void;
+  onToggleExplanation: (questionId: string) => void;
   onBookmarkToggle: (questionId: string, isBookmarked: boolean) => Promise<void>;
 }
 
@@ -62,42 +61,16 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   language,
   correctOptionIds,
   isAnswerVisible,
+  isExplanationVisible,
   isAnswerKeyLoading = false,
   isBookmarkUpdating,
   onToggleAnswer,
+  onToggleExplanation,
   onBookmarkToggle,
 }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [isSavingBookmark, setIsSavingBookmark] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
-  const [hasAiRevealed, setHasAiRevealed] = useState(false);
-  const onToggleAnswerRef = useRef(onToggleAnswer);
-
-  useEffect(() => {
-    onToggleAnswerRef.current = onToggleAnswer;
-  }, [onToggleAnswer]);
-
-  useEffect(() => {
-    if (!isAnswerVisible) setHasAiRevealed(false);
-  }, [isAnswerVisible]);
-
-  useEffect(() => {
-    if (!isThinking) return;
-
-    if (isAnswerVisible) {
-      setIsThinking(false);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setIsThinking(false);
-      setHasAiRevealed(true);
-      onToggleAnswerRef.current(question.id);
-    }, AI_EXPLANATION_THINK_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [isAnswerVisible, isThinking, question.id]);
 
   const questionText = getQuestionText(question, language);
   const explanation = getExplanationText(question, language);
@@ -112,10 +85,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   );
   const hasAnswerKey = correctIds.size > 0;
   const hasExplanation = Boolean(explanation);
-  const explanationId = `question-answer-${question.id}`;
-  const showAnswerPanel =
-    isAnswerVisible &&
-    (hasExplanation || (!hasAnswerKey && !isAnswerKeyLoading));
+  const explanationId = `question-explanation-${question.id}`;
+  const answerUnavailableId = `question-answer-${question.id}`;
+  const showAnswerUnavailable =
+    isAnswerVisible && !hasAnswerKey && !isAnswerKeyLoading;
 
   const breadcrumb = [
     subjectName || t('questionBank.unknownSubject'),
@@ -143,18 +116,6 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     } finally {
       setIsSavingBookmark(false);
     }
-  };
-
-  const handleAnswerAction = () => {
-    const action = getAiExplanationAction({ isThinking, isAnswerVisible });
-
-    if (action === 'ignore') return;
-    if (action === 'hide') {
-      onToggleAnswer(question.id);
-      return;
-    }
-
-    setIsThinking(true);
   };
 
   return (
@@ -303,97 +264,83 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             </ol>
           )}
 
-          {showAnswerPanel && (
+          {showAnswerUnavailable && (
+            <p
+              id={answerUnavailableId}
+              className="mt-3 text-[11px] font-medium text-text-secondary"
+            >
+              {t('questionBank.answerUnavailable')}
+            </p>
+          )}
+
+          {isExplanationVisible && hasExplanation && (
             <div
               id={explanationId}
-              className={`mt-3 space-y-2 ${
-                hasAiRevealed
-                  ? 'animate-in fade-in slide-in-from-top-1 duration-300 motion-reduce:animate-none'
-                  : ''
-              }`}
+              className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-500/30 dark:bg-emerald-500/10"
             >
-              {!hasAnswerKey && !isAnswerKeyLoading && (
-                <p className="text-[11px] font-medium text-text-secondary">
-                  {t('questionBank.answerUnavailable')}
-                </p>
-              )}
-
-              {hasExplanation && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                    {t('questionBank.explanation')}
-                  </p>
-                  <div className="mt-1 text-text-primary">
-                    <MathDisplay
-                      content={explanation}
-                      className="whitespace-pre-line"
-                    />
-                  </div>
-                </div>
-              )}
+              <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                {t('questionBank.explanation')}
+              </p>
+              <div className="mt-1 text-text-primary">
+                <MathDisplay
+                  content={explanation}
+                  className="whitespace-pre-line"
+                />
+              </div>
             </div>
           )}
 
-          <div className="mt-3 border-t border-border-color pt-2.5">
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border-color pt-2.5">
             <button
               type="button"
-              className={`group inline-flex min-h-9 max-w-full items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-wait motion-reduce:transition-none ${
+              className={`group inline-flex min-h-9 max-w-full items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none ${
                 isAnswerVisible
                   ? 'border-transparent text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10'
-                  : isThinking
-                    ? 'border-accent/30 bg-accent/10 text-accent dark:text-indigo-300'
-                    : 'border-accent/25 bg-gradient-to-r from-primary/10 to-accent/10 text-accent hover:border-accent/40 hover:from-primary/15 hover:to-accent/15 dark:text-indigo-300'
+                  : 'border-accent/25 bg-gradient-to-r from-primary/10 to-accent/10 text-accent hover:border-accent/40 hover:from-primary/15 hover:to-accent/15 dark:text-indigo-300'
               }`}
-              disabled={isThinking}
               aria-expanded={isAnswerVisible}
-              aria-controls={showAnswerPanel ? explanationId : undefined}
-              aria-busy={isThinking}
-              onClick={handleAnswerAction}
+              aria-controls={
+                showAnswerUnavailable ? answerUnavailableId : undefined
+              }
+              onClick={() => onToggleAnswer(question.id)}
             >
-              {isThinking ? (
-                <>
-                  <Sparkles
-                    className="h-4 w-4 shrink-0 animate-pulse motion-reduce:animate-none"
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">
-                    {t('questionBank.aiExplanationThinking')}
-                  </span>
-                  <span
-                    className="ml-0.5 inline-flex shrink-0 items-center gap-0.5"
-                    aria-hidden="true"
-                  >
-                    {[0, 1, 2].map((index) => (
-                      <span
-                        key={index}
-                        className="h-1 w-1 animate-bounce rounded-full bg-current motion-reduce:animate-none"
-                        style={{ animationDelay: `${index * 120}ms` }}
-                      />
-                    ))}
-                  </span>
-                </>
-              ) : isAnswerVisible ? (
-                <>
-                  <EyeOff className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">
-                    {t('questionBank.hideAnswerExplanation')}
-                  </span>
-                </>
+              {isAnswerVisible ? (
+                <EyeOff className="h-4 w-4 shrink-0" aria-hidden="true" />
               ) : (
-                <>
-                  <Sparkles
-                    className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:rotate-12 motion-reduce:transition-none"
-                    aria-hidden="true"
-                  />
-                  <span className="truncate">
-                    {t('questionBank.showAnswerExplanation')}
-                  </span>
-                </>
+                <Eye
+                  className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none"
+                  aria-hidden="true"
+                />
               )}
+              <span className="truncate">
+                {isAnswerVisible
+                  ? t('questionBank.hideAnswer')
+                  : t('questionBank.showAnswer')}
+              </span>
             </button>
-            <span className="sr-only" role="status" aria-live="polite">
-              {isThinking ? t('questionBank.aiExplanationThinking') : ''}
-            </span>
+
+            {hasExplanation && (
+              <button
+                type="button"
+                className={`inline-flex min-h-9 max-w-full items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none ${
+                  isExplanationVisible
+                    ? 'border-transparent text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10'
+                    : 'border-border-color bg-surface/60 text-text-secondary hover:bg-surface hover:text-text-primary'
+                }`}
+                aria-expanded={isExplanationVisible}
+                aria-controls={
+                  isExplanationVisible ? explanationId : undefined
+                }
+                onClick={() => onToggleExplanation(question.id)}
+              >
+                <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">
+                  {isExplanationVisible
+                    ? t('questionBank.hideAnswerExplanation')
+                    : t('questionBank.showAnswerExplanation')}
+                </span>
+              </button>
+            )}
           </div>
         </>
       )}
