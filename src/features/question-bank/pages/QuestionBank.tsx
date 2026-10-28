@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useReducer, useState } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { localizeDigits } from '@/shared/i18n/messages';
 import {
@@ -20,18 +20,11 @@ import { describeQuestionBankError } from '../services/questionBankErrors';
 import { localizedText } from '../services/questionBankMapper';
 import { LEGACY_ROW_CAP } from '../services/questionBankService';
 import {
-  EMPTY_ANSWER_VISIBILITY,
-  expandAllAnswers,
-  isAnswerVisible,
-  toggleAnswerVisibility,
-  type AnswerVisibilityState,
+  INITIAL_REVEAL_STATE,
+  isExplanationExpanded,
+  revealReducer,
 } from '../utils/answerVisibility';
-import {
-  EMPTY_EXPLANATION_VISIBILITY,
-  isExplanationVisible,
-  toggleExplanationVisibility,
-  type ExplanationVisibilityState,
-} from '../utils/explanationVisibility';
+import type { QuestionBankFilterState } from '../types/questionBank';
 
 function InfoBadge(props: { children: React.ReactNode }) {
   return (
@@ -70,12 +63,11 @@ export default function QuestionBank() {
   } = useQuestionBank();
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [readingMode, setReadingMode] = useState(false);
-  const [answerState, setAnswerState] = useState<AnswerVisibilityState>(
-    EMPTY_ANSWER_VISIBILITY
+  const [revealState, dispatchReveal] = useReducer(
+    revealReducer,
+    INITIAL_REVEAL_STATE
   );
-  const [explanationState, setExplanationState] =
-    useState<ExplanationVisibilityState>(EMPTY_EXPLANATION_VISIBILITY);
+  const answersRevealed = revealState.answersRevealed;
 
   const activeFilterCount = useMemo(() => {
     return [
@@ -111,22 +103,34 @@ export default function QuestionBank() {
 
   const errorKey = error ? describeQuestionBankError(error) : null;
 
-  const toggleReadingMode = () => {
-    const next = !readingMode;
-    setReadingMode(next);
-    if (next) setAnswerState((current) => expandAllAnswers(current));
+  const resetRevealState = () => {
+    dispatchReveal({ type: 'reset' });
   };
 
-  const toggleQuestionAnswer = (questionId: string) => {
-    setAnswerState((current) =>
-      toggleAnswerVisibility(current, questionId, readingMode)
-    );
+  const handleFilterChange = <K extends keyof QuestionBankFilterState>(
+    key: K,
+    value: QuestionBankFilterState[K]
+  ) => {
+    resetRevealState();
+    updateFilter(key, value);
+  };
+
+  const handleResetFilters = () => {
+    resetRevealState();
+    resetFilters();
+  };
+
+  const handleRefetch = () => {
+    resetRevealState();
+    void refetch();
+  };
+
+  const toggleAnswersRevealed = () => {
+    dispatchReveal({ type: 'toggle-answers' });
   };
 
   const toggleQuestionExplanation = (questionId: string) => {
-    setExplanationState((current) =>
-      toggleExplanationVisibility(current, questionId)
-    );
+    dispatchReveal({ type: 'toggle-explanation', questionId });
   };
 
   return (
@@ -153,7 +157,7 @@ export default function QuestionBank() {
               {subjects.map((subject) => (
                 <Card
                   key={subject.id}
-                  onClick={() => updateFilter('subjectId', subject.id)}
+                  onClick={() => handleFilterChange('subjectId', subject.id)}
                   className="group cursor-pointer rounded-[20px] border border-card-border bg-card-bg p-4 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary hover:shadow-md"
                 >
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -176,7 +180,7 @@ export default function QuestionBank() {
             <div className="flex items-center justify-between gap-2 border-b border-border-color pb-2">
               <Button
                 variant="ghost"
-                onClick={resetFilters}
+                onClick={handleResetFilters}
                 className="h-8 rounded-full px-2 text-xs font-bold text-text-secondary hover:text-text-primary"
               >
                 <ChevronLeft className="mr-1 h-4 w-4" />
@@ -215,8 +219,8 @@ export default function QuestionBank() {
                     boards={boards}
                     colleges={colleges}
                     admissions={admissions}
-                    onFilterChange={updateFilter}
-                    onReset={resetFilters}
+                    onFilterChange={handleFilterChange}
+                    onReset={handleResetFilters}
                   />
                 </div>
               </aside>
@@ -294,7 +298,7 @@ export default function QuestionBank() {
                       <Button
                         variant="ghost"
                         className="mx-auto h-9 rounded-xl px-3 text-xs font-bold"
-                        onClick={() => void refetch()}
+                        onClick={handleRefetch}
                       >
                         <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                         {t('questionBank.tryAgain')}
@@ -317,20 +321,15 @@ export default function QuestionBank() {
                         question={question}
                         language={language}
                         correctOptionIds={answerKeys.get(question.id) ?? null}
-                        isAnswerVisible={isAnswerVisible(
+                        answersRevealed={answersRevealed}
+                        isExplanationVisible={isExplanationExpanded(
                           question.id,
-                          readingMode,
-                          answerState
-                        )}
-                        isExplanationVisible={isExplanationVisible(
-                          question.id,
-                          explanationState
+                          revealState
                         )}
                         isAnswerKeyLoading={isAnswersFetching}
                         isBookmarkUpdating={
                           bookmarkUpdatingId === question.id
                         }
-                        onToggleAnswer={toggleQuestionAnswer}
                         onToggleExplanation={toggleQuestionExplanation}
                         onBookmarkToggle={(questionId, isBookmarked) =>
                           toggleBookmark({ questionId, isBookmarked })
@@ -371,19 +370,19 @@ export default function QuestionBank() {
         <button
           type="button"
           className={`fixed bottom-24 right-4 z-40 inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-xs font-bold shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring active:scale-95 motion-reduce:transition-none md:bottom-6 md:right-6 ${
-            readingMode
+            answersRevealed
               ? 'border-emerald-600 bg-emerald-600 text-white shadow-emerald-600/25 hover:bg-emerald-700'
               : 'border-card-border bg-card-bg text-text-primary hover:bg-surface'
           }`}
-          aria-pressed={readingMode}
-          onClick={toggleReadingMode}
+          aria-pressed={answersRevealed}
+          onClick={toggleAnswersRevealed}
         >
-          {readingMode ? (
+          {answersRevealed ? (
             <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
           ) : (
             <BookOpen className="h-4 w-4" aria-hidden="true" />
           )}
-          {readingMode
+          {answersRevealed
             ? t('questionBank.readingModeActive')
             : t('questionBank.readingMode')}
         </button>
