@@ -1,7 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Bookmark, BookmarkCheck, Check, FileText, Lock } from 'lucide-react';
+import {
+  Bookmark,
+  BookmarkCheck,
+  Check,
+  ChevronDown,
+  FileText,
+  Lock,
+} from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import {
   localizeDigits,
@@ -274,8 +281,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               }`}
             >
               <div className="overflow-hidden">
-                <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                <div className="mt-3 rounded-xl border border-accent/20 border-l-[3px] border-l-accent bg-accent/10 px-3.5 py-3 dark:border-accent/30 dark:border-l-accent dark:bg-accent/15">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-accent">
                     {t('questionBank.explanation')}
                   </p>
                   <div className="mt-1 text-text-primary">
@@ -293,10 +300,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border-color pt-2.5">
               <button
                 type="button"
-                className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none ${
+                className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none ${
                   isExplanationVisible
-                    ? 'border-transparent text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10'
-                    : 'border-border-color bg-surface/60 text-text-secondary hover:bg-surface hover:text-text-primary'
+                    ? 'border-accent/40 bg-accent/[0.18] text-accent hover:bg-accent/20 active:bg-accent/25 dark:bg-accent/25 dark:hover:bg-accent/30'
+                    : 'border-accent/30 bg-accent/10 text-accent hover:bg-accent/15 active:bg-accent/20 dark:bg-accent/15 dark:hover:bg-accent/20'
                 }`}
                 aria-expanded={isExplanationVisible}
                 aria-controls={explanationId}
@@ -308,6 +315,12 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                     ? t('questionBank.hideAnswerExplanation')
                     : t('questionBank.showAnswerExplanation')}
                 </span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
+                    isExplanationVisible ? 'rotate-180' : ''
+                  }`}
+                  aria-hidden="true"
+                />
               </button>
             </div>
           )}
