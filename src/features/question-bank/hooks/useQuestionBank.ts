@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -16,10 +17,18 @@ import {
   dedupeQuestions,
   buildStats,
 } from '../services/questionBankMapper';
+import type { QuestionBankFilterState } from '../types/questionBank';
 import {
-  DEFAULT_QUESTION_BANK_FILTERS,
-  type QuestionBankFilterState,
-} from '../types/questionBank';
+  applyQuestionBankFilterChange,
+  buildQuestionBankSearchParams,
+  filtersFromSearchParams,
+  hasQuestionBankView,
+} from '../utils/questionBankUrlState';
+import {
+  questionBankSessionKey,
+  readQuestionBankSession,
+  writeQuestionBankSession,
+} from '../utils/questionBankSession';
 
 /** Delay before a typed search term is sent to the database. */
 export const SEARCH_DEBOUNCE_MS = 350;
@@ -44,9 +53,32 @@ function useDebouncedValue<T>(value: T, delay: number): T {
   return debounced;
 }
 
+const toQuestionBankSearch = (filters: QuestionBankFilterState): string => {
+  const search = buildQuestionBankSearchParams(filters).toString();
+  return search ? `?${search}` : '';
+};
+
 export function useQuestionBank() {
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<QuestionBankFilterState>(DEFAULT_QUESTION_BANK_FILTERS);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  /**
+   * The URL is the source of truth for the open view and its filters, so a
+   * refresh and a shared link always land on the same question list.
+   */
+  const filters = useMemo(
+    () => filtersFromSearchParams(searchParams),
+    [searchParams]
+  );
+
+  const sessionKey = questionBankSessionKey(location.pathname, location.search);
+  const storedSession = useMemo(
+    () => readQuestionBankSession(sessionKey),
+    [sessionKey]
+  );
+  const targetPageCount = Math.max(1, storedSession?.pageCount ?? 1);
 
   const filtersQuery = useQuery({
     queryKey: ['question-bank', 'filters'],
@@ -65,13 +97,17 @@ export function useQuestionBank() {
     [filters, debouncedSearch]
   );
 
-  const shouldFetchQuestions = Boolean(
-    effectiveFilters.subjectId ||
-      effectiveFilters.search ||
-      effectiveFilters.bookmarkedOnly ||
-      effectiveFilters.mistakesOnly ||
-      effectiveFilters.premiumOnly
-  );
+  const hasView = hasQuestionBankView(filters);
+  const isFiltersLoaded = Boolean(filtersQuery.data);
+  const isInvalidSubject =
+    isFiltersLoaded &&
+    Boolean(filters.subjectId) &&
+    !filtersQuery.data?.subjects.some(
+      (subject) => subject.id === filters.subjectId
+    );
+
+  // An unknown subject in a copied URL must not trigger a doomed request.
+  const shouldFetchQuestions = hasView && !isInvalidSubject;
 
   const questionsQuery = useInfiniteQuery({
     queryKey: ['question-bank', 'questions', effectiveFilters],
@@ -84,6 +120,36 @@ export function useQuestionBank() {
     staleTime: 1000 * 60 * 2,
     enabled: shouldFetchQuestions,
   });
+
+  const loadedPageCount = questionsQuery.data?.pages.length ?? 0;
+
+  // Restore the "load more" depth recorded for this exact URL. Pages are
+  // fetched sequentially after the first one resolves, so the first paint still
+  // happens immediately.
+  useEffect(() => {
+    if (!shouldFetchQuestions) return;
+    if (loadedPageCount < 1 || loadedPageCount >= targetPageCount) return;
+    if (!questionsQuery.hasNextPage) return;
+    if (questionsQuery.isFetching || questionsQuery.isFetchingNextPage) return;
+    // A failed page must not be retried in a tight loop.
+    if (questionsQuery.isFetchNextPageError) return;
+
+    void questionsQuery.fetchNextPage();
+  }, [
+    shouldFetchQuestions,
+    loadedPageCount,
+    targetPageCount,
+    questionsQuery.hasNextPage,
+    questionsQuery.isFetching,
+    questionsQuery.isFetchingNextPage,
+    questionsQuery.isFetchNextPageError,
+    questionsQuery.fetchNextPage,
+  ]);
+
+  useEffect(() => {
+    if (!shouldFetchQuestions || loadedPageCount < 1) return;
+    writeQuestionBankSession(sessionKey, { pageCount: loadedPageCount });
+  }, [shouldFetchQuestions, loadedPageCount, sessionKey]);
 
   const toggleBookmarkMutation = useMutation({
     mutationFn: ({ questionId, isBookmarked }: { questionId: string; isBookmarked: boolean }) =>
@@ -166,46 +232,50 @@ export function useQuestionBank() {
     [answersQuery.data]
   );
 
-  const updateFilter = <K extends keyof QuestionBankFilterState>(
-    key: K,
-    value: QuestionBankFilterState[K]
-  ) => {
-    setFilters((prev) => {
-      if (key === 'subjectId') {
-        return {
-          ...prev,
-          subjectId: String(value),
-          chapterId: '',
-          topicId: '',
-        };
-      }
+  const updateFilter = useCallback(
+    <K extends keyof QuestionBankFilterState>(
+      key: K,
+      value: QuestionBankFilterState[K]
+    ) => {
+      const next = applyQuestionBankFilterChange(filters, key, value);
+      navigate(
+        {
+          pathname: location.pathname,
+          search: toQuestionBankSearch(next),
+        },
+        // Filter tweaks replace the current entry so Back never walks through
+        // every keystroke or dropdown change. Keeping the location state lets
+        // the in-app Back button still recognise the subject list behind it.
+        { replace: true, state: location.state }
+      );
+    },
+    [filters, location.pathname, location.state, navigate]
+  );
 
-      if (key === 'chapterId') {
-        return {
-          ...prev,
-          chapterId: String(value),
-          topicId: '',
-        };
-      }
+  const resetFilters = useCallback(() => {
+    navigate(
+      { pathname: location.pathname, search: '' },
+      { replace: true, state: location.state }
+    );
+  }, [location.pathname, location.state, navigate]);
 
-      if (key === 'institutionType') {
-        return {
-          ...prev,
-          institutionType: String(value),
-          institutionEiin: '',
-        };
-      }
-
-      return {
-        ...prev,
-        [key]: value,
-      };
-    });
-  };
-
-  const resetFilters = () => {
-    setFilters(DEFAULT_QUESTION_BANK_FILTERS);
-  };
+  /**
+   * Opening a subject is a navigation, not a filter tweak: it must create a
+   * history entry so both the in-app and browser Back buttons return here.
+   */
+  const openSubject = useCallback(
+    (subjectId: string) => {
+      const next = applyQuestionBankFilterChange(filters, 'subjectId', subjectId);
+      navigate(
+        {
+          pathname: location.pathname,
+          search: toQuestionBankSearch(next),
+        },
+        { state: { fromQuestionBankSubjects: true } }
+      );
+    },
+    [filters, location.pathname, navigate]
+  );
 
   const loadMore = () => {
     if (!questionsQuery.hasNextPage || questionsQuery.isFetchingNextPage) return;
@@ -214,9 +284,17 @@ export function useQuestionBank() {
 
   return {
     filters,
-    setFilters,
     updateFilter,
     resetFilters,
+    openSubject,
+    hasView,
+    isInvalidSubject,
+    sessionKey,
+    isPaginationRestored:
+      !shouldFetchQuestions ||
+      loadedPageCount >= targetPageCount ||
+      !questionsQuery.hasNextPage ||
+      questionsQuery.isFetchNextPageError,
     subjects: derived.subjects,
     chapters: derived.chapters,
     topics: derived.topics,

@@ -1,4 +1,5 @@
-import React, { useMemo, useReducer, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { localizeDigits } from '@/shared/i18n/messages';
 import {
@@ -25,6 +26,20 @@ import {
   revealReducer,
 } from '../utils/answerVisibility';
 import type { QuestionBankFilterState } from '../types/questionBank';
+import {
+  readQuestionBankSession,
+  writeQuestionBankSession,
+} from '../utils/questionBankSession';
+
+function getScrollParent(element: HTMLElement | null): HTMLElement | null {
+  let node = element?.parentElement ?? null;
+  while (node) {
+    const overflowY = window.getComputedStyle(node).overflowY;
+    if (overflowY === 'auto' || overflowY === 'scroll') return node;
+    node = node.parentElement;
+  }
+  return null;
+}
 
 function InfoBadge(props: { children: React.ReactNode }) {
   return (
@@ -36,10 +51,17 @@ function InfoBadge(props: { children: React.ReactNode }) {
 
 export default function QuestionBank() {
   const { t, language } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
   const {
     filters,
     updateFilter,
     resetFilters,
+    openSubject,
+    hasView,
+    isInvalidSubject,
+    sessionKey,
+    isPaginationRestored,
     subjects,
     chapters,
     topics,
@@ -62,7 +84,10 @@ export default function QuestionBank() {
     isAnswersFetching,
   } = useQuestionBank();
 
+  const pageRef = useRef<HTMLDivElement>(null);
+  const restoredScrollKeyRef = useRef('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showInvalidSubjectNotice, setShowInvalidSubjectNotice] = useState(false);
   const [revealState, dispatchReveal] = useReducer(
     revealReducer,
     INITIAL_REVEAL_STATE
@@ -84,13 +109,8 @@ export default function QuestionBank() {
     ].filter(Boolean).length;
   }, [filters]);
 
-  const isSubjectSelectionMode = !(
-    filters.subjectId ||
-    filters.search ||
-    filters.bookmarkedOnly ||
-    filters.mistakesOnly ||
-    filters.premiumOnly
-  );
+  // The URL decides the view; an unknown subject degrades to the subject list.
+  const isSubjectSelectionMode = !hasView || isInvalidSubject;
 
   const institutionName = useMemo(() => {
     if (!filters.institutionEiin) return '';
@@ -105,6 +125,78 @@ export default function QuestionBank() {
 
   const resetRevealState = () => {
     dispatchReveal({ type: 'reset' });
+  };
+
+  // A different subject (or returning to the list) starts with answers hidden.
+  useEffect(() => {
+    dispatchReveal({ type: 'reset' });
+  }, [filters.subjectId]);
+
+  // An invalid subject in a copied URL falls back to the subject list instead
+  // of an empty or crashing question view.
+  useEffect(() => {
+    if (!isInvalidSubject) return;
+    setShowInvalidSubjectNotice(true);
+    dispatchReveal({ type: 'reset' });
+    resetFilters();
+  }, [isInvalidSubject, resetFilters]);
+
+  // Restore scroll only after pagination has been rebuilt, otherwise the list
+  // is still too short to scroll to the saved offset.
+  useEffect(() => {
+    if (isSubjectSelectionMode || !isPaginationRestored || isLoading) return;
+    if (restoredScrollKeyRef.current === sessionKey) return;
+
+    const stored = readQuestionBankSession(sessionKey);
+
+    const frame = window.requestAnimationFrame(() => {
+      restoredScrollKeyRef.current = sessionKey;
+      const container = getScrollParent(pageRef.current);
+      container?.scrollTo({ top: stored?.scrollY ?? 0 });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isSubjectSelectionMode, isPaginationRestored, isLoading, sessionKey]);
+
+  // Scroll position is tiny and URL-keyed; answers/explanations stay in memory
+  // only, so a refresh always reveals a clean list.
+  useEffect(() => {
+    if (isSubjectSelectionMode) return;
+    const container = getScrollParent(pageRef.current);
+    if (!container) return;
+
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        writeQuestionBankSession(sessionKey, { scrollY: container.scrollTop });
+      });
+    };
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [isSubjectSelectionMode, sessionKey]);
+
+  const handleOpenSubject = (subjectId: string) => {
+    resetRevealState();
+    setShowInvalidSubjectNotice(false);
+    openSubject(subjectId);
+  };
+
+  const handleBack = () => {
+    resetRevealState();
+    const fromSubjects = Boolean(
+      (location.state as { fromQuestionBankSubjects?: boolean } | null)
+        ?.fromQuestionBankSubjects
+    );
+    if (fromSubjects) {
+      navigate(-1);
+      return;
+    }
+    navigate('/bank');
   };
 
   const handleFilterChange = <K extends keyof QuestionBankFilterState>(
@@ -135,6 +227,7 @@ export default function QuestionBank() {
 
   return (
     <div
+      ref={pageRef}
       className={`min-h-full bg-app px-4 pt-4 text-text-primary sm:px-6 lg:px-8 ${
         isSubjectSelectionMode ? 'pb-4' : 'pb-16 md:pb-4'
       }`}
@@ -142,6 +235,15 @@ export default function QuestionBank() {
       <div className="mx-auto max-w-7xl">
         {isSubjectSelectionMode ? (
           <section className="space-y-4">
+            {(showInvalidSubjectNotice || isInvalidSubject) && (
+              <div
+                role="status"
+                className="rounded-2xl border border-border-color bg-surface px-3 py-2 text-[11px] font-medium text-text-secondary"
+              >
+                {t('questionBank.invalidSubject')}
+              </div>
+            )}
+
             <div className="flex items-center justify-between border-b border-border-color pb-2">
               <h2 className="text-lg font-bold text-text-primary">
                 {t('questionBank.selectSubject')}
@@ -157,7 +259,7 @@ export default function QuestionBank() {
               {subjects.map((subject) => (
                 <Card
                   key={subject.id}
-                  onClick={() => handleFilterChange('subjectId', subject.id)}
+                  onClick={() => handleOpenSubject(subject.id)}
                   className="group cursor-pointer rounded-[20px] border border-card-border bg-card-bg p-4 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary hover:shadow-md"
                 >
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -180,7 +282,7 @@ export default function QuestionBank() {
             <div className="flex items-center justify-between gap-2 border-b border-border-color pb-2">
               <Button
                 variant="ghost"
-                onClick={handleResetFilters}
+                onClick={handleBack}
                 className="h-8 rounded-full px-2 text-xs font-bold text-text-secondary hover:text-text-primary"
               >
                 <ChevronLeft className="mr-1 h-4 w-4" />
