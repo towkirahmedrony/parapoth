@@ -1,49 +1,53 @@
-export interface AnswerVisibilityState {
-  revealed: ReadonlySet<string>;
-  collapsed: ReadonlySet<string>;
+import {
+  EMPTY_EXPLANATION_VISIBILITY,
+  toggleExplanationVisibility,
+  type ExplanationVisibilityState,
+} from './explanationVisibility';
+
+export interface QuestionBankRevealState {
+  answersRevealed: boolean;
+  expandedExplanationIds: ExplanationVisibilityState;
 }
 
-export const EMPTY_ANSWER_VISIBILITY: AnswerVisibilityState = {
-  revealed: new Set(),
-  collapsed: new Set(),
+export const INITIAL_REVEAL_STATE: QuestionBankRevealState = {
+  answersRevealed: false,
+  expandedExplanationIds: EMPTY_EXPLANATION_VISIBILITY,
 };
 
-/**
- * Practice mode reveals only the questions the student explicitly opened.
- * Reading mode starts with every visible question expanded; the student can
- * still collapse individual cards without leaving the mode.
- */
-export function isAnswerVisible(
-  questionId: string,
-  readingMode: boolean,
-  state: AnswerVisibilityState
-): boolean {
-  return readingMode
-    ? !state.collapsed.has(questionId)
-    : state.revealed.has(questionId);
-}
+export type QuestionBankRevealAction =
+  | { type: 'toggle-answers' }
+  | { type: 'toggle-explanation'; questionId: string }
+  | { type: 'reset' };
 
-export function toggleAnswerVisibility(
-  state: AnswerVisibilityState,
-  questionId: string,
-  readingMode: boolean
-): AnswerVisibilityState {
-  if (readingMode) {
-    const collapsed = new Set(state.collapsed);
-    if (collapsed.has(questionId)) collapsed.delete(questionId);
-    else collapsed.add(questionId);
-    return { ...state, collapsed };
+export function revealReducer(
+  state: QuestionBankRevealState,
+  action: QuestionBankRevealAction
+): QuestionBankRevealState {
+  switch (action.type) {
+    case 'toggle-answers':
+      return {
+        answersRevealed: !state.answersRevealed,
+        expandedExplanationIds: EMPTY_EXPLANATION_VISIBILITY,
+      };
+    case 'toggle-explanation':
+      if (!state.answersRevealed) return state;
+      return {
+        ...state,
+        expandedExplanationIds: toggleExplanationVisibility(
+          state.expandedExplanationIds,
+          action.questionId
+        ),
+      };
+    case 'reset':
+      return INITIAL_REVEAL_STATE;
+    default:
+      return state;
   }
-
-  const revealed = new Set(state.revealed);
-  if (revealed.has(questionId)) revealed.delete(questionId);
-  else revealed.add(questionId);
-  return { ...state, revealed };
 }
 
-/** Entering reading mode re-expands cards collapsed in a previous session. */
-export function expandAllAnswers(
-  state: AnswerVisibilityState
-): AnswerVisibilityState {
-  return { ...state, collapsed: new Set() };
+export function isExplanationExpanded(
+  questionId: string,
+  state: QuestionBankRevealState
+): boolean {
+  return state.expandedExplanationIds.has(questionId);
 }

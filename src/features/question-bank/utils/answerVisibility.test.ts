@@ -1,59 +1,73 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  EMPTY_ANSWER_VISIBILITY,
-  expandAllAnswers,
-  isAnswerVisible,
-  toggleAnswerVisibility,
-  type AnswerVisibilityState,
+  INITIAL_REVEAL_STATE,
+  isExplanationExpanded,
+  revealReducer,
+  type QuestionBankRevealState,
 } from './answerVisibility';
 
-const state = (overrides: Partial<AnswerVisibilityState> = {}): AnswerVisibilityState => ({
-  revealed: overrides.revealed ?? new Set(),
-  collapsed: overrides.collapsed ?? new Set(),
+const revealed = (): QuestionBankRevealState =>
+  revealReducer(INITIAL_REVEAL_STATE, { type: 'toggle-answers' });
+
+test('answers and explanations start hidden', () => {
+  assert.equal(INITIAL_REVEAL_STATE.answersRevealed, false);
+  assert.equal(isExplanationExpanded('q1', INITIAL_REVEAL_STATE), false);
 });
 
-test('practice mode reveals only the questions the student opens', () => {
-  let current = state();
+test('the floating toggle reveals all answers without opening explanations', () => {
+  const current = revealed();
 
-  assert.equal(isAnswerVisible('q1', false, current), false);
-  current = toggleAnswerVisibility(current, 'q1', false);
-  assert.equal(isAnswerVisible('q1', false, current), true);
-  assert.equal(isAnswerVisible('q2', false, current), false);
-
-  current = toggleAnswerVisibility(current, 'q1', false);
-  assert.equal(isAnswerVisible('q1', false, current), false);
+  assert.equal(current.answersRevealed, true);
+  assert.equal(isExplanationExpanded('q1', current), false);
+  assert.equal(isExplanationExpanded('q2', current), false);
 });
 
-test('reading mode reveals every question unless it is collapsed', () => {
-  let current = state();
+test('explanations toggle independently while answers are revealed', () => {
+  let current = revealed();
 
-  assert.equal(isAnswerVisible('q1', true, current), true);
-  current = toggleAnswerVisibility(current, 'q1', true);
-  assert.equal(isAnswerVisible('q1', true, current), false);
-  assert.equal(isAnswerVisible('q2', true, current), true);
+  current = revealReducer(current, { type: 'toggle-explanation', questionId: 'q1' });
+  assert.equal(isExplanationExpanded('q1', current), true);
+  assert.equal(isExplanationExpanded('q2', current), false);
 
-  current = toggleAnswerVisibility(current, 'q1', true);
-  assert.equal(isAnswerVisible('q1', true, current), true);
+  current = revealReducer(current, { type: 'toggle-explanation', questionId: 'q1' });
+  assert.equal(isExplanationExpanded('q1', current), false);
 });
 
-test('turning reading mode on expands cards collapsed earlier', () => {
-  const collapsed = state({ collapsed: new Set(['q1', 'q2']) });
-  const expanded = expandAllAnswers(collapsed);
+test('explanations cannot open while answers are hidden', () => {
+  const current = revealReducer(INITIAL_REVEAL_STATE, {
+    type: 'toggle-explanation',
+    questionId: 'q1',
+  });
 
-  assert.equal(isAnswerVisible('q1', true, expanded), true);
-  assert.equal(isAnswerVisible('q2', true, expanded), true);
-  assert.equal(collapsed.collapsed.size, 2, 'the previous state is not mutated');
+  assert.equal(current, INITIAL_REVEAL_STATE);
+  assert.equal(isExplanationExpanded('q1', current), false);
 });
 
-test('individual reveals survive a reading-mode session', () => {
-  let current = toggleAnswerVisibility(EMPTY_ANSWER_VISIBILITY, 'q1', false);
-  current = expandAllAnswers(current);
+test('hiding answers collapses every explanation', () => {
+  let current = revealed();
+  current = revealReducer(current, { type: 'toggle-explanation', questionId: 'q1' });
+  current = revealReducer(current, { type: 'toggle-explanation', questionId: 'q2' });
+  current = revealReducer(current, { type: 'toggle-answers' });
 
-  assert.equal(isAnswerVisible('q1', true, current), true);
-  assert.equal(isAnswerVisible('q2', true, current), true);
-  assert.equal(isAnswerVisible('q1', false, current), true);
-  assert.equal(isAnswerVisible('q2', false, current), false);
+  assert.equal(current.answersRevealed, false);
+  assert.equal(isExplanationExpanded('q1', current), false);
+  assert.equal(isExplanationExpanded('q2', current), false);
+});
 
-  assert.equal(EMPTY_ANSWER_VISIBILITY.revealed.size, 0, 'initial state is not mutated');
+test('new questions follow the answer state but stay collapsed', () => {
+  const current = revealed();
+
+  assert.equal(current.answersRevealed, true);
+  assert.equal(isExplanationExpanded('new-question', current), false);
+});
+
+test('reset restores the clean initial state without mutating it', () => {
+  let current = revealed();
+  current = revealReducer(current, { type: 'toggle-explanation', questionId: 'q1' });
+  current = revealReducer(current, { type: 'reset' });
+
+  assert.equal(current.answersRevealed, false);
+  assert.equal(isExplanationExpanded('q1', current), false);
+  assert.equal(INITIAL_REVEAL_STATE.expandedExplanationIds.size, 0);
 });

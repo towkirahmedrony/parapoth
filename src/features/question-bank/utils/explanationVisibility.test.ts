@@ -1,11 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  EMPTY_ANSWER_VISIBILITY,
-  isAnswerVisible,
-  toggleAnswerVisibility,
-} from './answerVisibility';
-import {
   EMPTY_EXPLANATION_VISIBILITY,
   isExplanationVisible,
   toggleExplanationVisibility,
@@ -39,17 +34,4 @@ test('same question id keeps its state when the list changes', () => {
 
   assert.equal(isExplanationVisible('stable-id', current), true);
   assert.equal(isExplanationVisible('other-id', current), false);
-});
-
-test('answer and explanation visibility stay independent', () => {
-  const explanationOnly = toggleExplanationVisibility(
-    EMPTY_EXPLANATION_VISIBILITY,
-    'q1'
-  );
-  assert.equal(isExplanationVisible('q1', explanationOnly), true);
-  assert.equal(isAnswerVisible('q1', false, EMPTY_ANSWER_VISIBILITY), false);
-
-  const answerOnly = toggleAnswerVisibility(EMPTY_ANSWER_VISIBILITY, 'q2', false);
-  assert.equal(isAnswerVisible('q2', false, answerOnly), true);
-  assert.equal(isExplanationVisible('q2', EMPTY_EXPLANATION_VISIBILITY), false);
 });

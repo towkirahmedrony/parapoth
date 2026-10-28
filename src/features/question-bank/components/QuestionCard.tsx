@@ -1,15 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import {
-  Bookmark,
-  BookmarkCheck,
-  Check,
-  Eye,
-  EyeOff,
-  FileText,
-  Lock,
-} from 'lucide-react';
+import { Bookmark, BookmarkCheck, Check, FileText, Lock } from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import {
   localizeDigits,
@@ -34,11 +26,10 @@ interface QuestionCardProps {
   question: QuestionBankQuestion;
   language: AppLanguage;
   correctOptionIds: string[] | null;
-  isAnswerVisible: boolean;
+  answersRevealed: boolean;
   isExplanationVisible: boolean;
   isAnswerKeyLoading?: boolean;
   isBookmarkUpdating: boolean;
-  onToggleAnswer: (questionId: string) => void;
   onToggleExplanation: (questionId: string) => void;
   onBookmarkToggle: (questionId: string, isBookmarked: boolean) => Promise<void>;
 }
@@ -60,11 +51,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   question,
   language,
   correctOptionIds,
-  isAnswerVisible,
+  answersRevealed,
   isExplanationVisible,
   isAnswerKeyLoading = false,
   isBookmarkUpdating,
-  onToggleAnswer,
   onToggleExplanation,
   onBookmarkToggle,
 }) => {
@@ -88,7 +78,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   const explanationId = `question-explanation-${question.id}`;
   const answerUnavailableId = `question-answer-${question.id}`;
   const showAnswerUnavailable =
-    isAnswerVisible && !hasAnswerKey && !isAnswerKeyLoading;
+    answersRevealed && !hasAnswerKey && !isAnswerKeyLoading;
 
   const breadcrumb = [
     subjectName || t('questionBank.unknownSubject'),
@@ -211,7 +201,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             <ol className="mt-3 grid gap-2 lg:grid-cols-2">
               {question.options.map((option, index) => {
                 const isCorrect =
-                  isAnswerVisible && correctIds.has(String(option.id));
+                  answersRevealed && correctIds.has(String(option.id));
                 const optionText = getOptionText(option, language);
 
                 return (
@@ -273,64 +263,43 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             </p>
           )}
 
-          {isExplanationVisible && hasExplanation && (
+          {answersRevealed && hasExplanation && (
             <div
               id={explanationId}
-              className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-500/30 dark:bg-emerald-500/10"
+              aria-hidden={!isExplanationVisible}
+              className={`grid transition-all duration-200 ease-out motion-reduce:transition-none ${
+                isExplanationVisible
+                  ? 'grid-rows-[1fr] opacity-100'
+                  : 'grid-rows-[0fr] opacity-0'
+              }`}
             >
-              <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                {t('questionBank.explanation')}
-              </p>
-              <div className="mt-1 text-text-primary">
-                <MathDisplay
-                  content={explanation}
-                  className="whitespace-pre-line"
-                />
+              <div className="overflow-hidden">
+                <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    {t('questionBank.explanation')}
+                  </p>
+                  <div className="mt-1 text-text-primary">
+                    <MathDisplay
+                      content={explanation}
+                      className="whitespace-pre-line"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border-color pt-2.5">
-            <button
-              type="button"
-              className={`group inline-flex min-h-9 max-w-full items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none ${
-                isAnswerVisible
-                  ? 'border-transparent text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10'
-                  : 'border-accent/25 bg-gradient-to-r from-primary/10 to-accent/10 text-accent hover:border-accent/40 hover:from-primary/15 hover:to-accent/15 dark:text-indigo-300'
-              }`}
-              aria-expanded={isAnswerVisible}
-              aria-controls={
-                showAnswerUnavailable ? answerUnavailableId : undefined
-              }
-              onClick={() => onToggleAnswer(question.id)}
-            >
-              {isAnswerVisible ? (
-                <EyeOff className="h-4 w-4 shrink-0" aria-hidden="true" />
-              ) : (
-                <Eye
-                  className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none"
-                  aria-hidden="true"
-                />
-              )}
-              <span className="truncate">
-                {isAnswerVisible
-                  ? t('questionBank.hideAnswer')
-                  : t('questionBank.showAnswer')}
-              </span>
-            </button>
-
-            {hasExplanation && (
+          {answersRevealed && hasExplanation && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border-color pt-2.5">
               <button
                 type="button"
-                className={`inline-flex min-h-9 max-w-full items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none ${
+                className={`inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring motion-reduce:transition-none ${
                   isExplanationVisible
                     ? 'border-transparent text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10'
                     : 'border-border-color bg-surface/60 text-text-secondary hover:bg-surface hover:text-text-primary'
                 }`}
                 aria-expanded={isExplanationVisible}
-                aria-controls={
-                  isExplanationVisible ? explanationId : undefined
-                }
+                aria-controls={explanationId}
                 onClick={() => onToggleExplanation(question.id)}
               >
                 <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -340,8 +309,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                     : t('questionBank.showAnswerExplanation')}
                 </span>
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
     </article>
