@@ -10,6 +10,8 @@ export interface DBNotificationItem {
   body_en: string;
   body_bn: string | null;
   type: string;
+  event_code?: string | null;
+  priority?: string | null;
   image_url: string | null;
   action_link: string | null;
   created_at: string;

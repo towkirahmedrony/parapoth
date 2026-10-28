@@ -13,6 +13,7 @@ import type { Theme } from '@/app/providers/ThemeProvider';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { LANGUAGE_OPTION_LABELS } from '@/shared/i18n/messages';
 import { ForcedUpdateCard } from '@/features/app-update/ForcedUpdateCard';
+import NotificationPreferencesCard from '@/features/notifications/components/NotificationPreferencesCard';
 
 const APP_VERSION = 'Porokh v5.0.0 (Supreme)';
 
@@ -159,7 +160,7 @@ const ThemePicker: React.FC = () => {
 export const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
   const textFontClass =
     language === 'bn' ? "font-['Hind_Siliguri']" : 'font-sans';
@@ -265,8 +266,18 @@ export const Settings: React.FC = () => {
             title={t('settings.notifications')}
             description={t('settings.notificationsDescription')}
             onClick={() => navigate('/notifications')}
-            isLast
           />
+          {user?.id && (
+            <div className="pt-2">
+              <p className="text-sm font-semibold text-text-primary">
+                {t('notification.preferencesTitle')}
+              </p>
+              <p className="mb-1 text-[11px] text-text-secondary">
+                {t('notification.preferencesDescription')}
+              </p>
+              <NotificationPreferencesCard userId={user.id} />
+            </div>
+          )}
         </SettingSection>
 
         {/* E. App updates — real OTA check / hard reload, see app-update/forcedUpdate.ts */}

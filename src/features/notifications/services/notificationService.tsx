@@ -36,8 +36,6 @@ export const saveDeviceTokenToAPI = async (
   deviceId: string,
   token: string | null
 ): Promise<void> => {
-  if (!token) return;
-
   try {
     const userAgent = navigator.userAgent;
 
@@ -104,12 +102,24 @@ export const listenForForegroundMessages = (): Unsubscribe | undefined => {
   if (!messaging) return undefined;
 
   return onMessage(messaging, (payload: MessagePayload) => {
-    const title = payload.notification?.title || 'New Update';
-    const body = payload.notification?.body || '';
+    // The backend sends data-only messages (see notification.service.ts), so
+    // `data` is authoritative and `notification` is only a fallback.
+    const data = payload.data ?? {};
+    const title = data.title || payload.notification?.title || 'New Update';
+    const body = data.body || payload.notification?.body || '';
+    const actionLink = data.action_link || '/';
 
     toast.custom((t) => (
       <div
-        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full shadow-lg rounded-2xl pointer-events-auto flex border p-4`}
+        onClick={() => {
+          if (!actionLink) return;
+          if (actionLink.startsWith('http')) {
+            window.open(actionLink, '_blank', 'noopener,noreferrer');
+          } else {
+            window.location.assign(actionLink);
+          }
+        }}
+        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full shadow-lg rounded-2xl pointer-events-auto flex border p-4 cursor-pointer`}
         style={{
           backgroundColor: 'var(--dyn-card)',
           borderColor: 'color-mix(in srgb, var(--dyn-text) 10%, transparent)',
@@ -157,11 +167,59 @@ export const fetchNotifications = async (): Promise<DBNotificationItem[]> => {
   }
 };
 
-export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
+export const markNotificationAsRead = async (
+  notificationId: string,
+  isClicked = false
+): Promise<void> => {
   try {
-    await apiClient.post(`/notifications/${notificationId}/read`);
+    await apiClient.post('/notifications/read', {
+      notification_id: notificationId,
+      is_clicked: isClicked,
+    });
   } catch (error) {
     console.error('[NotificationService] Error marking notification as read:', error);
     throw error;
   }
+};
+
+export const markAllNotificationsAsRead = async (): Promise<number> => {
+  try {
+    const response = await apiClient.post<{ data?: { updated?: number } }>(
+      '/notifications/read-all'
+    );
+    return response.data?.data?.updated ?? 0;
+  } catch (error) {
+    console.error('[NotificationService] Error marking all as read:', error);
+    throw error;
+  }
+};
+
+export const fetchUnreadNotificationCount = async (): Promise<number> => {
+  const response = await apiClient.get<{ data?: { count?: number } }>(
+    '/notifications/unread-count'
+  );
+  return response.data?.data?.count ?? 0;
+};
+
+export interface NotificationPreferences {
+  types: Record<string, boolean>;
+  in_app: boolean;
+  push: boolean;
+}
+
+export const fetchNotificationPreferences = async (): Promise<NotificationPreferences> => {
+  const response = await apiClient.get<{ data: NotificationPreferences }>(
+    '/notifications/preferences'
+  );
+  return response.data.data;
+};
+
+export const updateNotificationPreferences = async (
+  patch: Partial<NotificationPreferences> & { types?: Record<string, boolean> }
+): Promise<NotificationPreferences> => {
+  const response = await apiClient.put<{ data: NotificationPreferences }>(
+    '/notifications/preferences',
+    patch
+  );
+  return response.data.data;
 };

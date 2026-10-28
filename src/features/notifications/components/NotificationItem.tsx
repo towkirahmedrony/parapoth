@@ -2,7 +2,20 @@ import React, { memo } from 'react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { pickLang } from '@/shared/i18n/localize';
 import { LOCALE_BY_LANGUAGE, type AppLanguage } from '@/shared/i18n/messages';
-import { Bell, Megaphone, Clock, ChevronRight, ExternalLink } from 'lucide-react';
+import {
+  Bell,
+  Megaphone,
+  Clock,
+  ChevronRight,
+  ExternalLink,
+  GraduationCap,
+  Gift,
+  Flame,
+  Users,
+  CreditCard,
+  Shield,
+  LucideIcon,
+} from 'lucide-react';
 import { DBNotificationItem } from '../types/notificationTypes'; 
 
 interface NotificationItemProps {
@@ -23,9 +36,19 @@ const formatTime = (isoString: string, language: AppLanguage) => {
          date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 };
 
+const ICON_BY_TYPE: Record<string, LucideIcon> = {
+  exam: GraduationCap,
+  reward: Gift,
+  streak: Flame,
+  social: Users,
+  billing: CreditCard,
+  security: Shield,
+};
+
 const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, onClick }) => {
   const { t, language } = useLanguage();
   const isRead = item.notification_reads?.[0]?.is_read || false;
+  const TypeIcon = ICON_BY_TYPE[item.type] ?? (activeTab === 'notifications' ? Bell : Megaphone);
 
   return (
     <div 
@@ -43,7 +66,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ item, activeTab, on
           />
         ) : (
           <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary">
-            {activeTab === 'notifications' ? <Bell size={20} /> : <Megaphone size={20} />}
+            <TypeIcon size={20} />
           </div>
         )}
       </div>

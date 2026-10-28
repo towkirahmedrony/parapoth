@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { supabase } from '../../lib/supabase';
 import { buildApiUrl } from '../../lib/apiConfig';
+import { fetchUnreadNotificationCount } from '@/features/notifications/services/notificationService';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -57,25 +58,12 @@ const Header: React.FC = () => {
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['notifications', 'unreadCount', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return 0;
-
-      const { count, error } = await supabase
-        .from('notification_reads')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
-
-      if (error) throw error;
-      return count ?? 0;
-    },
-    enabled: !!user?.id && isDashboardHome,
-    staleTime: 60 * 1000,
+    queryFn: () => (user?.id ? fetchUnreadNotificationCount() : 0),
+    enabled: !!user?.id,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
-
-  if (!isDashboardHome) {
-    return null;
-  }
 
   const currentStreak =
     profileData?.current_streak ?? user?.user_metadata?.current_streak ?? 0;
