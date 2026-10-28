@@ -26,6 +26,12 @@ import {
   toggleAnswerVisibility,
   type AnswerVisibilityState,
 } from '../utils/answerVisibility';
+import {
+  EMPTY_EXPLANATION_VISIBILITY,
+  isExplanationVisible,
+  toggleExplanationVisibility,
+  type ExplanationVisibilityState,
+} from '../utils/explanationVisibility';
 
 function InfoBadge(props: { children: React.ReactNode }) {
   return (
@@ -68,6 +74,8 @@ export default function QuestionBank() {
   const [answerState, setAnswerState] = useState<AnswerVisibilityState>(
     EMPTY_ANSWER_VISIBILITY
   );
+  const [explanationState, setExplanationState] =
+    useState<ExplanationVisibilityState>(EMPTY_EXPLANATION_VISIBILITY);
 
   const activeFilterCount = useMemo(() => {
     return [
@@ -112,6 +120,12 @@ export default function QuestionBank() {
   const toggleQuestionAnswer = (questionId: string) => {
     setAnswerState((current) =>
       toggleAnswerVisibility(current, questionId, readingMode)
+    );
+  };
+
+  const toggleQuestionExplanation = (questionId: string) => {
+    setExplanationState((current) =>
+      toggleExplanationVisibility(current, questionId)
     );
   };
 
@@ -308,11 +322,16 @@ export default function QuestionBank() {
                           readingMode,
                           answerState
                         )}
+                        isExplanationVisible={isExplanationVisible(
+                          question.id,
+                          explanationState
+                        )}
                         isAnswerKeyLoading={isAnswersFetching}
                         isBookmarkUpdating={
                           bookmarkUpdatingId === question.id
                         }
                         onToggleAnswer={toggleQuestionAnswer}
+                        onToggleExplanation={toggleQuestionExplanation}
                         onBookmarkToggle={(questionId, isBookmarked) =>
                           toggleBookmark({ questionId, isBookmarked })
                         }
