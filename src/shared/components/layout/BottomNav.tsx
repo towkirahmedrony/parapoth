@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Trophy, Play, PieChart, User, LucideIcon } from 'lucide-react';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { EXAM_TYPES, examListPath } from '@/features/exam/constants/examTypes';
 
 const NAV_LINK_CONTAINER_CLASS = "w-full h-full flex items-center justify-center";
 
@@ -54,7 +55,7 @@ const BottomNav: React.FC = () => {
         {/* Floating Exam Button */}
         <div className="relative flex items-center justify-center -mt-8">
           <NavLink
-            to="/exam/selection"
+            to={examListPath(EXAM_TYPES.model.type)}
             className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 border-[6px] border-surface bg-primary text-primary-foreground"
             aria-label={t('nav.startExam')}
           >

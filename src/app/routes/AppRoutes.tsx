@@ -1,5 +1,12 @@
 import React, { lazy, Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 
 // Shared Components & Layouts
 import { MainLayout } from '@/shared/components/layout/MainLayout';
@@ -15,6 +22,12 @@ import Home from '@/features/dashboard/pages/Home';
 import History from '@/features/history/pages/History';
 import UserProfile from '@/features/profile/pages/UserProfile';
 import Selection from '@/features/exam/pages/Selection';
+import {
+  EXAM_TYPES,
+  examListPath,
+  isExamTabType,
+  isExamType,
+} from '@/features/exam/constants/examTypes';
 
 // ==========================================
 // ২. বাকি পেজগুলো (Lazy Loaded - মেমোরি বাঁচানোর জন্য)
@@ -120,6 +133,41 @@ const NotFound = () => {
   );
 };
 
+const ExamListRoute = () => {
+  const { type } = useParams<{ type: string }>();
+
+  if (!isExamType(type)) {
+    return <NotFound />;
+  }
+
+  if (isExamTabType(type)) {
+    return <Selection type={type} />;
+  }
+
+  return <AdmissionLandingPage />;
+};
+
+const LegacyExamSelectionRedirect = () => {
+  const [searchParams] = useSearchParams();
+  const requestedType = searchParams.get('type');
+  const type = isExamType(requestedType)
+    ? requestedType
+    : EXAM_TYPES.model.type;
+
+  return <Navigate to={examListPath(type)} replace />;
+};
+
+const LegacyQuestionBankRedirect = () => {
+  const location = useLocation();
+
+  return (
+    <Navigate
+      to={{ pathname: '/question-bank', search: location.search }}
+      replace
+    />
+  );
+};
+
 const AppRoutes: React.FC = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -180,9 +228,19 @@ const AppRoutes: React.FC = () => {
         {/* --- Fullscreen protected routes --- */}
         <Route
           path="/exam/selection"
+          element={<LegacyExamSelectionRedirect />}
+        />
+
+        <Route
+          path="/exams"
+          element={<Navigate to={examListPath(EXAM_TYPES.model.type)} replace />}
+        />
+
+        <Route
+          path="/exams/:type"
           element={
             <PermissionGuard>
-              <Selection />
+              <ExamListRoute />
             </PermissionGuard>
           }
         />
@@ -394,7 +452,8 @@ const AppRoutes: React.FC = () => {
 
           {/* Academic & Materials */}
           <Route path="suggestion" element={<Placeholder title={t('placeholder.suggestion')} />} />
-          <Route path="bank" element={<QuestionBank />} />
+          <Route path="bank" element={<LegacyQuestionBankRedirect />} />
+          <Route path="question-bank" element={<QuestionBank />} />
           <Route path="materials" element={<Placeholder title={t('placeholder.materials')} />} />
 
           {/* Support & Moderation */}

@@ -33,7 +33,7 @@ const updateSeoMeta = (
     '/dashboard': t('meta.dashboardTitle'),
     '/dashboard/home': t('meta.dashboardTitle'),
     '/dashboard/question-bank': t('meta.route.questionBank'),
-    '/bank': t('meta.route.questionBank'),
+    '/question-bank': t('meta.route.questionBank'),
     '/dashboard/arena': t('meta.route.arena'),
     '/exam/live': t('meta.route.arena'),
     '/dashboard/leaderboard': t('meta.route.leaderboard'),

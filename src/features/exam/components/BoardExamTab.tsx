@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { pickLang } from '@/shared/i18n/localize';
 import { localizeBoardName } from '../utils/examLabels';
+import { EXAM_TYPES } from '../constants/examTypes';
 
 interface BoardExamTabProps {
   onViewChange: (isDetail: boolean) => void;
@@ -59,7 +60,7 @@ const BoardExamTab: React.FC<BoardExamTabProps> = ({ onViewChange }) => {
         .from('exam_papers')
         .select('*')
         .eq('subject_id', selectedSubject.id)
-        .eq('category', 'board_exam')
+        .eq('category', EXAM_TYPES.board.databaseValue)
         .eq('is_published', true)
         .order('created_at', { ascending: false });
 

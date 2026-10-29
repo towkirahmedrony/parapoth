@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { TabType } from '../types/history';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { type AppMessageKey } from '@/shared/i18n/messages';
+import { EXAM_TYPES, examListPath } from '@/features/exam/constants/examTypes';
 
 import searchAnim from '@/assets/animations/empty-search.json';
 
@@ -24,19 +25,19 @@ const EMPTY_STATE_CONFIG: Record<TabType, EmptyStateConfig> = {
     titleKey: 'history.emptyHistoryTitle',
     descKey: 'history.emptyHistoryDesc',
     btnKey: 'history.emptyHistoryBtn',
-    link: '/exam/selection',
+    link: examListPath(EXAM_TYPES.model.type),
   },
   mistakes: {
     titleKey: 'history.emptyMistakesTitle',
     descKey: 'history.emptyMistakesDesc',
     btnKey: 'history.emptyMistakesBtn',
-    link: '/exam/selection',
+    link: examListPath(EXAM_TYPES.model.type),
   },
   bookmarks: {
     titleKey: 'history.emptyBookmarksTitle',
     descKey: 'history.emptyBookmarksDesc',
     btnKey: 'history.emptyBookmarksBtn',
-    link: '/bank',
+    link: '/question-bank',
   },
 };
 

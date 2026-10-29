@@ -196,7 +196,7 @@ export default function QuestionBank() {
       navigate(-1);
       return;
     }
-    navigate('/bank');
+    navigate('/question-bank');
   };
 
   const handleFilterChange = <K extends keyof QuestionBankFilterState>(

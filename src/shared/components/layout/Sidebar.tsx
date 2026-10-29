@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { supabase } from '@/shared/lib/supabase';
+import { EXAM_TYPES, examListPath } from '@/features/exam/constants/examTypes';
 
 export const Sidebar: React.FC = memo(() => {
   const { user, signOut } = useAuth();
@@ -41,7 +42,7 @@ export const Sidebar: React.FC = memo(() => {
   // Nav labels always follow the active application language.
   const navItems = [
     { label: t('nav.home'), path: '/dashboard/home', icon: Home },
-    { label: t('nav.modelTest'), path: '/exam/selection', icon: FileEdit },
+    { label: t('nav.modelTest'), path: examListPath(EXAM_TYPES.model.type), icon: FileEdit },
     { label: t('nav.admission'), path: '/admission', icon: GraduationCap },
     { label: t('nav.progress'), path: '/progress', icon: PieChart },
     { label: t('nav.leaderboard'), path: '/dashboard/leaderboard', icon: Trophy },
