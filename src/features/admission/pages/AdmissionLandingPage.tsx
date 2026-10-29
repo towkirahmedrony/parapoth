@@ -134,6 +134,32 @@ const AdmissionLandingPage: React.FC = () => {
         )}
       </section>
 
+      <section className="mt-5 rounded-3xl bg-card-bg p-5 sm:p-6">
+        <h2 className="font-['Hind_Siliguri'] text-lg font-bold text-text-primary sm:text-xl">
+          {t('admission.modelTestCtaTitle')}
+        </h2>
+        <p className="mt-1 font-['Hind_Siliguri'] text-sm text-text-secondary">
+          {t('admission.modelTestCtaHint')}
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          {[
+            { to: '/exams/model?category=medical', labelKey: 'admission.modelTestMedical' as const },
+            { to: '/exams/model?category=engineering', labelKey: 'admission.modelTestEngineering' as const },
+            { to: '/exams/model?category=varsity', labelKey: 'admission.modelTestUniversity' as const },
+          ].map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="flex items-center justify-between rounded-2xl bg-surface px-4 py-3.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              {t(item.labelKey)}
+              <ListChecks className="h-4 w-4 text-primary" aria-hidden="true" />
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {isError ? (
         <div className="mt-6">
           <AdmissionState

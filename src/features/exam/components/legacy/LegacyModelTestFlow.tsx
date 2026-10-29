@@ -2,21 +2,21 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { getIconByName } from '@/shared/utils/iconMapper';
-import ChapterSelection from './ChapterSelection';
-import ExamConfiguration, { ExamConfig } from './ExamConfiguration';
+import ChapterSelection from '../ChapterSelection';
+import ExamConfiguration, { ExamConfig } from '../ExamConfiguration';
 import { Skeleton } from '@/shared/components/ui/Skeleton';
-import { Subject } from '../types/content';
-import { useCurriculumTree } from '../hooks/useContentData';
+import { Subject } from '../../types/content';
+import { useCurriculumTree } from '../../hooks/useContentData';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { pickLang } from '@/shared/i18n/localize';
 
-interface ModelTestTabProps {
+interface LegacyModelTestFlowProps {
   onViewChange: (isDetail: boolean) => void;
 }
 
 type ViewState = 'subject_list' | 'chapter_selection' | 'exam_config';
 
-const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
+const LegacyModelTestFlow: React.FC<LegacyModelTestFlowProps> = ({ onViewChange }) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const [view, setView] = useState<ViewState>('subject_list');
@@ -115,4 +115,4 @@ const ModelTestTab: React.FC<ModelTestTabProps> = ({ onViewChange }) => {
   );
 };
 
-export default ModelTestTab;
+export default LegacyModelTestFlow;

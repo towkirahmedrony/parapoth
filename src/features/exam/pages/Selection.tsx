@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ModelTestTab from '../components/ModelTestTab';
+import ModelTestScreen from '../components/ModelTestScreen';
 import BoardExamTab from '../components/BoardExamTab';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { FreeUsageIndicator } from '@/features/access/components/FreeUsageIndicator';
@@ -98,7 +98,7 @@ const Selection: React.FC<SelectionProps> = ({ type }) => {
       <div className={`w-full max-w-4xl mx-auto ${!isDetailView ? "p-4 sm:p-6" : "p-0"}`}>
         {activeTab === EXAM_TYPES.model.type ? (
           <div className={!isDetailView ? "animate-in slide-in-from-left-4 fade-in duration-300" : ""}>
-            <ModelTestTab onViewChange={setIsDetailView} />
+            <ModelTestScreen onViewChange={setIsDetailView} />
           </div>
         ) : (
           <div className={!isDetailView ? "animate-in slide-in-from-right-4 fade-in duration-300" : ""}>

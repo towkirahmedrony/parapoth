@@ -1199,6 +1199,7 @@ export type Database = {
           title: string
           title_en: string | null
           total_marks: number
+          track: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1225,6 +1226,7 @@ export type Database = {
           title: string
           title_en?: string | null
           total_marks: number
+          track?: string | null
           updated_at?: string | null
         }
         Update: {
