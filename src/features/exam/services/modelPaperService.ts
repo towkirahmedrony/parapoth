@@ -1,6 +1,11 @@
 import apiClient from '@/shared/lib/apiClient';
 import { supabase } from '@/shared/lib/supabase';
-import type { ModelPaperScope, ModelTrack } from '../constants/modelTracks';
+import {
+  MODEL_TRACKS,
+  isModelTrack,
+  type ModelPaperScope,
+  type ModelTrack,
+} from '../constants/modelTracks';
 
 export interface ModelPaperSubject {
   name_bn: string | null;
@@ -64,6 +69,39 @@ const MODEL_PAPER_SELECT = `
     slug
   )
 `;
+
+export interface ModelSubjectSummary {
+  id: string;
+  slug: string | null;
+  name_bn: string | null;
+  name_en: string | null;
+  icon_url: string | null;
+  paperCount: number;
+}
+
+export interface ModelTrackSummary {
+  paperCount: number;
+  fullCount: number;
+  subjects: ModelSubjectSummary[];
+}
+
+export type ModelTrackSummaryMap = Record<ModelTrack, ModelTrackSummary>;
+
+interface ModelSummaryRow {
+  id: string;
+  track: string | null;
+  subject_id: string | null;
+  subjects: {
+    slug: string | null;
+    name_bn: string | null;
+    name_en: string | null;
+    icon_url: string | null;
+    sequence: number | null;
+  } | null;
+}
+
+const MODEL_SUMMARY_SELECT =
+  'id, track, subject_id, subjects:subject_id ( slug, name_bn, name_en, icon_url, sequence )';
 
 const COUNT_CHUNK_SIZE = 200;
 
@@ -161,6 +199,60 @@ export const modelPaperService = {
       ...paper,
       question_count: counts.get(paper.id) ?? null,
     }));
+  },
+
+  async getTrackSummary(): Promise<ModelTrackSummaryMap> {
+    const { data, error } = await supabase
+      .from('exam_papers')
+      .select(MODEL_SUMMARY_SELECT)
+      .eq('category', 'model_test')
+      .eq('is_published', true);
+
+    if (error) throw new Error(error.message);
+
+    const rows = (data ?? []) as unknown as ModelSummaryRow[];
+    const summary = Object.fromEntries(
+      MODEL_TRACKS.map((track) => [
+        track,
+        { paperCount: 0, fullCount: 0, subjects: [] as ModelSubjectSummary[] },
+      ])
+    ) as ModelTrackSummaryMap;
+    const sequences = new Map<string, number>();
+
+    for (const row of rows) {
+      if (!isModelTrack(row.track)) continue;
+
+      const entry = summary[row.track];
+      entry.paperCount += 1;
+
+      if (!row.subject_id) {
+        entry.fullCount += 1;
+        continue;
+      }
+
+      let item = entry.subjects.find((subject) => subject.id === row.subject_id);
+      if (!item) {
+        item = {
+          id: row.subject_id,
+          slug: row.subjects?.slug ?? null,
+          name_bn: row.subjects?.name_bn ?? null,
+          name_en: row.subjects?.name_en ?? null,
+          icon_url: row.subjects?.icon_url ?? null,
+          paperCount: 0,
+        };
+        entry.subjects.push(item);
+        sequences.set(row.subject_id, row.subjects?.sequence ?? 9999);
+      }
+      item.paperCount += 1;
+    }
+
+    for (const track of MODEL_TRACKS) {
+      summary[track].subjects.sort(
+        (a, b) => (sequences.get(a.id) ?? 9999) - (sequences.get(b.id) ?? 9999)
+      );
+    }
+
+    return summary;
   },
 
   async startAttempt(examId: string): Promise<ModelAttemptStart> {

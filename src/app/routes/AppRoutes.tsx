@@ -21,11 +21,12 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import Home from '@/features/dashboard/pages/Home';
 import History from '@/features/history/pages/History';
 import UserProfile from '@/features/profile/pages/UserProfile';
-import Selection from '@/features/exam/pages/Selection';
+import ModelCategoryPage from '@/features/exam/pages/ModelCategoryPage';
+import ModelSubjectsPage from '@/features/exam/pages/ModelSubjectsPage';
+import ModelPapersPage from '@/features/exam/pages/ModelPapersPage';
 import {
   EXAM_TYPES,
   examListPath,
-  isExamTabType,
   isExamType,
 } from '@/features/exam/constants/examTypes';
 
@@ -140,8 +141,12 @@ const ExamListRoute = () => {
     return <NotFound />;
   }
 
-  if (isExamTabType(type)) {
-    return <Selection type={type} />;
+  if (type === EXAM_TYPES.model.type) {
+    return <ModelCategoryPage />;
+  }
+
+  if (type === EXAM_TYPES.board.type) {
+    return <Navigate to={examListPath(EXAM_TYPES.model.type)} replace />;
   }
 
   return <AdmissionLandingPage />;
@@ -234,6 +239,24 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/exams"
           element={<Navigate to={examListPath(EXAM_TYPES.model.type)} replace />}
+        />
+
+        <Route
+          path="/exams/model/:track"
+          element={
+            <PermissionGuard>
+              <ModelSubjectsPage />
+            </PermissionGuard>
+          }
+        />
+
+        <Route
+          path="/exams/model/:track/:subjectId"
+          element={
+            <PermissionGuard>
+              <ModelPapersPage />
+            </PermissionGuard>
+          }
         />
 
         <Route
