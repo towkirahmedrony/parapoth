@@ -8,6 +8,8 @@ import { DBNotificationItem } from '../types/notificationTypes';
 import NotificationHeader from '../components/NotificationHeader';
 import NotificationItem from '../components/NotificationItem';
 import NotificationEmptyState from '../components/NotificationEmptyState';
+import NoticeList from '@/features/notices/components/NoticeList';
+import { useNotices } from '@/features/notices/hooks/useNotices';
 import PullToRefresh from '../../groups/components/PullToRefresh';
 import {
   fetchNotifications,
@@ -42,6 +44,12 @@ const Notifications: React.FC = () => {
     enabled: !!user?.id,
     staleTime: 2 * 60 * 1000,
   });
+
+  const {
+    data: noticeData,
+    isLoading: noticesLoading,
+    refetch: refetchNotices,
+  } = useNotices();
 
   const filteredData = useMemo(() => {
     return notifications.filter((item) =>
@@ -145,7 +153,8 @@ const Notifications: React.FC = () => {
   const handleRefresh = useCallback(async () => {
     await queryClient.refetchQueries({ queryKey });
     await queryClient.refetchQueries({ queryKey: unreadKey });
-  }, [queryClient, queryKey, unreadKey]);
+    await refetchNotices();
+  }, [queryClient, queryKey, unreadKey, refetchNotices]);
 
   const renderSection = (title: string, items: DBNotificationItem[]) => {
     if (items.length === 0) return null;
@@ -192,7 +201,12 @@ const Notifications: React.FC = () => {
 
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
-          {isLoading ? (
+          {activeTab === 'notices' ? (
+            <NoticeList
+              notices={noticeData?.items ?? []}
+              isLoading={noticesLoading}
+            />
+          ) : isLoading ? (
             <div className="space-y-3" aria-label={t('common.loading')}>
               {[1, 2, 3, 4, 5].map((i) => (
                 <div

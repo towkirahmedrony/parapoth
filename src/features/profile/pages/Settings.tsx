@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bell, ChevronRight, Globe, HelpCircle, Info, Lock, LogOut,
+  Bell, ChevronRight, Globe, HelpCircle, Info, Lock, LogOut, Megaphone,
   Moon, MonitorSmartphone, Palette, Pencil, Puzzle, Shield, Sun, User,
   Users, LucideIcon,
 } from 'lucide-react';
@@ -261,6 +261,12 @@ export const Settings: React.FC = () => {
 
         {/* D. Preferences — genuinely supported notification settings */}
         <SettingSection title={t('settings.sectionPreferences')}>
+          <SettingRow
+            icon={Megaphone}
+            title={t('settings.notices')}
+            description={t('settings.noticesDescription')}
+            onClick={() => navigate('/notices')}
+          />
           <SettingRow
             icon={Bell}
             title={t('settings.notifications')}

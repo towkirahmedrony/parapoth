@@ -10,6 +10,7 @@ import { useLiveExamActive } from '../hooks/useLiveExamActive';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
 import { FreeUsageIndicator } from '@/features/access/components/FreeUsageIndicator';
 import { PromoBanner } from '@/features/access/components/PromoBanner';
+import UrgentNoticeStrip from '@/features/notices/components/UrgentNoticeStrip';
 import type { AppMessageKey } from '@/shared/i18n/messages';
 import {
   normalizeDisplayName,
@@ -200,6 +201,8 @@ const Home: React.FC = memo(() => {
         </section>
 
         <PromoBanner className="mt-2" />
+
+        <UrgentNoticeStrip />
 
         <DynamicBanner
           banners={visibleBanners.length > 0 ? visibleBanners : null}
