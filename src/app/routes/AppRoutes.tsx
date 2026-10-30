@@ -173,18 +173,6 @@ const LegacyQuestionBankRedirect = () => {
   );
 };
 
-const LegacyModelCatalogueRedirect = () => {
-  const { track, subjectId } = useParams();
-  const next = new URLSearchParams();
-
-  if (track) next.set('category', track);
-  if (subjectId) next.set('subject', subjectId);
-
-  const query = next.toString();
-
-  return <Navigate to={`/exams/model${query ? `?${query}` : ''}`} replace />;
-};
-
 const AppRoutes: React.FC = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -252,14 +240,6 @@ const AppRoutes: React.FC = () => {
           path="/exams"
           element={<Navigate to={examListPath(EXAM_TYPES.model.type)} replace />}
         />
-
-        {/* Legacy model-test deep links keep working after the catalogue moved
-            to /exams/model with query-string state. */}
-        <Route
-          path="/exams/model/:track/:subjectId"
-          element={<LegacyModelCatalogueRedirect />}
-        />
-        <Route path="/exams/model/:track" element={<LegacyModelCatalogueRedirect />} />
 
         <Route
           path="/exams/model/:track"
