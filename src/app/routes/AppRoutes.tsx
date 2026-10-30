@@ -51,6 +51,15 @@ const QuestionBank = lazy(() => import('@/features/question-bank/pages/QuestionB
 const AdmissionLandingPage = lazy(() =>
   import('@/features/admission/pages/AdmissionLandingPage')
 );
+const AdmissionUniversitiesPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionUniversitiesPage')
+);
+const AdmissionUnitListPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionUnitListPage')
+);
+const AdmissionUnitPage = lazy(() =>
+  import('@/features/admission/pages/AdmissionUnitPage')
+);
 const AdmissionGroupPage = lazy(() =>
   import('@/features/admission/pages/AdmissionGroupPage')
 );
@@ -455,8 +464,20 @@ const AppRoutes: React.FC = () => {
           <Route path="group/:groupId/battle" element={<Navigate to="/groups" replace />} />
           <Route path="group/:groupId/focus" element={<Placeholder title={t('placeholder.focusSession')} />} />
 
-          {/* Admission */}
-          <Route path="admission" element={<AdmissionLandingPage />} />
+          {/* Admission — unit-first flow: Admission → University → Unit.
+              Static segments outrank the legacy group routes below, which stay
+              in place for existing links. */}
+          <Route path="admission" element={<AdmissionUniversitiesPage />} />
+          <Route
+            path="admission/university/:universityId"
+            element={<AdmissionUnitListPage />}
+          />
+          <Route
+            path="admission/university/:universityId/unit/:unitId"
+            element={<AdmissionUnitPage />}
+          />
+
+          {/* Legacy group-first admission routes (kept for backward compatibility) */}
           <Route path="admission/:groupSlug" element={<AdmissionGroupPage />} />
           <Route
             path="admission/:groupSlug/:examType"

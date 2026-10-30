@@ -1,8 +1,18 @@
-# Admission feature (frontend-only)
+# Admission feature
 
-The admission browsing experience is built entirely on the existing Porokh
-Supabase tables and the existing exam attempt API. No backend route, schema,
-migration, RLS policy or database function is added or modified.
+Admission browsing has two surfaces:
+
+- **Unit-first experience (Phase 4)** — `/admission` → university → unit. Units
+  come from `admission_units` and papers from `exam_papers.admission_unit_id`.
+  The unit screen is served by `GET /api/v1/admissions/units/:unitId/content`,
+  so published-only filtering, session grouping and per-subject/question counts
+  are decided on the server, not in the browser. Subject practice starts with
+  `POST /api/v1/admissions/units/:unitId/practice`, which selects question ids
+  from the unit's own pool server-side and reuses the existing practice-attempt
+  engine (`/exam/attempt/:attemptId`). No admission-specific exam engine exists.
+- **Legacy group-first pages** — `/admission/:groupSlug/...` still read the
+  `exam_papers.meta_data` contract documented below and remain in place for
+  existing links.
 
 ## Data used
 
@@ -44,9 +54,9 @@ existing board exam tab with `board_exam`). Admission rows must therefore use
 
 ## Missing backend capabilities (reported, not worked around)
 
-1. **No admission-specific API.** The frontend derives browsing structure from
-   `exam_papers` and `institutions`; there is no `admission` endpoint to list
-   groups/universities/units.
+1. **No admission API for the legacy pages.** Those pages derive browsing
+   structure from `exam_papers` and `institutions`; the unit-first flow above
+   uses the dedicated student admission endpoints instead.
 2. **No first-class university/group/unit columns.** The adapter contract above
    is required in `meta_data`; untagged rows are excluded from group-specific
    lists and are counted in the catalog diagnostics.

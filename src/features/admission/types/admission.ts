@@ -175,3 +175,114 @@ export interface AdmissionAttemptQuestionsResponse {
   server_time: string;
   questions: AdmissionAttemptQuestion[];
 }
+
+// --------------------------------------------------------------------------
+// Unit-first admission navigation (Phase 4)
+//
+// Unit identity comes from the Phase 1 `admission_units` table and
+// `exam_papers.admission_unit_id`; the canonical paper mode/session come from
+// the Phase 2 `meta_data.exam_mode` / `meta_data.admission_session` keys. The
+// sections below are built server-side and only mapped here.
+// --------------------------------------------------------------------------
+
+export type AdmissionPaperMode = 'past_exam' | 'subject_practice' | 'model_test';
+
+export interface AdmissionUnitRecord {
+  id: string;
+  institutionId: string;
+  nameBn: string;
+  nameEn: string | null;
+  code: string;
+  displayOrder: number;
+  /** Published admission papers linked to this unit. */
+  paperCount: number;
+}
+
+export interface AdmissionUniversityEntry {
+  id: string;
+  nameBn: string;
+  nameEn: string | null;
+  shortName: string | null;
+  slug: string | null;
+  location: string | null;
+  units: AdmissionUnitRecord[];
+  paperCount: number;
+}
+
+export interface AdmissionUnitPaper {
+  id: string;
+  title: string;
+  titleEn: string | null;
+  mode: AdmissionPaperMode | null;
+  session: string | null;
+  modelTestNo: number | null;
+  durationMin: number | null;
+  totalMarks: number | null;
+  questionCount: number;
+  isPremium: boolean;
+  startTime: string | null;
+  endTime: string | null;
+  defaultNegativeMarks: number | null;
+}
+
+export interface AdmissionSessionGroup {
+  /** `null` when a historical paper declares no usable session. */
+  session: string | null;
+  papers: AdmissionUnitPaper[];
+}
+
+export interface AdmissionChapterOption {
+  id: string;
+  nameBn: string;
+  nameEn: string | null;
+  questionCount: number;
+}
+
+export interface AdmissionSubjectOption {
+  id: string;
+  nameBn: string;
+  nameEn: string | null;
+  slug: string | null;
+  isPremium: boolean;
+  questionCount: number;
+  chapters: AdmissionChapterOption[];
+}
+
+export interface AdmissionUnitInfo {
+  id: string;
+  institutionId: string;
+  nameBn: string;
+  nameEn: string | null;
+  code: string;
+  description: string | null;
+  displayOrder: number;
+}
+
+export interface AdmissionUnitUniversity {
+  id: string;
+  nameBn: string;
+  nameEn: string | null;
+  shortName: string | null;
+  slug: string | null;
+  location: string | null;
+}
+
+export interface AdmissionUnitContent {
+  unit: AdmissionUnitInfo;
+  university: AdmissionUnitUniversity | null;
+  pastExams: AdmissionSessionGroup[];
+  modelTests: AdmissionUnitPaper[];
+  subjects: AdmissionSubjectOption[];
+}
+
+export interface AdmissionPracticeInput {
+  subject_id: string;
+  chapter_id: string | null;
+}
+
+export interface AdmissionPracticeStart {
+  id: string;
+  deadlineAt: string | null;
+  secondsRemaining: number | null;
+  questionCount: number;
+}
