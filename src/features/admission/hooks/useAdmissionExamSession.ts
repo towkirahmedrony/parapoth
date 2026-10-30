@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import apiClient from '@/shared/lib/apiClient';
 import {
   extractSubmittedResultId,
   type SubmitPayload,
 } from '@/features/exam/utils/examSubmission';
+import { postExamSubmission } from '@/features/exam/utils/examSubmissionRequest';
 import type { Question } from '@/features/exam/types/exam';
 import { useOfflineExam } from '@/features/exam/offline/useOfflineExam';
 import { computeRemainingSeconds } from '@/features/exam/offline/offlineExamService';
@@ -146,7 +146,7 @@ export const useAdmissionExamSession = (examId: string | undefined) => {
 
   const submitMutation = useMutation({
     mutationFn: async (payload: SubmitPayload) => {
-      const response = await apiClient.post('/exams/user/submit', payload);
+      const response = await postExamSubmission(payload);
       const resultId = extractSubmittedResultId(response.data);
       const result = response.data?.data ?? response.data;
       return { resultId, result };

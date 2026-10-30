@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import apiClient from '@/shared/lib/apiClient';
 import { Question, ExamResultData } from '../types/exam';
 import { useLanguage } from '@/shared/i18n/LanguageProvider';
+import { postExamSubmission } from '../utils/examSubmissionRequest';
 
 // ১. কাস্টম এক্সাম বা প্রশ্ন জেনারেট করা
 export const useGenerateExam = (topicIds: string[], questionCount: number) => {
@@ -34,7 +35,7 @@ export const useSubmitExamResult = () => {
       };
 
       // 🌟 ফিক্স: পাথ থেকে '/api/v1/' সরানো হয়েছে
-      const response = await apiClient.post('/exams/user/submit', payload);
+      const response = await postExamSubmission(payload);
       return response.data.data;
     },
     onSuccess: () => {

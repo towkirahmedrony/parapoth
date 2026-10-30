@@ -33,14 +33,13 @@ import {
   getOrCreateSubmissionId,
   resolveSubmitErrorMessage,
 } from '../utils/examSubmission';
+import { postExamSubmission } from '../utils/examSubmissionRequest';
 
 const defaultConfig: ExamConfig = {
   questionCount: 10,
   duration: 20,
   negativeMarking: true,
 };
-
-const SUBMIT_ENDPOINT = '/exams/user/submit';
 
 const PRACTICE_TITLES: Record<PracticeMode, AppMessageKey> = {
   retake: 'practice.retakeTitle',
@@ -386,7 +385,7 @@ const Arena: React.FC = () => {
 
   const submitExamMutation = useMutation({
     mutationFn: async (payload: ReturnType<typeof buildSubmitPayload>) => {
-      const res = await apiClient.post<SubmitExamResponse>(SUBMIT_ENDPOINT, payload);
+      const res = await postExamSubmission<SubmitExamResponse>(payload);
 
       // Validate the response before leaving the exam page. Without a persisted
       // result id there is nothing to navigate to, and a retry is safe because

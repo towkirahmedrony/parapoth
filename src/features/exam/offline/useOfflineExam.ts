@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { apiClient } from '@/shared/lib/apiClient';
 import { admissionExamService } from '@/features/admission/services/admissionExamService';
 import { extractSubmittedResultId } from '@/features/exam/utils/examSubmission';
+import { postExamSubmission } from '@/features/exam/utils/examSubmissionRequest';
 import {
   loadPreparedExamForStart,
   listPreparedExamsForUser,
@@ -51,7 +51,7 @@ const realApi: OfflineExamApi = {
 };
 
 const realSubmit = async (payload: SubmitPayload) => {
-  const response = await apiClient.post('/exams/user/submit', {
+  const response = await postExamSubmission({
     exam_id: payload.examId ?? null,
     attempt_id: payload.attemptId,
     session_id: payload.sessionId,
