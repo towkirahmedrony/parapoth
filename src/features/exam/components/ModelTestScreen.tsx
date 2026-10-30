@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
@@ -39,6 +39,7 @@ const ModelTestScreen: React.FC<ModelTestScreenProps> = ({ onViewChange }) => {
   const track: ModelTrack = isModelTrack(requestedTrack)
     ? requestedTrack
     : DEFAULT_MODEL_TRACK;
+  const requestedSubjectId = searchParams.get('subject');
 
   const [scope, setScope] = useState<ModelPaperScope>('subject');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
@@ -52,6 +53,18 @@ const ModelTestScreen: React.FC<ModelTestScreenProps> = ({ onViewChange }) => {
     scope,
     subjectId: selectedSubject?.id ?? null,
   });
+
+  useEffect(() => {
+    if (!requestedSubjectId) return;
+
+    const match = subjects.find((subject) => subject.id === requestedSubjectId);
+
+    if (!match) return;
+
+    setScope('subject');
+    setSelectedSubject(match);
+    onViewChange(true);
+  }, [requestedSubjectId, subjects, onViewChange]);
 
   const startMutation = useMutation({
     mutationFn: (paper: ModelPaperListItem) => modelPaperService.startAttempt(paper.id),
@@ -71,6 +84,7 @@ const ModelTestScreen: React.FC<ModelTestScreenProps> = ({ onViewChange }) => {
 
       const next = new URLSearchParams(searchParams);
       next.set('category', nextTrack);
+      next.delete('subject');
       setSearchParams(next, { replace: true });
       setSelectedSubject(null);
       setSelectedPaper(null);
@@ -82,27 +96,37 @@ const ModelTestScreen: React.FC<ModelTestScreenProps> = ({ onViewChange }) => {
   const handleScopeChange = useCallback(
     (nextScope: ModelPaperScope) => {
       if (nextScope === scope) return;
+
+      const next = new URLSearchParams(searchParams);
+      next.delete('subject');
+      setSearchParams(next, { replace: true });
       setScope(nextScope);
       setSelectedSubject(null);
       setSelectedPaper(null);
       onViewChange(false);
     },
-    [scope, onViewChange]
+    [scope, onViewChange, searchParams, setSearchParams]
   );
 
   const handleSubjectOpen = useCallback(
     (subject: Subject) => {
+      const next = new URLSearchParams(searchParams);
+      next.set('subject', subject.id);
+      setSearchParams(next, { replace: true });
       setSelectedSubject(subject);
       onViewChange(true);
     },
-    [onViewChange]
+    [onViewChange, searchParams, setSearchParams]
   );
 
   const handleSubjectBack = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('subject');
+    setSearchParams(next, { replace: true });
     setSelectedSubject(null);
     setSelectedPaper(null);
     onViewChange(false);
-  }, [onViewChange]);
+  }, [onViewChange, searchParams, setSearchParams]);
 
   const handleStart = useCallback(
     (paper: ModelPaperListItem) => {
