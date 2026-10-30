@@ -173,6 +173,18 @@ const LegacyQuestionBankRedirect = () => {
   );
 };
 
+const LegacyModelCatalogueRedirect = () => {
+  const { track, subjectId } = useParams();
+  const next = new URLSearchParams();
+
+  if (track) next.set('category', track);
+  if (subjectId) next.set('subject', subjectId);
+
+  const query = next.toString();
+
+  return <Navigate to={`/exams/model${query ? `?${query}` : ''}`} replace />;
+};
+
 const AppRoutes: React.FC = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -241,6 +253,14 @@ const AppRoutes: React.FC = () => {
           element={<Navigate to={examListPath(EXAM_TYPES.model.type)} replace />}
         />
 
+        {/* Legacy model-test deep links keep working after the catalogue moved
+            to /exams/model with query-string state. */}
+        <Route
+          path="/exams/model/:track/:subjectId"
+          element={<LegacyModelCatalogueRedirect />}
+        />
+        <Route path="/exams/model/:track" element={<LegacyModelCatalogueRedirect />} />
+
         <Route
           path="/exams/model/:track"
           element={
@@ -277,13 +297,11 @@ const AppRoutes: React.FC = () => {
           }
         />
 
+        {/* Legacy subject deep links now belong to the preset model-test
+            catalogue. /exam/live (no slug) keeps the generated Arena flow. */}
         <Route
           path="/exam/live/:subjectSlug"
-          element={
-            <PermissionGuard>
-              <Arena />
-            </PermissionGuard>
-          }
+          element={<Navigate to="/exams/model" replace />}
         />
 
         {/* Practice attempts are server-issued, so the attempt id is part of
